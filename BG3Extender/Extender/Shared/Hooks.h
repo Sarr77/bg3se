@@ -16,6 +16,7 @@ public:
 
     void OnParseDataFolder(stats::RPGStats::ParseStructureFolderProc* next, stats::RPGStats* self, Array<STDString>* paths);
     void OnClientConnectMessage(net::Message::SerializeProc* wrapped, net::Message* msg, net::BitstreamSerializer* serializer);
+    void OnInitialPeerHandshakeMessage(net::Message::SerializeProc* wrapped, net::Message* msg, net::BitstreamSerializer* serializer);
     bool OnAbstractPeerBindSocket(net::AbstractPeerBindSocketProc* wrapped, net::AbstractPeer* peer, uint16_t port, uint32_t socketType);
     void OnAbstractPeerSendMessageSinglePeer(net::AbstractPeerSendMessageSinglePeerProc* wrapped,
         net::AbstractPeer* peer, TPeerId peerId, net::Message* message);
@@ -24,6 +25,8 @@ public:
 
     enum class ClientConnectMessageSerializeTag{};
     WrappableFunction<ClientConnectMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__ClientConnectMessage__Serialize;
+    enum class InitialPeerHandshakeMessageSerializeTag{};
+    WrappableFunction<InitialPeerHandshakeMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__InitialPeerHandshakeMessage__Serialize;
     enum class AbstractPeerBindSocketTag{};
     WrappableFunction<AbstractPeerBindSocketTag, net::AbstractPeerBindSocketProc> net__AbstractPeer__BindSocket;
     enum class AbstractPeerSendMessageSinglePeerTag{};
@@ -34,11 +37,13 @@ public:
 private:
     char const* GetLocalPeerMessageTraceSource(net::AbstractPeer* peer) const;
     bool BeginLocalPeerMessageTraceEvent(uint32_t& eventIndex);
+    bool BeginInitialPeerSerializerTelemetryEvent(uint32_t& eventIndex);
 
     bool loaded_{ false };
     bool networkingInitialized_{ false };
     bool nativePeerLimitUnexpectedValueLogged_{ false };
     std::atomic<uint32_t> localPeerMessageTraceEventCount_{ 0 };
+    std::atomic<uint32_t> initialPeerSerializerTelemetryEventCount_{ 0 };
 };
 
 END_SE()

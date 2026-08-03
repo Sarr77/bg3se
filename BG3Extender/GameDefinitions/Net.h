@@ -359,6 +359,7 @@ struct ClientConnectMessage : public Message
     char field_5C;
     Guid field_60;
     uint8_t field_70;
+    uint8_t field_71;
     HashSet<Guid> field_78;
     int field_A8;
     uint8_t field_AC;

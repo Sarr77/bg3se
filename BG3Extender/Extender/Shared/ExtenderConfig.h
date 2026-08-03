@@ -19,11 +19,21 @@ inline constexpr bool IsValidExperimentalNativeMultiplayerPeerLimit(uint32_t lim
     return limit >= 9 && limit <= 64;
 }
 
+inline constexpr bool IsValidInitialPeerSerializerTelemetryMaxEvents(uint32_t maxEvents)
+{
+    return maxEvents >= 1 && maxEvents <= 1024;
+}
+
 static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(0));
 static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(8));
 static_assert(IsValidExperimentalNativeMultiplayerPeerLimit(9));
 static_assert(IsValidExperimentalNativeMultiplayerPeerLimit(64));
 static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(65));
+static_assert(!IsValidInitialPeerSerializerTelemetryMaxEvents(0));
+static_assert(IsValidInitialPeerSerializerTelemetryMaxEvents(1));
+static_assert(IsValidInitialPeerSerializerTelemetryMaxEvents(64));
+static_assert(IsValidInitialPeerSerializerTelemetryMaxEvents(1024));
+static_assert(!IsValidInitialPeerSerializerTelemetryMaxEvents(1025));
 
 struct ExtenderConfig
 {
@@ -60,6 +70,9 @@ struct ExtenderConfig
     // Bounded, metadata-only trace of the common client/server message enqueue path.
     bool EnableLocalPeerMessageTrace{ false };
     uint32_t LocalPeerMessageTraceMaxEvents{ 4096 };
+    // Bounded field/size telemetry for the first peer serializers. No strings or GUID values.
+    bool EnableInitialPeerSerializerTelemetry{ false };
+    uint32_t InitialPeerSerializerTelemetryMaxEvents{ 64 };
     // Experimental native RakNet peer capacity override. 0 disables the hook.
     uint32_t ExperimentalNativeMultiplayerPeerLimit{ 0 };
 

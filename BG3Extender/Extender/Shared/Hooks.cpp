@@ -6,6 +6,7 @@
 BEGIN_SE()
 
 decltype(Hooks::eocnet__ClientConnectMessage__Serialize)* decltype(Hooks::eocnet__ClientConnectMessage__Serialize)::gHook;
+decltype(Hooks::eocnet__InitialPeerHandshakeMessage__Serialize)* decltype(Hooks::eocnet__InitialPeerHandshakeMessage__Serialize)::gHook;
 decltype(Hooks::net__AbstractPeer__BindSocket)* decltype(Hooks::net__AbstractPeer__BindSocket)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)* decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)::gHook;
@@ -28,6 +29,7 @@ void Hooks::Startup()
     auto& lib = gExtender->GetEngineHooks();
     lib.RPGStats__PreParseDataFolder.SetWrapper(&Hooks::OnParseDataFolder, this);
     eocnet__ClientConnectMessage__Serialize.SetWrapper(&Hooks::OnClientConnectMessage, this);
+    eocnet__InitialPeerHandshakeMessage__Serialize.SetWrapper(&Hooks::OnInitialPeerHandshakeMessage, this);
 
     auto const nativePeerLimit = gExtender->GetConfig().ExperimentalNativeMultiplayerPeerLimit;
     if (nativePeerLimit != 0) {
@@ -106,9 +108,37 @@ void Hooks::HookNetworkMessages(net::MessageFactory* factory)
     auto clientConnect = factory->MessagePools[(unsigned)NetMessage::NETMSG_CLIENT_CONNECT]->Template;
     eocnet__ClientConnectMessage__Serialize.Wrap((*(net::Message::VMT**)clientConnect)->Serialize);
 
-    DetourTransactionCommit();
+    if (gExtender->GetConfig().EnableInitialPeerSerializerTelemetry) {
+        if (!IsValidInitialPeerSerializerTelemetryMaxEvents(
+                gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents)) {
+            ERR("[MP_SERIALIZER_TRACE] event=disabled reason=invalid_max_events actual=%u allowed=1-1024",
+                gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents);
+        } else if (!IsNativePeerLimitResearchBuild(gExtender->GetGameVersion())) {
+            auto const& version = gExtender->GetGameVersion();
+            ERR("[MP_SERIALIZER_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u expected=4.72.9.685",
+                (unsigned)version.Major,
+                (unsigned)version.Minor,
+                (unsigned)version.Revision,
+                (unsigned)version.Build);
+        } else {
+            auto handshake = factory->MessagePools[(unsigned)NetMessage::NETMSG_HANDSHAKE]->Template;
+            eocnet__InitialPeerHandshakeMessage__Serialize.Wrap((*(net::Message::VMT**)handshake)->Serialize);
+        }
+    }
 
-    networkingInitialized_ = true;
+    auto const status = DetourTransactionCommit();
+
+    if (status == NO_ERROR && gExtender->GetConfig().EnableInitialPeerSerializerTelemetry
+        && IsValidInitialPeerSerializerTelemetryMaxEvents(
+            gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents)
+        && IsNativePeerLimitResearchBuild(gExtender->GetGameVersion())) {
+        INFO("[MP_SERIALIZER_TRACE] event=hook_enabled max_events=%u payload_logging=disabled string_logging=disabled guid_logging=disabled",
+            gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents);
+    } else if (status != NO_ERROR && gExtender->GetConfig().EnableInitialPeerSerializerTelemetry) {
+        ERR("[MP_SERIALIZER_TRACE] event=disabled reason=detour_failed status=%ld", status);
+    }
+
+    networkingInitialized_ = status == NO_ERROR;
 }
 
 void Hooks::OnParseDataFolder(stats::RPGStats::ParseStructureFolderProc* next, stats::RPGStats* self, Array<STDString>* paths)
@@ -133,7 +163,64 @@ void Hooks::OnClientConnectMessage(net::Message::SerializeProc* wrapped, net::Me
         gExtender->GetClient().GetNetworkManager().OnClientConnectMessage(m);
     }
 
+    auto const bitstream = serializer->Bitstream;
+    auto const bitsBefore = bitstream != nullptr ? bitstream->NumBits : 0;
+    auto const offsetBefore = bitstream != nullptr ? bitstream->CurrentOffsetBits : 0;
     wrapped(msg, serializer);
+
+    uint32_t eventIndex;
+    if (gExtender->GetConfig().EnableInitialPeerSerializerTelemetry
+        && IsValidInitialPeerSerializerTelemetryMaxEvents(
+            gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents)
+        && IsNativePeerLimitResearchBuild(gExtender->GetGameVersion())
+        && BeginInitialPeerSerializerTelemetryEvent(eventIndex)) {
+        auto const bitsAfter = bitstream != nullptr ? bitstream->NumBits : 0;
+        auto const offsetAfter = bitstream != nullptr ? bitstream->CurrentOffsetBits : 0;
+        INFO("[MP_SERIALIZER_TRACE] event=client_connect index=%u direction=%s msg_id=%u bits_before=%u bits_after=%u offset_before=%u offset_after=%u game_version_length=%u build_length=%u identity_type=%u identity_subtype=%u identity_payload_logging=disabled flag_70=%u flag_71=%u guid_set_count=%u field_a8=%d field_ac=%u",
+            eventIndex,
+            serializer->IsWriting ? "write" : "read",
+            (unsigned)msg->MsgId,
+            bitsBefore,
+            bitsAfter,
+            offsetBefore,
+            offsetAfter,
+            m->GameVersion.size(),
+            m->Build.size(),
+            (unsigned)(uint8_t)m->field_58,
+            (unsigned)(uint8_t)m->field_5C,
+            (unsigned)m->field_70,
+            (unsigned)m->field_71,
+            m->field_78.size(),
+            m->field_A8,
+            (unsigned)m->field_AC);
+    }
+}
+
+void Hooks::OnInitialPeerHandshakeMessage(
+    net::Message::SerializeProc* wrapped,
+    net::Message* msg,
+    net::BitstreamSerializer* serializer)
+{
+    auto const bitstream = serializer->Bitstream;
+    auto const bitsBefore = bitstream != nullptr ? bitstream->NumBits : 0;
+    auto const offsetBefore = bitstream != nullptr ? bitstream->CurrentOffsetBits : 0;
+    auto const scalarBefore = *(uint32_t*)((uint8_t*)msg + 0x28);
+    wrapped(msg, serializer);
+
+    uint32_t eventIndex;
+    if (BeginInitialPeerSerializerTelemetryEvent(eventIndex)) {
+        auto const bitsAfter = bitstream != nullptr ? bitstream->NumBits : 0;
+        auto const offsetAfter = bitstream != nullptr ? bitstream->CurrentOffsetBits : 0;
+        INFO("[MP_SERIALIZER_TRACE] event=handshake_scalar index=%u direction=%s msg_id=%u bits_before=%u bits_after=%u offset_before=%u offset_after=%u scalar_u32=%u",
+            eventIndex,
+            serializer->IsWriting ? "write" : "read",
+            (unsigned)msg->MsgId,
+            bitsBefore,
+            bitsAfter,
+            offsetBefore,
+            offsetAfter,
+            serializer->IsWriting ? scalarBefore : *(uint32_t*)((uint8_t*)msg + 0x28));
+    }
 }
 
 bool Hooks::OnAbstractPeerBindSocket(
@@ -186,6 +273,21 @@ bool Hooks::BeginLocalPeerMessageTraceEvent(uint32_t& eventIndex)
 
     if (eventIndex == maxEvents) {
         INFO("[MP_MESSAGE_TRACE] event=limit_reached max_events=%u", maxEvents);
+    }
+
+    return false;
+}
+
+bool Hooks::BeginInitialPeerSerializerTelemetryEvent(uint32_t& eventIndex)
+{
+    auto const maxEvents = gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents;
+    eventIndex = initialPeerSerializerTelemetryEventCount_.fetch_add(1, std::memory_order_relaxed);
+    if (eventIndex < maxEvents) {
+        return true;
+    }
+
+    if (eventIndex == maxEvents) {
+        INFO("[MP_SERIALIZER_TRACE] event=limit_reached max_events=%u", maxEvents);
     }
 
     return false;

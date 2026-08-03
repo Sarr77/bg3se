@@ -36,6 +36,8 @@ void ApplyConfig(ExtenderConfig& config, Document& root)
     ConfigGet(root, "MultiplayerCapacityTelemetryIntervalMs", config.MultiplayerCapacityTelemetryIntervalMs);
     ConfigGet(root, "EnableLocalPeerMessageTrace", config.EnableLocalPeerMessageTrace);
     ConfigGet(root, "LocalPeerMessageTraceMaxEvents", config.LocalPeerMessageTraceMaxEvents);
+    ConfigGet(root, "EnableInitialPeerSerializerTelemetry", config.EnableInitialPeerSerializerTelemetry);
+    ConfigGet(root, "InitialPeerSerializerTelemetryMaxEvents", config.InitialPeerSerializerTelemetryMaxEvents);
     ConfigGet(root, "ExperimentalNativeMultiplayerPeerLimit", config.ExperimentalNativeMultiplayerPeerLimit);
 
     ConfigGet(root, "DebuggerPort", config.DebuggerPort);
