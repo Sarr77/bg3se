@@ -19,6 +19,7 @@ class NetworkManager : public net::BaseNetworkManager
 {
 public:
     void Reset();
+    void Update() override;
 
     bool LocalPeerOnly() const;
     bool CanSendExtenderMessages(PeerId peerId) const;
@@ -39,9 +40,34 @@ public:
     void BroadcastToConnectedPeers(net::ExtenderMessage* msg, UserId excludeUserId, bool excludeLocalPeer = false);
 
 private:
+    struct CapacitySnapshot
+    {
+        uint16_t MaxPeers{ 0 };
+        uint8_t ModulePlayers{ 0 };
+        uint32_t ConnectedPeers{ 0 };
+        uint32_t ActivePeers{ 0 };
+        uint32_t SessionPeers{ 0 };
+        uint32_t LevelPeers{ 0 };
+        uint32_t KickedPeers{ 0 };
+        uint32_t UserMappings{ 0 };
+        uint32_t PeerInfoEntries{ 0 };
+        uint32_t CharacterOwners{ 0 };
+        uint32_t ExtenderPeers{ 0 };
+        int32_t LocalPeerId{ -1 };
+        int32_t ServerState{ -1 };
+        bool WasInitialized{ false };
+
+        bool operator == (CapacitySnapshot const& other) const;
+    };
+
+    void UpdateCapacityTelemetry(bool force = false, char const* event = "snapshot", std::optional<PeerId> peerId = {});
+    std::optional<CapacitySnapshot> MakeCapacitySnapshot() const;
+
     ExtenderProtocol * protocol_{ nullptr };
     // List of clients that support the extender protocol
     std::unordered_map<PeerId, net::ProtoVersion> peerVersions_;
+    std::optional<CapacitySnapshot> lastCapacitySnapshot_;
+    uint64_t lastCapacityTelemetryTick_{ 0 };
 };
 
 END_NS()

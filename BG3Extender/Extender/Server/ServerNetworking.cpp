@@ -52,7 +52,109 @@ void ExtenderProtocol::ProcessExtenderMessage(net::MessageContext& context, net:
 
 void NetworkManager::Reset()
 {
+    UpdateCapacityTelemetry(true, "reset-before");
     peerVersions_.clear();
+    lastCapacitySnapshot_.reset();
+    lastCapacityTelemetryTick_ = 0;
+}
+
+bool NetworkManager::CapacitySnapshot::operator == (CapacitySnapshot const& other) const
+{
+    return MaxPeers == other.MaxPeers
+        && ModulePlayers == other.ModulePlayers
+        && ConnectedPeers == other.ConnectedPeers
+        && ActivePeers == other.ActivePeers
+        && SessionPeers == other.SessionPeers
+        && LevelPeers == other.LevelPeers
+        && KickedPeers == other.KickedPeers
+        && UserMappings == other.UserMappings
+        && PeerInfoEntries == other.PeerInfoEntries
+        && CharacterOwners == other.CharacterOwners
+        && ExtenderPeers == other.ExtenderPeers
+        && LocalPeerId == other.LocalPeerId
+        && ServerState == other.ServerState
+        && WasInitialized == other.WasInitialized;
+}
+
+void NetworkManager::Update()
+{
+    BaseNetworkManager::Update();
+    UpdateCapacityTelemetry();
+}
+
+std::optional<NetworkManager::CapacitySnapshot> NetworkManager::MakeCapacitySnapshot() const
+{
+    auto server = GetServer();
+    if (server == nullptr) {
+        return {};
+    }
+
+    CapacitySnapshot snapshot;
+    snapshot.MaxPeers = server->MaxPeers;
+    snapshot.ConnectedPeers = server->ConnectedPeerIds.size();
+    snapshot.ActivePeers = server->ActivePeerIds.size();
+    snapshot.SessionPeers = server->SessionPeerIds.size();
+    snapshot.LevelPeers = server->LevelPeerIds.size();
+    snapshot.KickedPeers = server->KickedPeerIds.size();
+    snapshot.UserMappings = server->UserMappings.UserIds.size();
+    snapshot.PeerInfoEntries = server->PeerInfo.size();
+    snapshot.CharacterOwners = server->CharacterOwners.size();
+    snapshot.ExtenderPeers = (uint32_t)peerVersions_.size();
+    snapshot.LocalPeerId = server->LocalPeerId;
+    snapshot.ServerState = server->ServerState;
+    snapshot.WasInitialized = server->WasInitialized;
+
+    auto modManager = GetStaticSymbols().GetModManagerServer();
+    if (modManager != nullptr) {
+        snapshot.ModulePlayers = modManager->BaseModule.Info.NumPlayers;
+    }
+
+    return snapshot;
+}
+
+void NetworkManager::UpdateCapacityTelemetry(bool force, char const* event, std::optional<PeerId> peerId)
+{
+    auto const& config = gExtender->GetConfig();
+    if (!config.EnableMultiplayerCapacityTelemetry) {
+        return;
+    }
+
+    auto snapshot = MakeCapacitySnapshot();
+    if (!snapshot) {
+        return;
+    }
+
+    auto now = GetTickCount64();
+    auto interval = std::max<uint32_t>(config.MultiplayerCapacityTelemetryIntervalMs, 1000);
+    auto changed = !lastCapacitySnapshot_ || !(*lastCapacitySnapshot_ == *snapshot);
+    auto heartbeatDue = lastCapacityTelemetryTick_ == 0 || now - lastCapacityTelemetryTick_ >= interval;
+    if (!force && !changed && !heartbeatDue) {
+        return;
+    }
+
+    auto peer = peerId ? (int32_t)(TPeerId)*peerId : -1;
+    INFO("[MP_CAPACITY] event=%s peer=%d maxPeers=%u modulePlayers=%u initialized=%u "
+        "connected=%u active=%u session=%u level=%u kicked=%u users=%u "
+        "peerInfo=%u characterOwners=%u extenderPeers=%u localPeer=%d serverState=%d",
+        event,
+        peer,
+        (unsigned)snapshot->MaxPeers,
+        (unsigned)snapshot->ModulePlayers,
+        snapshot->WasInitialized ? 1u : 0u,
+        snapshot->ConnectedPeers,
+        snapshot->ActivePeers,
+        snapshot->SessionPeers,
+        snapshot->LevelPeers,
+        snapshot->KickedPeers,
+        snapshot->UserMappings,
+        snapshot->PeerInfoEntries,
+        snapshot->CharacterOwners,
+        snapshot->ExtenderPeers,
+        snapshot->LocalPeerId,
+        snapshot->ServerState);
+
+    lastCapacitySnapshot_ = *snapshot;
+    lastCapacityTelemetryTick_ = now;
 }
 
 bool NetworkManager::LocalPeerOnly() const
@@ -81,11 +183,13 @@ std::optional<net::ProtoVersion> NetworkManager::GetPeerVersion(PeerId peerId) c
 void NetworkManager::AllowExtenderMessages(PeerId peerId, net::ProtoVersion version)
 {
     peerVersions_.insert_or_assign(peerId, version);
+    UpdateCapacityTelemetry(true, "extender-peer-ready", peerId);
 }
 
 
 void NetworkManager::OnClientConnectMessage(net::MessageContext* context, net::ClientConnectMessage* msg)
 {
+    UpdateCapacityTelemetry(true, "client-connect-message", context->UserID.GetPeerId());
     if (!msg->Build.contains(" Extender")) {
         DEBUG("No extender trailer found in ClientConnect message");
     } else if (!msg->Build.contains(" Extender_0")) {

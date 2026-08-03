@@ -27,6 +27,10 @@ The following configuration variables can be set in the `ScriptExtenderSettings.
 | DebuggerPort | Integer | 9999 | Port number the Osiris debugger will listen on |
 | EnableLuaDebugger | Boolean | false | Enables the Lua debugger interface |
 | LuaDebuggerPort | Integer | 9998 | Port number the Lua debugger will listen on  |
+| EnableMultiplayerCapacityTelemetry | Boolean | false | Enables read-only research snapshots of server peer collections and capacity fields. No packet contents, lobby tokens, names or network addresses are logged. |
+| MultiplayerCapacityTelemetryIntervalMs | Integer | 10000 | Maximum interval between telemetry heartbeat snapshots; values below 1000 are clamped to 1000 ms. Changes are logged immediately. |
+
+The two multiplayer capacity settings belong to the `research/player-capacity` fork. See [Docs/MultiplayerCapacityTelemetry.md](Docs/MultiplayerCapacityTelemetry.md) for scope and output fields.
 
 ### Build Instructions
 
