@@ -13,11 +13,17 @@ decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks:
 
 static bool IsNativePeerLimitResearchBuild(GameVersionInfo const& version)
 {
-    // Product version 4.1.1.7209685 is encoded in the PE fixed file version as 4.72.9.685.
-    return version.Major == 4
+    // Product versions 4.1.1.7209685 and 4.1.1.7398727 are encoded in the
+    // PE fixed file version as 4.72.9.685 and 4.73.98.727, respectively.
+    auto const originalResearchBuild = version.Major == 4
         && version.Minor == 72
         && version.Revision == 9
         && version.Build == 685;
+    auto const august2026ResearchBuild = version.Major == 4
+        && version.Minor == 73
+        && version.Revision == 98
+        && version.Build == 727;
+    return originalResearchBuild || august2026ResearchBuild;
 }
 
 void Hooks::Startup()
@@ -37,7 +43,7 @@ void Hooks::Startup()
             ERR("[MP_PEER_LIMIT] event=disabled reason=invalid_limit target=%u allowed=9-64", nativePeerLimit);
         } else if (!IsNativePeerLimitResearchBuild(gExtender->GetGameVersion())) {
             auto const& version = gExtender->GetGameVersion();
-            ERR("[MP_PEER_LIMIT] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u expected=4.72.9.685",
+            ERR("[MP_PEER_LIMIT] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.72.9.685,4.73.98.727",
                 (unsigned)version.Major,
                 (unsigned)version.Minor,
                 (unsigned)version.Revision,
@@ -61,7 +67,7 @@ void Hooks::Startup()
     if (gExtender->GetConfig().EnableLocalPeerMessageTrace) {
         if (!IsNativePeerLimitResearchBuild(gExtender->GetGameVersion())) {
             auto const& version = gExtender->GetGameVersion();
-            ERR("[MP_MESSAGE_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u expected=4.72.9.685",
+            ERR("[MP_MESSAGE_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.72.9.685,4.73.98.727",
                 (unsigned)version.Major,
                 (unsigned)version.Minor,
                 (unsigned)version.Revision,
@@ -115,7 +121,7 @@ void Hooks::HookNetworkMessages(net::MessageFactory* factory)
                 gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents);
         } else if (!IsNativePeerLimitResearchBuild(gExtender->GetGameVersion())) {
             auto const& version = gExtender->GetGameVersion();
-            ERR("[MP_SERIALIZER_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u expected=4.72.9.685",
+            ERR("[MP_SERIALIZER_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.72.9.685,4.73.98.727",
                 (unsigned)version.Major,
                 (unsigned)version.Minor,
                 (unsigned)version.Revision,
