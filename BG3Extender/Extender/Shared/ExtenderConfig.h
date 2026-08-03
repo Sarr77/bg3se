@@ -57,6 +57,9 @@ struct ExtenderConfig
     // Read-only research telemetry for multiplayer capacity. Disabled by default.
     bool EnableMultiplayerCapacityTelemetry{ false };
     uint32_t MultiplayerCapacityTelemetryIntervalMs{ 10000 };
+    // Bounded, metadata-only trace of the common client/server message enqueue path.
+    bool EnableLocalPeerMessageTrace{ false };
+    uint32_t LocalPeerMessageTraceMaxEvents{ 4096 };
     // Experimental native RakNet peer capacity override. 0 disables the hook.
     uint32_t ExperimentalNativeMultiplayerPeerLimit{ 0 };
 

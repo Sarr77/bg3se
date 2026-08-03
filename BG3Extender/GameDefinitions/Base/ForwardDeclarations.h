@@ -109,6 +109,8 @@ namespace net
     struct Protocol;
     struct AbstractPeer;
     using AbstractPeerBindSocketProc = bool(AbstractPeer*, unsigned short, unsigned int);
+    using AbstractPeerSendMessageSinglePeerProc = void(AbstractPeer*, TPeerId, Message*);
+    using AbstractPeerSendMessageMultiPeerMoveIdsProc = void(AbstractPeer*, Array<PeerId>*, Message*, TPeerId);
     struct Host;
     struct Client;
     struct GameClient;

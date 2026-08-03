@@ -138,6 +138,8 @@ namespace bg3se
         SYM_OFF(ecl__EoCClient);
         SYM_OFF(esv__EoCServer);
         SYM_OFF(net__AbstractPeer__BindSocket);
+        SYM_OFF(net__AbstractPeer__SendMessageSinglePeer);
+        SYM_OFF(net__AbstractPeer__SendMessageMultiPeerMoveIds);
         SYM_OFF(ecl__EoCClient__HandleError);
         SYM_OFF(ecl__gCursorControl);
         SYM_OFF(ls__gDragDropManager);

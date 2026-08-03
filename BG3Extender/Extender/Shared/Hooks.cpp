@@ -7,6 +7,8 @@ BEGIN_SE()
 
 decltype(Hooks::eocnet__ClientConnectMessage__Serialize)* decltype(Hooks::eocnet__ClientConnectMessage__Serialize)::gHook;
 decltype(Hooks::net__AbstractPeer__BindSocket)* decltype(Hooks::net__AbstractPeer__BindSocket)::gHook;
+decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)* decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)::gHook;
+decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)::gHook;
 
 static bool IsNativePeerLimitResearchBuild(GameVersionInfo const& version)
 {
@@ -50,6 +52,36 @@ void Hooks::Startup()
                 INFO("[MP_PEER_LIMIT] event=hook_enabled target=%u", nativePeerLimit);
             } else {
                 ERR("[MP_PEER_LIMIT] event=disabled reason=detour_failed target=%u status=%ld", nativePeerLimit, status);
+            }
+        }
+    }
+
+    if (gExtender->GetConfig().EnableLocalPeerMessageTrace) {
+        if (!IsNativePeerLimitResearchBuild(gExtender->GetGameVersion())) {
+            auto const& version = gExtender->GetGameVersion();
+            ERR("[MP_MESSAGE_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u expected=4.72.9.685",
+                (unsigned)version.Major,
+                (unsigned)version.Minor,
+                (unsigned)version.Revision,
+                (unsigned)version.Build);
+        } else if (GetStaticSymbols().net__AbstractPeer__SendMessageSinglePeer == nullptr
+            || GetStaticSymbols().net__AbstractPeer__SendMessageMultiPeerMoveIds == nullptr) {
+            ERR("[MP_MESSAGE_TRACE] event=disabled reason=message_enqueue_symbol_missing single=%d multi=%d",
+                GetStaticSymbols().net__AbstractPeer__SendMessageSinglePeer != nullptr,
+                GetStaticSymbols().net__AbstractPeer__SendMessageMultiPeerMoveIds != nullptr);
+        } else {
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            net__AbstractPeer__SendMessageSinglePeer.Wrap(GetStaticSymbols().net__AbstractPeer__SendMessageSinglePeer);
+            net__AbstractPeer__SendMessageMultiPeerMoveIds.Wrap(GetStaticSymbols().net__AbstractPeer__SendMessageMultiPeerMoveIds);
+            auto const status = DetourTransactionCommit();
+            if (status == NO_ERROR) {
+                net__AbstractPeer__SendMessageSinglePeer.SetWrapper(&Hooks::OnAbstractPeerSendMessageSinglePeer, this);
+                net__AbstractPeer__SendMessageMultiPeerMoveIds.SetWrapper(&Hooks::OnAbstractPeerSendMessageMultiPeerMoveIds, this);
+                INFO("[MP_MESSAGE_TRACE] event=hook_enabled max_events=%u payload_logging=disabled",
+                    gExtender->GetConfig().LocalPeerMessageTraceMaxEvents);
+            } else {
+                ERR("[MP_MESSAGE_TRACE] event=disabled reason=detour_failed status=%ld", status);
             }
         }
     }
@@ -127,6 +159,100 @@ bool Hooks::OnAbstractPeerBindSocket(
     }
 
     return wrapped(peer, port, socketType);
+}
+
+char const* Hooks::GetLocalPeerMessageTraceSource(net::AbstractPeer* peer) const
+{
+    auto const eocServer = GetStaticSymbols().GetEoCServer();
+    if (eocServer != nullptr && static_cast<net::AbstractPeer*>(eocServer->GameServer) == peer) {
+        return "server";
+    }
+
+    auto const eocClient = GetStaticSymbols().GetEoCClient();
+    if (eocClient != nullptr && static_cast<net::AbstractPeer*>(eocClient->GameClient) == peer) {
+        return "client";
+    }
+
+    return "other";
+}
+
+bool Hooks::BeginLocalPeerMessageTraceEvent(uint32_t& eventIndex)
+{
+    auto const maxEvents = gExtender->GetConfig().LocalPeerMessageTraceMaxEvents;
+    eventIndex = localPeerMessageTraceEventCount_.fetch_add(1, std::memory_order_relaxed);
+    if (eventIndex < maxEvents) {
+        return true;
+    }
+
+    if (eventIndex == maxEvents) {
+        INFO("[MP_MESSAGE_TRACE] event=limit_reached max_events=%u", maxEvents);
+    }
+
+    return false;
+}
+
+void Hooks::OnAbstractPeerSendMessageSinglePeer(
+    net::AbstractPeerSendMessageSinglePeerProc* wrapped,
+    net::AbstractPeer* peer,
+    TPeerId peerId,
+    net::Message* message)
+{
+    uint32_t eventIndex;
+    if (BeginLocalPeerMessageTraceEvent(eventIndex)) {
+        if (message != nullptr) {
+            INFO("[MP_MESSAGE_TRACE] event=message index=%u source=%s enqueue=single msg_id=%u target_peer=%u reliability=%u priority=%u ordering=%u timestamped=%u original_size=%u",
+                eventIndex,
+                GetLocalPeerMessageTraceSource(peer),
+                (unsigned)message->MsgId,
+                (unsigned)peerId,
+                message->Reliability,
+                message->Priority,
+                (unsigned)message->OrderingSequence,
+                message->Timestamped,
+                message->OriginalSize);
+        } else {
+            INFO("[MP_MESSAGE_TRACE] event=message index=%u source=%s enqueue=single target_peer=%u message=null",
+                eventIndex,
+                GetLocalPeerMessageTraceSource(peer),
+                (unsigned)peerId);
+        }
+    }
+
+    wrapped(peer, peerId, message);
+}
+
+void Hooks::OnAbstractPeerSendMessageMultiPeerMoveIds(
+    net::AbstractPeerSendMessageMultiPeerMoveIdsProc* wrapped,
+    net::AbstractPeer* peer,
+    Array<PeerId>* recipients,
+    net::Message* message,
+    TPeerId excludePeerId)
+{
+    uint32_t eventIndex;
+    if (BeginLocalPeerMessageTraceEvent(eventIndex)) {
+        auto const recipientCount = recipients != nullptr ? recipients->size() : 0;
+        if (message != nullptr) {
+            INFO("[MP_MESSAGE_TRACE] event=message index=%u source=%s enqueue=multi msg_id=%u recipient_count=%u exclude_peer=%u reliability=%u priority=%u ordering=%u timestamped=%u original_size=%u",
+                eventIndex,
+                GetLocalPeerMessageTraceSource(peer),
+                (unsigned)message->MsgId,
+                recipientCount,
+                (unsigned)excludePeerId,
+                message->Reliability,
+                message->Priority,
+                (unsigned)message->OrderingSequence,
+                message->Timestamped,
+                message->OriginalSize);
+        } else {
+            INFO("[MP_MESSAGE_TRACE] event=message index=%u source=%s enqueue=multi recipient_count=%u exclude_peer=%u message=null",
+                eventIndex,
+                GetLocalPeerMessageTraceSource(peer),
+                recipientCount,
+                (unsigned)excludePeerId);
+        }
+    }
+
+    wrapped(peer, recipients, message, excludePeerId);
 }
 
 END_SE()

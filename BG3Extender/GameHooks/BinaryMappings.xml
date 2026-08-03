@@ -1108,5 +1108,44 @@
       45 33 ff // xor     r15d, r15d
       <Target Type="Absolute" Offset="-78" Symbol="net__AbstractPeer__BindSocket" />
     </Mapping>
+
+    <!--
+      Common semantic message enqueue functions shared by GameServer and GameClient,
+      builds 4.1.1.7209685 Vulkan and DX11. Each signature has one match per EXE.
+      These research hooks record metadata only; no message payload is inspected.
+    -->
+    <Mapping Name="net::AbstractPeer::SendMessageSinglePeer" Critical="false">
+      48 89 5c 24 10
+      48 89 74 24 18
+      57
+      48 83 ec 20
+      48 8b f1
+      49 8b f8
+      48 81 c1 48 01 00 00
+      8b da
+      e8 ?? ?? ?? ??
+      48 89 44 24 30
+      48 89 78 28
+      <Target Type="Absolute" Offset="0" Symbol="net__AbstractPeer__SendMessageSinglePeer" />
+    </Mapping>
+
+    <Mapping Name="net::AbstractPeer::SendMessageMultiPeerMoveIds" Critical="false">
+      48 89 5c 24 10
+      48 89 6c 24 18
+      48 89 74 24 20
+      57
+      41 56
+      41 57
+      48 83 ec 20
+      41 8b d9
+      49 8b f8
+      4c 8b fa
+      48 8b e9
+      48 81 c1 48 01 00 00
+      e8 ?? ?? ?? ??
+      48 89 44 24 40
+      48 89 78 28
+      <Target Type="Absolute" Offset="0" Symbol="net__AbstractPeer__SendMessageMultiPeerMoveIds" />
+    </Mapping>
   </Mappings>
 </BinaryMappings>

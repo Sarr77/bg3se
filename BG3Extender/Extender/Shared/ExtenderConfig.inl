@@ -34,6 +34,8 @@ void ApplyConfig(ExtenderConfig& config, Document& root)
     ConfigGet(root, "MergeVirtualTextures", config.MergeVirtualTextures);
     ConfigGet(root, "EnableMultiplayerCapacityTelemetry", config.EnableMultiplayerCapacityTelemetry);
     ConfigGet(root, "MultiplayerCapacityTelemetryIntervalMs", config.MultiplayerCapacityTelemetryIntervalMs);
+    ConfigGet(root, "EnableLocalPeerMessageTrace", config.EnableLocalPeerMessageTrace);
+    ConfigGet(root, "LocalPeerMessageTraceMaxEvents", config.LocalPeerMessageTraceMaxEvents);
     ConfigGet(root, "ExperimentalNativeMultiplayerPeerLimit", config.ExperimentalNativeMultiplayerPeerLimit);
 
     ConfigGet(root, "DebuggerPort", config.DebuggerPort);
