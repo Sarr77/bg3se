@@ -50,6 +50,7 @@ namespace bg3se
 
         ecl::EoCClient** ecl__EoCClient{ nullptr };
         esv::EoCServer** esv__EoCServer{ nullptr };
+        net::AbstractPeerBindSocketProc* net__AbstractPeer__BindSocket{ nullptr };
 
         ecl::EoCClient::HandleErrorProc* ecl__EoCClient__HandleError{ nullptr };
         ecl::CursorControl** ecl__gCursorControl{ nullptr };

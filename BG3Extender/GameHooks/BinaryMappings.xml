@@ -1094,5 +1094,19 @@
 		<Target Type="Indirect" Offset="@ref1" Symbol="esv__gSurfaceActionFactory" />
 		<Target Type="Indirect" Offset="@ref2" Symbol="esv__SurfaceActionFactory__DoCreateAction" />
     </Mapping>
+
+    <!--
+      net::AbstractPeer::BindSocket, builds 4.1.1.7209685 Vulkan and DX11.
+      The signature starts 0x4e bytes into the function at the MaxPeers read
+      immediately before RakPeer::Startup. It has exactly one match in each EXE.
+    -->
+    <Mapping Name="net::AbstractPeer::BindSocket" Critical="false">
+      @startup 49 8b 4d 20 // mov     rcx, [r13+20h] ; RakNetPeer
+      48 8b 01 // mov     rax, [rcx]
+      41 0f b7 95 9c 02 00 00 // movzx edx, word ptr [r13+29Ch] ; MaxPeers
+      ?? ?? ?? ?? ?? // mov     [rsp+28h], r8d
+      45 33 ff // xor     r15d, r15d
+      <Target Type="Absolute" Offset="-78" Symbol="net__AbstractPeer__BindSocket" />
+    </Mapping>
   </Mappings>
 </BinaryMappings>

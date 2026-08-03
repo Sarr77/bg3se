@@ -34,6 +34,7 @@ void ApplyConfig(ExtenderConfig& config, Document& root)
     ConfigGet(root, "MergeVirtualTextures", config.MergeVirtualTextures);
     ConfigGet(root, "EnableMultiplayerCapacityTelemetry", config.EnableMultiplayerCapacityTelemetry);
     ConfigGet(root, "MultiplayerCapacityTelemetryIntervalMs", config.MultiplayerCapacityTelemetryIntervalMs);
+    ConfigGet(root, "ExperimentalNativeMultiplayerPeerLimit", config.ExperimentalNativeMultiplayerPeerLimit);
 
     ConfigGet(root, "DebuggerPort", config.DebuggerPort);
     ConfigGet(root, "LuaDebuggerPort", config.LuaDebuggerPort);

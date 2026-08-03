@@ -14,6 +14,17 @@ struct ProfilerThreshold
     uint32_t Error{ 0 };
 };
 
+inline constexpr bool IsValidExperimentalNativeMultiplayerPeerLimit(uint32_t limit)
+{
+    return limit >= 9 && limit <= 64;
+}
+
+static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(0));
+static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(8));
+static_assert(IsValidExperimentalNativeMultiplayerPeerLimit(9));
+static_assert(IsValidExperimentalNativeMultiplayerPeerLimit(64));
+static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(65));
+
 struct ExtenderConfig
 {
 #if defined(OSI_EXTENSION_BUILD)
@@ -46,6 +57,8 @@ struct ExtenderConfig
     // Read-only research telemetry for multiplayer capacity. Disabled by default.
     bool EnableMultiplayerCapacityTelemetry{ false };
     uint32_t MultiplayerCapacityTelemetryIntervalMs{ 10000 };
+    // Experimental native RakNet peer capacity override. 0 disables the hook.
+    uint32_t ExperimentalNativeMultiplayerPeerLimit{ 0 };
 
 #if defined(OSI_EXTENSION_BUILD)
 #if defined(_DEBUG)
