@@ -42,6 +42,10 @@ public:
         net::AbstractPeer* peer, TPeerId peerId, net::Message* message);
     void OnAbstractPeerSendMessageMultiPeerMoveIds(net::AbstractPeerSendMessageMultiPeerMoveIdsProc* wrapped,
         net::AbstractPeer* peer, Array<PeerId>* recipients, net::Message* message, TPeerId excludePeerId);
+    net::ProtocolResult OnJoiningProtocolProcessMessage(
+        net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+        net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
+    uint8_t OnLobbyMembershipCheck(uint8_t (*wrapped)(void*, int8_t), void* lobby, int8_t backend);
 
     enum class ClientConnectMessageSerializeTag{};
     WrappableFunction<ClientConnectMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__ClientConnectMessage__Serialize;
@@ -67,6 +71,11 @@ public:
     WrappableFunction<AbstractPeerSendMessageSinglePeerTag, net::AbstractPeerSendMessageSinglePeerProc> net__AbstractPeer__SendMessageSinglePeer;
     enum class AbstractPeerSendMessageMultiPeerMoveIdsTag{};
     WrappableFunction<AbstractPeerSendMessageMultiPeerMoveIdsTag, net::AbstractPeerSendMessageMultiPeerMoveIdsProc> net__AbstractPeer__SendMessageMultiPeerMoveIds;
+    enum class JoiningProtocolProcessMessageTag{};
+    WrappableFunction<JoiningProtocolProcessMessageTag,
+        net::ProtocolResult(net::Protocol*, void*, net::MessageContext*, net::Message*)> eocnet__JoiningProtocol__ProcessMessage;
+    enum class LobbyMembershipCheckTag{};
+    WrappableFunction<LobbyMembershipCheckTag, uint8_t(void*, int8_t)> eocnet__Lobby__CheckMembership;
     enum class SocketOverrideSendTag{};
     WrappableFunction<SocketOverrideSendTag, int(void*, char const*, int, void const*)> stm__SteamSocketOverride__RakNetSendTo;
     enum class SocketOverrideReceiveTag{};

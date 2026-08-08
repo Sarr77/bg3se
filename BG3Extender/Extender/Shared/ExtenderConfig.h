@@ -128,6 +128,10 @@ struct ExtenderConfig
     // Exact-build local transport adapter for a reserved synthetic peer-ID pool.
     bool EnableLocalPeerTransportPrototype{ false };
     uint32_t LocalPeerTransportPrototypeMaxEvents{ 64 };
+    // Exact-build admission checkpoint for marked synthetic CLIENT_CONNECT messages.
+    // The marker is the upper 32 bits of the synthetic uint64 identity; zero is invalid.
+    bool EnableSyntheticLobbyBypassPrototype{ false };
+    uint32_t SyntheticLobbyBypassMarker{ 0 };
     // Experimental native RakNet peer capacity override. 0 disables the hook.
     uint32_t ExperimentalNativeMultiplayerPeerLimit{ 0 };
 

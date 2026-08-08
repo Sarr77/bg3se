@@ -48,6 +48,8 @@ void ApplyConfig(ExtenderConfig& config, Document& root)
     ConfigGet(root, "PartyWinSocketTelemetryMaxEvents", config.PartyWinSocketTelemetryMaxEvents);
     ConfigGet(root, "EnableLocalPeerTransportPrototype", config.EnableLocalPeerTransportPrototype);
     ConfigGet(root, "LocalPeerTransportPrototypeMaxEvents", config.LocalPeerTransportPrototypeMaxEvents);
+    ConfigGet(root, "EnableSyntheticLobbyBypassPrototype", config.EnableSyntheticLobbyBypassPrototype);
+    ConfigGet(root, "SyntheticLobbyBypassMarker", config.SyntheticLobbyBypassMarker);
     ConfigGet(root, "ExperimentalNativeMultiplayerPeerLimit", config.ExperimentalNativeMultiplayerPeerLimit);
 
     ConfigGet(root, "DebuggerPort", config.DebuggerPort);

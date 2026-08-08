@@ -17,6 +17,8 @@ decltype(Hooks::eocnet__LoadStartedMessage__Serialize)* decltype(Hooks::eocnet__
 decltype(Hooks::net__AbstractPeer__BindSocket)* decltype(Hooks::net__AbstractPeer__BindSocket)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)* decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)::gHook;
+decltype(Hooks::eocnet__JoiningProtocol__ProcessMessage)* decltype(Hooks::eocnet__JoiningProtocol__ProcessMessage)::gHook;
+decltype(Hooks::eocnet__Lobby__CheckMembership)* decltype(Hooks::eocnet__Lobby__CheckMembership)::gHook;
 decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)* decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)::gHook;
 decltype(Hooks::stm__SteamSocketOverride__RakNetRecvFrom)* decltype(Hooks::stm__SteamSocketOverride__RakNetRecvFrom)::gHook;
 decltype(Hooks::winsock__recvfrom)* decltype(Hooks::winsock__recvfrom)::gHook;
@@ -31,6 +33,8 @@ static constexpr uintptr_t SocketOverrideAddOverrideRva7398727 = 0x405B960;
 static constexpr uintptr_t SocketOverrideHelperSendRva7398727 = 0x405B2D0;
 static constexpr uintptr_t SocketOverrideMapSystemAddressRva7398727 = 0x405C340;
 static constexpr uintptr_t SocketOverrideMapTransportAddressRva7398727 = 0x405C420;
+static constexpr uintptr_t JoiningProtocolProcessMessageRva7398727 = 0x426A9A0;
+static constexpr uintptr_t LobbyMembershipCheckRva7398727 = 0x404E570;
 static constexpr uint64_t LocalPeerTransportSyntheticIdBase = 0xE100000000000001ull;
 static constexpr uint32_t LocalPeerTransportSyntheticPeerCount = 8;
 static constexpr uint8_t SteamSocketOverrideSendPreamble7398727[] = {
@@ -70,6 +74,27 @@ static constexpr uint8_t SocketOverrideMapTransportAddressPreamble7398727[] = {
     0xE6, 0x01, 0x48, 0x33, 0xC4, 0x48, 0x89, 0x44,
     0x24, 0x58
 };
+
+static constexpr uint8_t JoiningProtocolProcessMessagePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x55, 0x56, 0x57,
+    0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+    0x48, 0x8D, 0xAC, 0x24, 0x60, 0xFE, 0xFF, 0xFF,
+    0x48, 0x81, 0xEC, 0xA0, 0x02, 0x00, 0x00, 0x48
+};
+
+static constexpr uint8_t LobbyMembershipCheckPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x08, 0x48, 0x89, 0x74,
+    0x24, 0x10, 0x57, 0x48, 0x83, 0xEC, 0x20, 0x48,
+    0x0F, 0xBE, 0xFA, 0x48, 0x8B, 0xF1, 0x40, 0x80,
+    0xFF, 0x09, 0x75, 0x12, 0xB0, 0x04, 0x48, 0x8B,
+    0x5C, 0x24, 0x30, 0x48, 0x8B, 0x74, 0x24, 0x38,
+    0x48, 0x83, 0xC4, 0x20, 0x5F, 0xC3, 0x48, 0x8B,
+    0x99, 0x28, 0x04, 0x00, 0x00, 0x48, 0x89, 0x5C,
+    0x24, 0x40, 0x48, 0x8B, 0xCB, 0xFF, 0x15, 0x8D,
+    0xDF, 0x1F, 0x01
+};
+
+static thread_local bool SyntheticLobbyAdmissionActive{ false };
 
 struct LocalPeerTransportAddress
 {
@@ -237,6 +262,22 @@ static SocketOverrideMapTransportAddressProc ResolveSocketOverrideMapTransportAd
     return ResolveExactGameFunction<SocketOverrideMapTransportAddressProc>(
         SocketOverrideMapTransportAddressRva7398727,
         SocketOverrideMapTransportAddressPreamble7398727);
+}
+
+static net::ProtocolResult (*ResolveJoiningProtocolProcessMessage())(
+    net::Protocol*, void*, net::MessageContext*, net::Message*)
+{
+    return ResolveExactGameFunction<net::ProtocolResult (*)(
+        net::Protocol*, void*, net::MessageContext*, net::Message*)>(
+        JoiningProtocolProcessMessageRva7398727,
+        JoiningProtocolProcessMessagePreamble7398727);
+}
+
+static uint8_t (*ResolveLobbyMembershipCheck())(void*, int8_t)
+{
+    return ResolveExactGameFunction<uint8_t (*)(void*, int8_t)>(
+        LobbyMembershipCheckRva7398727,
+        LobbyMembershipCheckPreamble7398727);
 }
 
 static int (*ResolveWinSockRecvFrom())(uintptr_t, char*, int, int, void*, int*)
@@ -548,6 +589,7 @@ void Hooks::Startup()
         }
     }
 
+    bool localPeerTransportHookInstalled{ false };
     if (gExtender->GetConfig().EnableLocalPeerTransportPrototype) {
         auto const maxEvents = gExtender->GetConfig().LocalPeerTransportPrototypeMaxEvents;
         auto const sendTarget = ResolveSteamSocketOverrideSend();
@@ -592,11 +634,52 @@ void Hooks::Startup()
                     socketOverrideSendHookInstalled = true;
                 }
                 stm__SteamSocketOverride__RakNetRecvFrom.SetWrapper(&Hooks::OnSocketOverrideReceive, this);
+                localPeerTransportHookInstalled = true;
                 INFO("[MP_LOCAL_TRANSPORT] event=hook_enabled max_events=%u peer_scope=reserved_pool peer_count=%u proxy_port=51914 payload_logging=disabled address_logging=disabled id_logging=disabled",
                     maxEvents,
                     LocalPeerTransportSyntheticPeerCount);
             } else {
                 ERR("[MP_LOCAL_TRANSPORT] event=disabled reason=detour_failed status=%ld", status);
+            }
+        }
+    }
+
+    if (gExtender->GetConfig().EnableSyntheticLobbyBypassPrototype) {
+        auto const marker = gExtender->GetConfig().SyntheticLobbyBypassMarker;
+        auto const peerLimit = gExtender->GetConfig().ExperimentalNativeMultiplayerPeerLimit;
+        auto const processMessageTarget = ResolveJoiningProtocolProcessMessage();
+        auto const membershipCheckTarget = ResolveLobbyMembershipCheck();
+        if (marker == 0) {
+            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=invalid_marker marker_must_be_nonzero=true");
+        } else if (!localPeerTransportHookInstalled) {
+            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=local_transport_not_ready");
+        } else if (!IsValidExperimentalNativeMultiplayerPeerLimit(peerLimit)) {
+            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=invalid_peer_limit actual=%u required=9-64", peerLimit);
+        } else if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
+            auto const& version = gExtender->GetGameVersion();
+            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.73.98.727",
+                (unsigned)version.Major,
+                (unsigned)version.Minor,
+                (unsigned)version.Revision,
+                (unsigned)version.Build);
+        } else if (processMessageTarget == nullptr || membershipCheckTarget == nullptr) {
+            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=function_guard_failed joining_protocol=%d membership_check=%d",
+                processMessageTarget != nullptr,
+                membershipCheckTarget != nullptr);
+        } else {
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            eocnet__JoiningProtocol__ProcessMessage.Wrap(processMessageTarget);
+            eocnet__Lobby__CheckMembership.Wrap(membershipCheckTarget);
+            auto const status = DetourTransactionCommit();
+            if (status == NO_ERROR) {
+                eocnet__JoiningProtocol__ProcessMessage.SetWrapper(
+                    &Hooks::OnJoiningProtocolProcessMessage, this);
+                eocnet__Lobby__CheckMembership.SetWrapper(
+                    &Hooks::OnLobbyMembershipCheck, this);
+                INFO("[MP_SYNTHETIC_LOBBY] event=hook_enabled scope=marked_local_client_connect peer_range=2-9 identity_logging=disabled marker_logging=disabled");
+            } else {
+                ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=detour_failed status=%ld", status);
             }
         }
     }
@@ -1133,6 +1216,56 @@ bool Hooks::OnAbstractPeerBindSocket(
 
     return wrapped(peer, port, socketType);
 }
+
+net::ProtocolResult Hooks::OnJoiningProtocolProcessMessage(
+    net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+    net::Protocol* protocol,
+    void* unused,
+    net::MessageContext* context,
+    net::Message* message)
+{
+    auto matchesSyntheticAdmission = false;
+    if (context != nullptr && message != nullptr
+        && message->MsgId == NetMessage::NETMSG_CLIENT_CONNECT) {
+        auto const connect = static_cast<net::ClientConnectMessage*>(message);
+        uint64_t identity{};
+        memcpy(&identity, &connect->field_60, sizeof(identity));
+        auto const marker = gExtender->GetConfig().SyntheticLobbyBypassMarker;
+        auto const peerId = static_cast<uint32_t>(context->UserID.GetPeerId());
+        auto const syntheticIndex = static_cast<uint32_t>(identity);
+        matchesSyntheticAdmission = marker != 0
+            && static_cast<uint32_t>(identity >> 32) == marker
+            && syntheticIndex >= 1 && syntheticIndex <= LocalPeerTransportSyntheticPeerCount
+            && peerId >= 2 && peerId <= LocalPeerTransportSyntheticPeerCount + 1
+            && connect->field_58 == 0
+            && connect->field_5C == 1
+            && connect->field_70 == 2
+            && connect->field_71 == 0
+            && connect->field_78.size() == 5
+            && connect->field_A8 >= 1 && connect->field_A8 <= 16
+            && connect->field_AC == 1;
+    }
+
+    auto const previousAdmission = SyntheticLobbyAdmissionActive;
+    SyntheticLobbyAdmissionActive = matchesSyntheticAdmission;
+    auto const result = wrapped(protocol, unused, context, message);
+    SyntheticLobbyAdmissionActive = previousAdmission;
+    return result;
+}
+
+uint8_t Hooks::OnLobbyMembershipCheck(
+    uint8_t (*wrapped)(void*, int8_t),
+    void* lobby,
+    int8_t backend)
+{
+    if (SyntheticLobbyAdmissionActive && backend == 0) {
+        INFO("[MP_SYNTHETIC_LOBBY] event=membership_granted scope=current_marked_client_connect identity_logging=disabled marker_logging=disabled");
+        return 1;
+    }
+
+    return wrapped(lobby, backend);
+}
+
 char const* Hooks::GetLocalPeerMessageTraceSource(net::AbstractPeer* peer) const
 {
     auto const eocServer = GetStaticSymbols().GetEoCServer();
