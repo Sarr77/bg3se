@@ -20,6 +20,8 @@ public:
     void OnInitialPeerLoadMessage(net::Message::SerializeProc* wrapped, net::Message* msg, net::BitstreamSerializer* serializer);
     int OnSocketOverrideSend(int (*wrapped)(void*, char const*, int, void const*),
         void* self, char const* data, int length, void const* systemAddress);
+    int OnWinSockRecvFrom(int (*wrapped)(uintptr_t, char*, int, int, void*, int*),
+        uintptr_t socket, char* buffer, int length, int flags, void* from, int* fromLength);
     bool OnAbstractPeerBindSocket(net::AbstractPeerBindSocketProc* wrapped, net::AbstractPeer* peer, uint16_t port, uint32_t socketType);
     void OnAbstractPeerSendMessageSinglePeer(net::AbstractPeerSendMessageSinglePeerProc* wrapped,
         net::AbstractPeer* peer, TPeerId peerId, net::Message* message);
@@ -52,12 +54,15 @@ public:
     WrappableFunction<AbstractPeerSendMessageMultiPeerMoveIdsTag, net::AbstractPeerSendMessageMultiPeerMoveIdsProc> net__AbstractPeer__SendMessageMultiPeerMoveIds;
     enum class SocketOverrideSendTag{};
     WrappableFunction<SocketOverrideSendTag, int(void*, char const*, int, void const*)> stm__SteamSocketOverride__RakNetSendTo;
+    enum class WinSockRecvFromTag{};
+    WrappableFunction<WinSockRecvFromTag, int(uintptr_t, char*, int, int, void*, int*)> winsock__recvfrom;
 
 private:
     char const* GetLocalPeerMessageTraceSource(net::AbstractPeer* peer) const;
     bool BeginLocalPeerMessageTraceEvent(uint32_t& eventIndex);
     bool BeginInitialPeerSerializerTelemetryEvent(uint32_t& eventIndex);
     bool BeginSocketOverrideSendTelemetryEvent(uint32_t& eventIndex);
+    bool BeginRakNetRecvTelemetryEvent(uint32_t& eventIndex);
 
     bool loaded_{ false };
     bool networkingInitialized_{ false };
@@ -65,6 +70,7 @@ private:
     std::atomic<uint32_t> localPeerMessageTraceEventCount_{ 0 };
     std::atomic<uint32_t> initialPeerSerializerTelemetryEventCount_{ 0 };
     std::atomic<uint32_t> socketOverrideSendTelemetryEventCount_{ 0 };
+    std::atomic<uint32_t> rakNetRecvTelemetryEventCount_{ 0 };
 };
 
 END_SE()

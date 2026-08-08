@@ -40,6 +40,8 @@ void ApplyConfig(ExtenderConfig& config, Document& root)
     ConfigGet(root, "InitialPeerSerializerTelemetryMaxEvents", config.InitialPeerSerializerTelemetryMaxEvents);
     ConfigGet(root, "EnableSocketOverrideSendTelemetry", config.EnableSocketOverrideSendTelemetry);
     ConfigGet(root, "SocketOverrideSendTelemetryMaxEvents", config.SocketOverrideSendTelemetryMaxEvents);
+    ConfigGet(root, "EnableRakNetRecvTelemetry", config.EnableRakNetRecvTelemetry);
+    ConfigGet(root, "RakNetRecvTelemetryMaxEvents", config.RakNetRecvTelemetryMaxEvents);
     ConfigGet(root, "ExperimentalNativeMultiplayerPeerLimit", config.ExperimentalNativeMultiplayerPeerLimit);
 
     ConfigGet(root, "DebuggerPort", config.DebuggerPort);
