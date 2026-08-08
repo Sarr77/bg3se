@@ -38,7 +38,6 @@ public:
         uintptr_t socket, void* buffers, uint32_t bufferCount, uint32_t* numberOfBytesSent, uint32_t flags,
         void const* to, int toLength, void* overlapped, void* completionRoutine);
     bool OnAbstractPeerBindSocket(net::AbstractPeerBindSocketProc* wrapped, net::AbstractPeer* peer, uint16_t port, uint32_t socketType);
-    uint8_t OnGameServerGetMaxPlayers(uint8_t (*wrapped)(void*), void* server);
     void OnAbstractPeerSendMessageSinglePeer(net::AbstractPeerSendMessageSinglePeerProc* wrapped,
         net::AbstractPeer* peer, TPeerId peerId, net::Message* message);
     void OnAbstractPeerSendMessageMultiPeerMoveIds(net::AbstractPeerSendMessageMultiPeerMoveIdsProc* wrapped,
@@ -64,8 +63,6 @@ public:
     WrappableFunction<LoadStartedMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__LoadStartedMessage__Serialize;
     enum class AbstractPeerBindSocketTag{};
     WrappableFunction<AbstractPeerBindSocketTag, net::AbstractPeerBindSocketProc> net__AbstractPeer__BindSocket;
-    enum class GameServerGetMaxPlayersTag{};
-    WrappableFunction<GameServerGetMaxPlayersTag, uint8_t(void*)> esv__GameServer__GetMaxPlayers;
     enum class AbstractPeerSendMessageSinglePeerTag{};
     WrappableFunction<AbstractPeerSendMessageSinglePeerTag, net::AbstractPeerSendMessageSinglePeerProc> net__AbstractPeer__SendMessageSinglePeer;
     enum class AbstractPeerSendMessageMultiPeerMoveIdsTag{};
