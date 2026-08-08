@@ -79,7 +79,30 @@ bool NetworkManager::CapacitySnapshot::operator == (CapacitySnapshot const& othe
 void NetworkManager::Update()
 {
     BaseNetworkManager::Update();
+    MaintainExperimentalPlayerCapacity();
     UpdateCapacityTelemetry();
+}
+
+void NetworkManager::MaintainExperimentalPlayerCapacity()
+{
+    auto const target = gExtender->GetConfig().ExperimentalNativeMultiplayerPeerLimit;
+    if (!IsValidExperimentalNativeMultiplayerPeerLimit(target)) {
+        return;
+    }
+
+    auto modManager = GetStaticSymbols().GetModManagerServer();
+    if (modManager == nullptr) {
+        return;
+    }
+
+    auto& nativeCapacity = modManager->BaseModule.Info.NumPlayers;
+    if ((nativeCapacity == 4 || nativeCapacity == 8) && target > nativeCapacity) {
+        auto const native = nativeCapacity;
+        nativeCapacity = static_cast<uint8_t>(target);
+        INFO("[MP_PEER_LIMIT] event=player_capacity_refreshed method=server_update native=%u target=%u",
+            (unsigned)native,
+            target);
+    }
 }
 
 std::optional<NetworkManager::CapacitySnapshot> NetworkManager::MakeCapacitySnapshot() const

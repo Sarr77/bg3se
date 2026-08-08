@@ -61,6 +61,7 @@ private:
     };
 
     void UpdateCapacityTelemetry(bool force = false, char const* event = "snapshot", std::optional<PeerId> peerId = {});
+    void MaintainExperimentalPlayerCapacity();
     std::optional<CapacitySnapshot> MakeCapacitySnapshot() const;
 
     ExtenderProtocol * protocol_{ nullptr };
