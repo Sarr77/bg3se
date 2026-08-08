@@ -51,6 +51,7 @@ void ApplyConfig(ExtenderConfig& config, Document& root)
     ConfigGet(root, "EnableSyntheticLobbyBypassPrototype", config.EnableSyntheticLobbyBypassPrototype);
     ConfigGet(root, "SyntheticLobbyBypassMarker", config.SyntheticLobbyBypassMarker);
     ConfigGet(root, "ExperimentalNativeMultiplayerPeerLimit", config.ExperimentalNativeMultiplayerPeerLimit);
+    ConfigGet(root, "DisableNetMessageCompressionForResearch", config.DisableNetMessageCompressionForResearch);
 
     ConfigGet(root, "DebuggerPort", config.DebuggerPort);
     ConfigGet(root, "LuaDebuggerPort", config.LuaDebuggerPort);

@@ -134,6 +134,9 @@ struct ExtenderConfig
     uint32_t SyntheticLobbyBypassMarker{ 0 };
     // Experimental native RakNet peer capacity override. 0 disables the hook.
     uint32_t ExperimentalNativeMultiplayerPeerLimit{ 0 };
+    // Exact-build research switch: retain the normal envelope but use its
+    // uncompressed payload branch so external test peers need no hidden state.
+    bool DisableNetMessageCompressionForResearch{ false };
 
 #if defined(OSI_EXTENSION_BUILD)
 #if defined(_DEBUG)

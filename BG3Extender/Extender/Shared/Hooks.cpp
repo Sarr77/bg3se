@@ -1171,6 +1171,7 @@ bool Hooks::OnAbstractPeerBindSocket(
     uint32_t socketType)
 {
     auto const target = gExtender->GetConfig().ExperimentalNativeMultiplayerPeerLimit;
+    auto const disableCompression = gExtender->GetConfig().DisableNetMessageCompressionForResearch;
     auto const eocServer = GetStaticSymbols().GetEoCServer();
     auto const gameServer = eocServer != nullptr ? eocServer->GameServer : nullptr;
 
@@ -1214,6 +1215,13 @@ bool Hooks::OnAbstractPeerBindSocket(
         }
     }
 
+    if (disableCompression && gameServer != nullptr
+        && static_cast<net::AbstractPeer*>(gameServer) == peer) {
+        auto const previous = peer->Compressor.field_A0;
+        peer->Compressor.field_A0 = false;
+        INFO("[MP_PEER_LIMIT] event=net_compression_disabled previous=%u exact_build_research=1",
+            previous ? 1u : 0u);
+    }
     return wrapped(peer, port, socketType);
 }
 
