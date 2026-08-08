@@ -90,6 +90,18 @@ void NetworkManager::MaintainExperimentalPlayerCapacity()
         return;
     }
 
+    // ModuleInfo is reset while a save is being loaded. Changing its capacity
+    // during that transition can interfere with the host joining its own level.
+    // Wait until the local host has reached all three high-level peer sets.
+    auto server = GetServer();
+    if (server == nullptr
+        || !server->WasInitialized
+        || server->ActivePeerIds.empty()
+        || server->SessionPeerIds.empty()
+        || server->LevelPeerIds.empty()) {
+        return;
+    }
+
     auto modManager = GetStaticSymbols().GetModManagerServer();
     if (modManager == nullptr) {
         return;
