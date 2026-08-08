@@ -15,6 +15,7 @@ decltype(Hooks::eocnet__LevelLoadedMessage__Serialize)* decltype(Hooks::eocnet__
 decltype(Hooks::eocnet__LoadStartMessage__Serialize)* decltype(Hooks::eocnet__LoadStartMessage__Serialize)::gHook;
 decltype(Hooks::eocnet__LoadStartedMessage__Serialize)* decltype(Hooks::eocnet__LoadStartedMessage__Serialize)::gHook;
 decltype(Hooks::net__AbstractPeer__BindSocket)* decltype(Hooks::net__AbstractPeer__BindSocket)::gHook;
+decltype(Hooks::esv__GameServer__GetMaxPlayers)* decltype(Hooks::esv__GameServer__GetMaxPlayers)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)* decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)::gHook;
 decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)* decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)::gHook;
@@ -31,6 +32,7 @@ static constexpr uintptr_t SocketOverrideAddOverrideRva7398727 = 0x405B960;
 static constexpr uintptr_t SocketOverrideHelperSendRva7398727 = 0x405B2D0;
 static constexpr uintptr_t SocketOverrideMapSystemAddressRva7398727 = 0x405C340;
 static constexpr uintptr_t SocketOverrideMapTransportAddressRva7398727 = 0x405C420;
+static constexpr uintptr_t GameServerGetMaxPlayersRva7398727 = 0x3033120;
 static constexpr uint64_t LocalPeerTransportSyntheticIdBase = 0xE100000000000001ull;
 static constexpr uint32_t LocalPeerTransportSyntheticPeerCount = 8;
 static constexpr uint8_t SteamSocketOverrideSendPreamble7398727[] = {
@@ -69,6 +71,15 @@ static constexpr uint8_t SocketOverrideMapTransportAddressPreamble7398727[] = {
     0x83, 0xEC, 0x60, 0x48, 0x8B, 0x05, 0x2E, 0x99,
     0xE6, 0x01, 0x48, 0x33, 0xC4, 0x48, 0x89, 0x44,
     0x24, 0x58
+};
+
+static constexpr uint8_t GameServerGetMaxPlayersPreamble7398727[] = {
+    0x48, 0x8B, 0x05, 0x79, 0xCD, 0xF6, 0x02,
+    0x80, 0x78, 0x40, 0x00, 0x75, 0x14,
+    0x48, 0x8D, 0x81, 0xD0, 0x00, 0x00, 0x00,
+    0x48, 0x85, 0xC0, 0x74, 0x08,
+    0x0F, 0xB6, 0x80, 0x08, 0x01, 0x00, 0x00,
+    0xC3, 0xB8, 0x04, 0x00, 0x00, 0x00, 0xC3
 };
 
 struct LocalPeerTransportAddress
@@ -239,6 +250,13 @@ static SocketOverrideMapTransportAddressProc ResolveSocketOverrideMapTransportAd
         SocketOverrideMapTransportAddressPreamble7398727);
 }
 
+static uint8_t (*ResolveGameServerGetMaxPlayers())(void*)
+{
+    return ResolveExactGameFunction<uint8_t (*)(void*)>(
+        GameServerGetMaxPlayersRva7398727,
+        GameServerGetMaxPlayersPreamble7398727);
+}
+
 static int (*ResolveWinSockRecvFrom())(uintptr_t, char*, int, int, void*, int*)
 {
     auto const module = GetModuleHandleW(L"Ws2_32.dll");
@@ -377,15 +395,32 @@ void Hooks::Startup()
         } else if (GetStaticSymbols().net__AbstractPeer__BindSocket == nullptr) {
             ERR("[MP_PEER_LIMIT] event=disabled reason=bind_socket_symbol_missing target=%u", nativePeerLimit);
         } else {
-            DetourTransactionBegin();
-            DetourUpdateThread(GetCurrentThread());
-            net__AbstractPeer__BindSocket.Wrap(GetStaticSymbols().net__AbstractPeer__BindSocket);
-            auto const status = DetourTransactionCommit();
-            if (status == NO_ERROR) {
-                net__AbstractPeer__BindSocket.SetWrapper(&Hooks::OnAbstractPeerBindSocket, this);
-                INFO("[MP_PEER_LIMIT] event=hook_enabled target=%u", nativePeerLimit);
+            auto const capacityTarget = IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())
+                ? ResolveGameServerGetMaxPlayers()
+                : nullptr;
+            if (IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion()) && capacityTarget == nullptr) {
+                ERR("[MP_PEER_LIMIT] event=disabled reason=player_capacity_preamble_mismatch target=%u rva=0x%llx",
+                    nativePeerLimit,
+                    (unsigned long long)GameServerGetMaxPlayersRva7398727);
             } else {
-                ERR("[MP_PEER_LIMIT] event=disabled reason=detour_failed target=%u status=%ld", nativePeerLimit, status);
+                DetourTransactionBegin();
+                DetourUpdateThread(GetCurrentThread());
+                net__AbstractPeer__BindSocket.Wrap(GetStaticSymbols().net__AbstractPeer__BindSocket);
+                if (capacityTarget != nullptr) {
+                    esv__GameServer__GetMaxPlayers.Wrap(capacityTarget);
+                }
+                auto const status = DetourTransactionCommit();
+                if (status == NO_ERROR) {
+                    net__AbstractPeer__BindSocket.SetWrapper(&Hooks::OnAbstractPeerBindSocket, this);
+                    if (capacityTarget != nullptr) {
+                        esv__GameServer__GetMaxPlayers.SetWrapper(&Hooks::OnGameServerGetMaxPlayers, this);
+                    }
+                    INFO("[MP_PEER_LIMIT] event=hook_enabled target=%u transport=1 player_capacity=%d",
+                        nativePeerLimit,
+                        capacityTarget != nullptr);
+                } else {
+                    ERR("[MP_PEER_LIMIT] event=disabled reason=detour_failed target=%u status=%ld", nativePeerLimit, status);
+                }
             }
         }
     }
@@ -1103,6 +1138,26 @@ bool Hooks::OnAbstractPeerBindSocket(
     }
 
     return wrapped(peer, port, socketType);
+}
+
+uint8_t Hooks::OnGameServerGetMaxPlayers(uint8_t (*wrapped)(void*), void* server)
+{
+    auto const nativeCapacity = wrapped(server);
+    auto const target = gExtender->GetConfig().ExperimentalNativeMultiplayerPeerLimit;
+    if ((nativeCapacity == 4 || nativeCapacity == 8) && target > nativeCapacity) {
+        INFO("[MP_PEER_LIMIT] event=player_capacity_applied native=%u target=%u",
+            (unsigned)nativeCapacity,
+            target);
+        return static_cast<uint8_t>(target);
+    }
+
+    if (nativeCapacity != target && !nativePlayerCapacityUnexpectedValueLogged_) {
+        ERR("[MP_PEER_LIMIT] event=player_capacity_not_applied reason=unexpected_native_value current=%u target=%u",
+            (unsigned)nativeCapacity,
+            target);
+        nativePlayerCapacityUnexpectedValueLogged_ = true;
+    }
+    return nativeCapacity;
 }
 
 char const* Hooks::GetLocalPeerMessageTraceSource(net::AbstractPeer* peer) const
