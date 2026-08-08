@@ -23,6 +23,8 @@ public:
     void OnInitialPeerLoadMessage(net::Message::SerializeProc* wrapped, net::Message* msg, net::BitstreamSerializer* serializer);
     int OnSocketOverrideSend(int (*wrapped)(void*, char const*, int, void const*),
         void* self, char const* data, int length, void const* systemAddress);
+    int OnSocketOverrideReceive(int (*wrapped)(void*, char*, void*),
+        void* self, char* data, void* systemAddress);
     int OnWinSockRecvFrom(int (*wrapped)(uintptr_t, char*, int, int, void*, int*),
         uintptr_t socket, char* buffer, int length, int flags, void* from, int* fromLength);
     int OnWinSockSendTo(int (*wrapped)(uintptr_t, char const*, int, int, void const*, int),
@@ -67,6 +69,8 @@ public:
     WrappableFunction<AbstractPeerSendMessageMultiPeerMoveIdsTag, net::AbstractPeerSendMessageMultiPeerMoveIdsProc> net__AbstractPeer__SendMessageMultiPeerMoveIds;
     enum class SocketOverrideSendTag{};
     WrappableFunction<SocketOverrideSendTag, int(void*, char const*, int, void const*)> stm__SteamSocketOverride__RakNetSendTo;
+    enum class SocketOverrideReceiveTag{};
+    WrappableFunction<SocketOverrideReceiveTag, int(void*, char*, void*)> stm__SteamSocketOverride__RakNetRecvFrom;
     enum class WinSockRecvFromTag{};
     WrappableFunction<WinSockRecvFromTag, int(uintptr_t, char*, int, int, void*, int*)> winsock__recvfrom;
     enum class WinSockSendToTag{};
@@ -89,6 +93,8 @@ private:
     bool BeginRakNetRecvTelemetryEvent(uint32_t& eventIndex);
     bool BeginRakNetSendTelemetryEvent(uint32_t& eventIndex);
     bool BeginPartyWinSocketTelemetryEvent(uint32_t& eventIndex);
+    bool BeginLocalPeerTransportPrototypeEvent(uint32_t& eventIndex);
+    bool EnsureLocalPeerTransportMapping(void* steamSocketOverride);
 
     struct PendingPartyWinReceive
     {
@@ -108,6 +114,9 @@ private:
     std::atomic<uint32_t> rakNetRecvTelemetryEventCount_{ 0 };
     std::atomic<uint32_t> rakNetSendTelemetryEventCount_{ 0 };
     std::atomic<uint32_t> partyWinSocketTelemetryEventCount_{ 0 };
+    std::atomic<uint32_t> localPeerTransportPrototypeEventCount_{ 0 };
+    std::mutex localPeerTransportMappingMutex_;
+    void* localPeerTransportMappedOverride_{ nullptr };
     std::mutex pendingPartyWinReceivesMutex_;
     std::unordered_map<void*, PendingPartyWinReceive> pendingPartyWinReceives_;
 };

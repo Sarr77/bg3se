@@ -39,6 +39,11 @@ inline constexpr bool IsValidPartyWinSocketTelemetryMaxEvents(uint32_t maxEvents
     return maxEvents >= 1 && maxEvents <= 1024;
 }
 
+inline constexpr bool IsValidLocalPeerTransportPrototypeMaxEvents(uint32_t maxEvents)
+{
+    return maxEvents >= 1 && maxEvents <= 256;
+}
+
 static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(0));
 static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(8));
 static_assert(IsValidExperimentalNativeMultiplayerPeerLimit(9));
@@ -64,6 +69,11 @@ static_assert(IsValidPartyWinSocketTelemetryMaxEvents(1));
 static_assert(IsValidPartyWinSocketTelemetryMaxEvents(256));
 static_assert(IsValidPartyWinSocketTelemetryMaxEvents(1024));
 static_assert(!IsValidPartyWinSocketTelemetryMaxEvents(1025));
+static_assert(!IsValidLocalPeerTransportPrototypeMaxEvents(0));
+static_assert(IsValidLocalPeerTransportPrototypeMaxEvents(1));
+static_assert(IsValidLocalPeerTransportPrototypeMaxEvents(64));
+static_assert(IsValidLocalPeerTransportPrototypeMaxEvents(256));
+static_assert(!IsValidLocalPeerTransportPrototypeMaxEvents(257));
 
 struct ExtenderConfig
 {
@@ -115,6 +125,9 @@ struct ExtenderConfig
     // Loopback-only metadata trace for PartyWin's overlapped Winsock transport.
     bool EnablePartyWinSocketTelemetry{ false };
     uint32_t PartyWinSocketTelemetryMaxEvents{ 256 };
+    // Exact-build local transport adapter for one reserved synthetic peer ID.
+    bool EnableLocalPeerTransportPrototype{ false };
+    uint32_t LocalPeerTransportPrototypeMaxEvents{ 64 };
     // Experimental native RakNet peer capacity override. 0 disables the hook.
     uint32_t ExperimentalNativeMultiplayerPeerLimit{ 0 };
 

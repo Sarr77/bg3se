@@ -18,6 +18,7 @@ decltype(Hooks::net__AbstractPeer__BindSocket)* decltype(Hooks::net__AbstractPee
 decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)* decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)::gHook;
 decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)* decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)::gHook;
+decltype(Hooks::stm__SteamSocketOverride__RakNetRecvFrom)* decltype(Hooks::stm__SteamSocketOverride__RakNetRecvFrom)::gHook;
 decltype(Hooks::winsock__recvfrom)* decltype(Hooks::winsock__recvfrom)::gHook;
 decltype(Hooks::winsock__sendto)* decltype(Hooks::winsock__sendto)::gHook;
 decltype(Hooks::winsock__WSARecvFrom)* decltype(Hooks::winsock__WSARecvFrom)::gHook;
@@ -25,12 +26,76 @@ decltype(Hooks::winsock__WSAGetOverlappedResult)* decltype(Hooks::winsock__WSAGe
 decltype(Hooks::winsock__WSASendTo)* decltype(Hooks::winsock__WSASendTo)::gHook;
 
 static constexpr uintptr_t SteamSocketOverrideSendRva7398727 = 0x4061C20;
+static constexpr uintptr_t SteamSocketOverrideReceiveRva7398727 = 0x4061D60;
+static constexpr uintptr_t SocketOverrideAddOverrideRva7398727 = 0x405B960;
+static constexpr uintptr_t SocketOverrideHelperSendRva7398727 = 0x405B2D0;
+static constexpr uintptr_t SocketOverrideMapSystemAddressRva7398727 = 0x405C340;
+static constexpr uint64_t LocalPeerTransportSyntheticId = 0xE100000000000001ull;
 static constexpr uint8_t SteamSocketOverrideSendPreamble7398727[] = {
     0x48, 0x89, 0x5C, 0x24, 0x10,
     0x48, 0x89, 0x6C, 0x24, 0x18,
     0x48, 0x89, 0x7C, 0x24, 0x20,
     0x41, 0x56, 0x48, 0x83, 0xEC, 0x50
 };
+
+static constexpr uint8_t SteamSocketOverrideReceivePreamble7398727[] = {
+    0x40, 0x55, 0x53, 0x56, 0x57, 0x41, 0x54, 0x41,
+    0x56, 0x41, 0x57, 0x48, 0x8D, 0xAC, 0x24, 0xB0,
+    0xFB, 0xFF, 0xFF, 0x48, 0x81, 0xEC, 0x50, 0x05
+};
+
+static constexpr uint8_t SocketOverrideAddOverridePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x18, 0x48, 0x89, 0x74,
+    0x24, 0x20, 0x55, 0x57, 0x41, 0x54, 0x41, 0x56,
+    0x41, 0x57, 0x48, 0x8D, 0x6C, 0x24, 0xC9, 0x48
+};
+
+static constexpr uint8_t SocketOverrideHelperSendPreamble7398727[] = {
+    0x40, 0x55, 0x53, 0x56, 0x57, 0x41, 0x56, 0x41,
+    0x57, 0x48, 0x8D, 0xAC, 0x24, 0x78, 0xFF, 0xFF,
+    0xFF, 0x48, 0x81, 0xEC, 0x88, 0x01, 0x00, 0x00
+};
+
+static constexpr uint8_t SocketOverrideMapSystemAddressPreamble7398727[] = {
+    0x40, 0x53, 0x56, 0x57, 0x48, 0x83, 0xEC, 0x60,
+    0x48, 0x8B, 0x05, 0x11, 0x9A, 0xE6, 0x01, 0x48,
+    0x33, 0xC4, 0x48, 0x89, 0x44, 0x24, 0x58, 0x49
+};
+
+struct LocalPeerTransportAddress
+{
+    uint32_t Kind;
+    uint8_t Type;
+    uint8_t Reserved[3];
+    uint64_t Id;
+    uint64_t SecondaryId;
+};
+
+static_assert(sizeof(LocalPeerTransportAddress) == 24);
+
+using SocketOverrideAddOverrideProc = void (*)(void*, LocalPeerTransportAddress const*);
+using SocketOverrideHelperSendProc = int (*)(void*, void*, char const*, int, LocalPeerTransportAddress const*);
+using SocketOverrideMapSystemAddressProc = bool (*)(void*, void const*, LocalPeerTransportAddress*);
+
+static SocketOverrideAddOverrideProc LocalPeerTransportAddOverride{ nullptr };
+static SocketOverrideHelperSendProc LocalPeerTransportHelperSend{ nullptr };
+static SocketOverrideMapSystemAddressProc LocalPeerTransportMapSystemAddress{ nullptr };
+
+template <class T, size_t N>
+static T ResolveExactGameFunction(uintptr_t rva, uint8_t const (&preamble)[N])
+{
+    auto const module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
+    if (module == 0) {
+        return nullptr;
+    }
+
+    auto const target = reinterpret_cast<uint8_t const*>(module + rva);
+    if (memcmp(target, preamble, N) != 0) {
+        return nullptr;
+    }
+
+    return reinterpret_cast<T>(const_cast<uint8_t*>(target));
+}
 
 static bool IsNativePeerLimitResearchBuild(GameVersionInfo const& version)
 {
@@ -70,6 +135,34 @@ static int (*ResolveSteamSocketOverrideSend())(void*, char const*, int, void con
 
     return reinterpret_cast<int (*)(void*, char const*, int, void const*)>(
         const_cast<uint8_t*>(target));
+}
+
+static int (*ResolveSteamSocketOverrideReceive())(void*, char*, void*)
+{
+    return ResolveExactGameFunction<int (*)(void*, char*, void*)>(
+        SteamSocketOverrideReceiveRva7398727,
+        SteamSocketOverrideReceivePreamble7398727);
+}
+
+static SocketOverrideAddOverrideProc ResolveSocketOverrideAddOverride()
+{
+    return ResolveExactGameFunction<SocketOverrideAddOverrideProc>(
+        SocketOverrideAddOverrideRva7398727,
+        SocketOverrideAddOverridePreamble7398727);
+}
+
+static SocketOverrideHelperSendProc ResolveSocketOverrideHelperSend()
+{
+    return ResolveExactGameFunction<SocketOverrideHelperSendProc>(
+        SocketOverrideHelperSendRva7398727,
+        SocketOverrideHelperSendPreamble7398727);
+}
+
+static SocketOverrideMapSystemAddressProc ResolveSocketOverrideMapSystemAddress()
+{
+    return ResolveExactGameFunction<SocketOverrideMapSystemAddressProc>(
+        SocketOverrideMapSystemAddressRva7398727,
+        SocketOverrideMapSystemAddressPreamble7398727);
 }
 
 static int (*ResolveWinSockRecvFrom())(uintptr_t, char*, int, int, void*, int*)
@@ -253,6 +346,7 @@ void Hooks::Startup()
         }
     }
 
+    bool socketOverrideSendHookInstalled{ false };
     if (gExtender->GetConfig().EnableSocketOverrideSendTelemetry) {
         auto const maxEvents = gExtender->GetConfig().SocketOverrideSendTelemetryMaxEvents;
         if (!IsValidSocketOverrideSendTelemetryMaxEvents(maxEvents)) {
@@ -274,6 +368,7 @@ void Hooks::Startup()
             auto const status = DetourTransactionCommit();
             if (status == NO_ERROR) {
                 stm__SteamSocketOverride__RakNetSendTo.SetWrapper(&Hooks::OnSocketOverrideSend, this);
+                socketOverrideSendHookInstalled = true;
                 INFO("[MP_TRANSPORT_TRACE] event=hook_enabled max_events=%u payload_logging=disabled address_logging=disabled",
                     maxEvents);
             } else {
@@ -374,6 +469,55 @@ void Hooks::Startup()
                     maxEvents);
             } else {
                 ERR("[MP_PARTYWIN_SOCKET_TRACE] event=disabled reason=detour_failed status=%ld", status);
+            }
+        }
+    }
+
+    if (gExtender->GetConfig().EnableLocalPeerTransportPrototype) {
+        auto const maxEvents = gExtender->GetConfig().LocalPeerTransportPrototypeMaxEvents;
+        auto const sendTarget = ResolveSteamSocketOverrideSend();
+        auto const receiveTarget = ResolveSteamSocketOverrideReceive();
+        auto const addOverride = ResolveSocketOverrideAddOverride();
+        auto const helperSend = ResolveSocketOverrideHelperSend();
+        auto const mapSystemAddress = ResolveSocketOverrideMapSystemAddress();
+        if (!IsValidLocalPeerTransportPrototypeMaxEvents(maxEvents)) {
+            ERR("[MP_LOCAL_TRANSPORT] event=disabled reason=invalid_max_events actual=%u allowed=1-256", maxEvents);
+        } else if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
+            auto const& version = gExtender->GetGameVersion();
+            ERR("[MP_LOCAL_TRANSPORT] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.73.98.727",
+                (unsigned)version.Major,
+                (unsigned)version.Minor,
+                (unsigned)version.Revision,
+                (unsigned)version.Build);
+        } else if (sendTarget == nullptr || receiveTarget == nullptr || addOverride == nullptr
+            || helperSend == nullptr || mapSystemAddress == nullptr) {
+            ERR("[MP_LOCAL_TRANSPORT] event=disabled reason=function_guard_failed send=%d receive=%d add_override=%d helper_send=%d map=%d",
+                sendTarget != nullptr,
+                receiveTarget != nullptr,
+                addOverride != nullptr,
+                helperSend != nullptr,
+                mapSystemAddress != nullptr);
+        } else {
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            if (!socketOverrideSendHookInstalled) {
+                stm__SteamSocketOverride__RakNetSendTo.Wrap(sendTarget);
+            }
+            stm__SteamSocketOverride__RakNetRecvFrom.Wrap(receiveTarget);
+            auto const status = DetourTransactionCommit();
+            if (status == NO_ERROR) {
+                LocalPeerTransportAddOverride = addOverride;
+                LocalPeerTransportHelperSend = helperSend;
+                LocalPeerTransportMapSystemAddress = mapSystemAddress;
+                if (!socketOverrideSendHookInstalled) {
+                    stm__SteamSocketOverride__RakNetSendTo.SetWrapper(&Hooks::OnSocketOverrideSend, this);
+                    socketOverrideSendHookInstalled = true;
+                }
+                stm__SteamSocketOverride__RakNetRecvFrom.SetWrapper(&Hooks::OnSocketOverrideReceive, this);
+                INFO("[MP_LOCAL_TRANSPORT] event=hook_enabled max_events=%u peer_scope=one_reserved_id proxy_port=51914 payload_logging=disabled address_logging=disabled id_logging=disabled",
+                    maxEvents);
+            } else {
+                ERR("[MP_LOCAL_TRANSPORT] event=disabled reason=detour_failed status=%ld", status);
             }
         }
     }
@@ -508,10 +652,40 @@ void Hooks::OnClientConnectMessage(net::Message::SerializeProc* wrapped, net::Me
 int Hooks::OnSocketOverrideSend(int (*wrapped)(void*, char const*, int, void const*),
     void* self, char const* data, int length, void const* systemAddress)
 {
+    if (gExtender->GetConfig().EnableLocalPeerTransportPrototype
+        && self != nullptr && data != nullptr && length > 0 && systemAddress != nullptr
+        && LocalPeerTransportHelperSend != nullptr && LocalPeerTransportMapSystemAddress != nullptr) {
+        auto const socketOverride = *reinterpret_cast<void**>(reinterpret_cast<uint8_t*>(self) + 0x10);
+        LocalPeerTransportAddress transportAddress{};
+        if (socketOverride != nullptr
+            && LocalPeerTransportMapSystemAddress(socketOverride, systemAddress, &transportAddress)
+            && transportAddress.Kind == 1
+            && transportAddress.Type == 7
+            && transportAddress.Id == LocalPeerTransportSyntheticId
+            && transportAddress.SecondaryId == 0) {
+            auto const helperState = *reinterpret_cast<void**>(reinterpret_cast<uint8_t*>(socketOverride) + 0x18);
+            auto const helperResult = helperState != nullptr
+                ? LocalPeerTransportHelperSend(helperState, socketOverride, data, length, &transportAddress)
+                : SOCKET_ERROR;
+            auto const result = helperResult > 0 ? length : helperResult;
+
+            uint32_t eventIndex;
+            if (BeginLocalPeerTransportPrototypeEvent(eventIndex)) {
+                INFO("[MP_LOCAL_TRANSPORT] event=send index=%u length=%d result=%d helper_result=%d peer_scope=reserved payload_logging=disabled address_logging=disabled id_logging=disabled",
+                    eventIndex,
+                    length,
+                    result,
+                    helperResult);
+            }
+            return result;
+        }
+    }
+
     auto const result = wrapped(self, data, length, systemAddress);
 
     uint32_t eventIndex;
-    if (BeginSocketOverrideSendTelemetryEvent(eventIndex)) {
+    if (gExtender->GetConfig().EnableSocketOverrideSendTelemetry
+        && BeginSocketOverrideSendTelemetryEvent(eventIndex)) {
         INFO("[MP_TRANSPORT_TRACE] event=send index=%u length=%d result=%d payload_logging=disabled address_logging=disabled",
             eventIndex,
             length,
@@ -519,6 +693,13 @@ int Hooks::OnSocketOverrideSend(int (*wrapped)(void*, char const*, int, void con
     }
 
     return result;
+}
+
+int Hooks::OnSocketOverrideReceive(int (*wrapped)(void*, char*, void*),
+    void* self, char* data, void* systemAddress)
+{
+    EnsureLocalPeerTransportMapping(self);
+    return wrapped(self, data, systemAddress);
 }
 
 int Hooks::OnWinSockRecvFrom(int (*wrapped)(uintptr_t, char*, int, int, void*, int*),
@@ -930,6 +1111,57 @@ bool Hooks::BeginPartyWinSocketTelemetryEvent(uint32_t& eventIndex)
     }
 
     return false;
+}
+
+bool Hooks::BeginLocalPeerTransportPrototypeEvent(uint32_t& eventIndex)
+{
+    auto const maxEvents = gExtender->GetConfig().LocalPeerTransportPrototypeMaxEvents;
+    eventIndex = localPeerTransportPrototypeEventCount_.fetch_add(1, std::memory_order_relaxed);
+    if (eventIndex < maxEvents) {
+        return true;
+    }
+
+    if (eventIndex == maxEvents) {
+        INFO("[MP_LOCAL_TRANSPORT] event=limit_reached max_events=%u", maxEvents);
+    }
+
+    return false;
+}
+
+bool Hooks::EnsureLocalPeerTransportMapping(void* steamSocketOverride)
+{
+    if (!gExtender->GetConfig().EnableLocalPeerTransportPrototype
+        || steamSocketOverride == nullptr || LocalPeerTransportAddOverride == nullptr) {
+        return false;
+    }
+
+    auto const socketOverride = *reinterpret_cast<void**>(
+        reinterpret_cast<uint8_t*>(steamSocketOverride) + 0x10);
+    if (socketOverride == nullptr) {
+        return false;
+    }
+
+    std::lock_guard<std::mutex> lock(localPeerTransportMappingMutex_);
+    if (localPeerTransportMappedOverride_ == socketOverride) {
+        return true;
+    }
+
+    LocalPeerTransportAddress transportAddress{
+        1,
+        7,
+        { 0, 0, 0 },
+        LocalPeerTransportSyntheticId,
+        0
+    };
+    LocalPeerTransportAddOverride(socketOverride, &transportAddress);
+    localPeerTransportMappedOverride_ = socketOverride;
+
+    uint32_t eventIndex;
+    if (BeginLocalPeerTransportPrototypeEvent(eventIndex)) {
+        INFO("[MP_LOCAL_TRANSPORT] event=mapping_attempt index=%u peer_scope=reserved payload_logging=disabled address_logging=disabled id_logging=disabled",
+            eventIndex);
+    }
+    return true;
 }
 
 void Hooks::OnAbstractPeerSendMessageSinglePeer(
