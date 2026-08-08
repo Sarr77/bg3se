@@ -18,6 +18,8 @@ public:
     void OnClientConnectMessage(net::Message::SerializeProc* wrapped, net::Message* msg, net::BitstreamSerializer* serializer);
     void OnInitialPeerHandshakeMessage(net::Message::SerializeProc* wrapped, net::Message* msg, net::BitstreamSerializer* serializer);
     void OnInitialPeerLoadMessage(net::Message::SerializeProc* wrapped, net::Message* msg, net::BitstreamSerializer* serializer);
+    int OnSocketOverrideSend(int (*wrapped)(void*, char const*, int, void const*),
+        void* self, char const* data, int length, void const* systemAddress);
     bool OnAbstractPeerBindSocket(net::AbstractPeerBindSocketProc* wrapped, net::AbstractPeer* peer, uint16_t port, uint32_t socketType);
     void OnAbstractPeerSendMessageSinglePeer(net::AbstractPeerSendMessageSinglePeerProc* wrapped,
         net::AbstractPeer* peer, TPeerId peerId, net::Message* message);
@@ -48,17 +50,21 @@ public:
     WrappableFunction<AbstractPeerSendMessageSinglePeerTag, net::AbstractPeerSendMessageSinglePeerProc> net__AbstractPeer__SendMessageSinglePeer;
     enum class AbstractPeerSendMessageMultiPeerMoveIdsTag{};
     WrappableFunction<AbstractPeerSendMessageMultiPeerMoveIdsTag, net::AbstractPeerSendMessageMultiPeerMoveIdsProc> net__AbstractPeer__SendMessageMultiPeerMoveIds;
+    enum class SocketOverrideSendTag{};
+    WrappableFunction<SocketOverrideSendTag, int(void*, char const*, int, void const*)> stm__SteamSocketOverride__RakNetSendTo;
 
 private:
     char const* GetLocalPeerMessageTraceSource(net::AbstractPeer* peer) const;
     bool BeginLocalPeerMessageTraceEvent(uint32_t& eventIndex);
     bool BeginInitialPeerSerializerTelemetryEvent(uint32_t& eventIndex);
+    bool BeginSocketOverrideSendTelemetryEvent(uint32_t& eventIndex);
 
     bool loaded_{ false };
     bool networkingInitialized_{ false };
     bool nativePeerLimitUnexpectedValueLogged_{ false };
     std::atomic<uint32_t> localPeerMessageTraceEventCount_{ 0 };
     std::atomic<uint32_t> initialPeerSerializerTelemetryEventCount_{ 0 };
+    std::atomic<uint32_t> socketOverrideSendTelemetryEventCount_{ 0 };
 };
 
 END_SE()

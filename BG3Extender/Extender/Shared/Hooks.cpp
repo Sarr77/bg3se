@@ -17,6 +17,15 @@ decltype(Hooks::eocnet__LoadStartedMessage__Serialize)* decltype(Hooks::eocnet__
 decltype(Hooks::net__AbstractPeer__BindSocket)* decltype(Hooks::net__AbstractPeer__BindSocket)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)* decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)::gHook;
+decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)* decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)::gHook;
+
+static constexpr uintptr_t SteamSocketOverrideSendRva7398727 = 0x4061C20;
+static constexpr uint8_t SteamSocketOverrideSendPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10,
+    0x48, 0x89, 0x6C, 0x24, 0x18,
+    0x48, 0x89, 0x7C, 0x24, 0x20,
+    0x41, 0x56, 0x48, 0x83, 0xEC, 0x50
+};
 
 static bool IsNativePeerLimitResearchBuild(GameVersionInfo const& version)
 {
@@ -31,6 +40,31 @@ static bool IsNativePeerLimitResearchBuild(GameVersionInfo const& version)
         && version.Revision == 98
         && version.Build == 727;
     return originalResearchBuild || august2026ResearchBuild;
+}
+
+static bool IsSocketOverrideTelemetryResearchBuild(GameVersionInfo const& version)
+{
+    return version.Major == 4
+        && version.Minor == 73
+        && version.Revision == 98
+        && version.Build == 727;
+}
+
+static int (*ResolveSteamSocketOverrideSend())(void*, char const*, int, void const*)
+{
+    auto const module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
+    if (module == 0) {
+        return nullptr;
+    }
+
+    auto const target = reinterpret_cast<uint8_t const*>(module + SteamSocketOverrideSendRva7398727);
+    if (memcmp(target, SteamSocketOverrideSendPreamble7398727,
+            sizeof(SteamSocketOverrideSendPreamble7398727)) != 0) {
+        return nullptr;
+    }
+
+    return reinterpret_cast<int (*)(void*, char const*, int, void const*)>(
+        const_cast<uint8_t*>(target));
 }
 
 void Hooks::Startup()
@@ -104,6 +138,35 @@ void Hooks::Startup()
                     gExtender->GetConfig().LocalPeerMessageTraceMaxEvents);
             } else {
                 ERR("[MP_MESSAGE_TRACE] event=disabled reason=detour_failed status=%ld", status);
+            }
+        }
+    }
+
+    if (gExtender->GetConfig().EnableSocketOverrideSendTelemetry) {
+        auto const maxEvents = gExtender->GetConfig().SocketOverrideSendTelemetryMaxEvents;
+        if (!IsValidSocketOverrideSendTelemetryMaxEvents(maxEvents)) {
+            ERR("[MP_TRANSPORT_TRACE] event=disabled reason=invalid_max_events actual=%u allowed=1-1024", maxEvents);
+        } else if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
+            auto const& version = gExtender->GetGameVersion();
+            ERR("[MP_TRANSPORT_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.73.98.727",
+                (unsigned)version.Major,
+                (unsigned)version.Minor,
+                (unsigned)version.Revision,
+                (unsigned)version.Build);
+        } else if (auto const target = ResolveSteamSocketOverrideSend(); target == nullptr) {
+            ERR("[MP_TRANSPORT_TRACE] event=disabled reason=send_preamble_mismatch rva=0x%llx",
+                (unsigned long long)SteamSocketOverrideSendRva7398727);
+        } else {
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            stm__SteamSocketOverride__RakNetSendTo.Wrap(target);
+            auto const status = DetourTransactionCommit();
+            if (status == NO_ERROR) {
+                stm__SteamSocketOverride__RakNetSendTo.SetWrapper(&Hooks::OnSocketOverrideSend, this);
+                INFO("[MP_TRANSPORT_TRACE] event=hook_enabled max_events=%u payload_logging=disabled address_payload_logging=disabled",
+                    maxEvents);
+            } else {
+                ERR("[MP_TRANSPORT_TRACE] event=disabled reason=detour_failed status=%ld", status);
             }
         }
     }
@@ -233,6 +296,30 @@ void Hooks::OnClientConnectMessage(net::Message::SerializeProc* wrapped, net::Me
             m->field_A8,
             (unsigned)m->field_AC);
     }
+}
+
+int Hooks::OnSocketOverrideSend(int (*wrapped)(void*, char const*, int, void const*),
+    void* self, char const* data, int length, void const* systemAddress)
+{
+    auto const result = wrapped(self, data, length, systemAddress);
+
+    uint32_t eventIndex;
+    if (BeginSocketOverrideSendTelemetryEvent(eventIndex)) {
+        auto const addressBytes = reinterpret_cast<uint8_t const*>(systemAddress);
+        uint32_t addressKind{ UINT32_MAX };
+        if (addressBytes != nullptr) {
+            memcpy(&addressKind, addressBytes, sizeof(addressKind));
+        }
+        auto const addressSubtype = addressBytes != nullptr ? addressBytes[4] : UINT8_MAX;
+        INFO("[MP_TRANSPORT_TRACE] event=send index=%u length=%d address_kind=%u address_subtype=%u result=%d payload_logging=disabled address_payload_logging=disabled",
+            eventIndex,
+            length,
+            addressKind,
+            (unsigned)addressSubtype,
+            result);
+    }
+
+    return result;
 }
 
 void Hooks::OnInitialPeerHandshakeMessage(
@@ -397,6 +484,21 @@ bool Hooks::BeginInitialPeerSerializerTelemetryEvent(uint32_t& eventIndex)
 
     if (eventIndex == maxEvents) {
         INFO("[MP_SERIALIZER_TRACE] event=limit_reached max_events=%u", maxEvents);
+    }
+
+    return false;
+}
+
+bool Hooks::BeginSocketOverrideSendTelemetryEvent(uint32_t& eventIndex)
+{
+    auto const maxEvents = gExtender->GetConfig().SocketOverrideSendTelemetryMaxEvents;
+    eventIndex = socketOverrideSendTelemetryEventCount_.fetch_add(1, std::memory_order_relaxed);
+    if (eventIndex < maxEvents) {
+        return true;
+    }
+
+    if (eventIndex == maxEvents) {
+        INFO("[MP_TRANSPORT_TRACE] event=limit_reached max_events=%u", maxEvents);
     }
 
     return false;

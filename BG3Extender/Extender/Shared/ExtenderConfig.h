@@ -24,6 +24,11 @@ inline constexpr bool IsValidInitialPeerSerializerTelemetryMaxEvents(uint32_t ma
     return maxEvents >= 1 && maxEvents <= 1024;
 }
 
+inline constexpr bool IsValidSocketOverrideSendTelemetryMaxEvents(uint32_t maxEvents)
+{
+    return maxEvents >= 1 && maxEvents <= 1024;
+}
+
 static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(0));
 static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(8));
 static_assert(IsValidExperimentalNativeMultiplayerPeerLimit(9));
@@ -34,6 +39,11 @@ static_assert(IsValidInitialPeerSerializerTelemetryMaxEvents(1));
 static_assert(IsValidInitialPeerSerializerTelemetryMaxEvents(64));
 static_assert(IsValidInitialPeerSerializerTelemetryMaxEvents(1024));
 static_assert(!IsValidInitialPeerSerializerTelemetryMaxEvents(1025));
+static_assert(!IsValidSocketOverrideSendTelemetryMaxEvents(0));
+static_assert(IsValidSocketOverrideSendTelemetryMaxEvents(1));
+static_assert(IsValidSocketOverrideSendTelemetryMaxEvents(128));
+static_assert(IsValidSocketOverrideSendTelemetryMaxEvents(1024));
+static_assert(!IsValidSocketOverrideSendTelemetryMaxEvents(1025));
 
 struct ExtenderConfig
 {
@@ -73,6 +83,9 @@ struct ExtenderConfig
     // Bounded field/size telemetry for the first peer serializers. No strings or GUID values.
     bool EnableInitialPeerSerializerTelemetry{ false };
     uint32_t InitialPeerSerializerTelemetryMaxEvents{ 64 };
+    // Bounded metadata-only trace of SteamSocketOverride::RakNetSendTo.
+    bool EnableSocketOverrideSendTelemetry{ false };
+    uint32_t SocketOverrideSendTelemetryMaxEvents{ 128 };
     // Experimental native RakNet peer capacity override. 0 disables the hook.
     uint32_t ExperimentalNativeMultiplayerPeerLimit{ 0 };
 

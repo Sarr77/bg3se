@@ -38,6 +38,8 @@ void ApplyConfig(ExtenderConfig& config, Document& root)
     ConfigGet(root, "LocalPeerMessageTraceMaxEvents", config.LocalPeerMessageTraceMaxEvents);
     ConfigGet(root, "EnableInitialPeerSerializerTelemetry", config.EnableInitialPeerSerializerTelemetry);
     ConfigGet(root, "InitialPeerSerializerTelemetryMaxEvents", config.InitialPeerSerializerTelemetryMaxEvents);
+    ConfigGet(root, "EnableSocketOverrideSendTelemetry", config.EnableSocketOverrideSendTelemetry);
+    ConfigGet(root, "SocketOverrideSendTelemetryMaxEvents", config.SocketOverrideSendTelemetryMaxEvents);
     ConfigGet(root, "ExperimentalNativeMultiplayerPeerLimit", config.ExperimentalNativeMultiplayerPeerLimit);
 
     ConfigGet(root, "DebuggerPort", config.DebuggerPort);
