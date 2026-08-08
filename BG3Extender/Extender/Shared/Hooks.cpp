@@ -91,6 +91,53 @@ static SocketOverrideHelperSendProc LocalPeerTransportHelperSend{ nullptr };
 static SocketOverrideMapSystemAddressProc LocalPeerTransportMapSystemAddress{ nullptr };
 static SocketOverrideMapTransportAddressProc LocalPeerTransportMapTransportAddress{ nullptr };
 
+static bool IsLocalPeerTransportDefaultProxyDestination(void* helperState)
+{
+    if (helperState == nullptr) {
+        return false;
+    }
+
+    auto const destination = reinterpret_cast<sockaddr_in*>(
+        reinterpret_cast<uint8_t*>(helperState) + 8);
+    return destination->sin_family == AF_INET
+        && destination->sin_port == htons(51914)
+        && destination->sin_addr.s_addr == htonl(INADDR_ANY);
+}
+
+static int SendLocalPeerTransportToLoopbackProxy(void* helperState,
+    void* socketOverride, char const* data, int length,
+    LocalPeerTransportAddress const* transportAddress, bool& routeAdjusted)
+{
+    routeAdjusted = false;
+    if (helperState == nullptr || LocalPeerTransportHelperSend == nullptr) {
+        return SOCKET_ERROR;
+    }
+
+    auto sendWithTemporaryLoopback = [&]() {
+        auto destination = reinterpret_cast<sockaddr_in*>(
+            reinterpret_cast<uint8_t*>(helperState) + 8);
+        auto const originalAddress = destination->sin_addr.s_addr;
+        destination->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        auto const result = LocalPeerTransportHelperSend(
+            helperState, socketOverride, data, length, transportAddress);
+        destination->sin_addr.s_addr = originalAddress;
+        routeAdjusted = true;
+        return result;
+    };
+
+    if (IsLocalPeerTransportDefaultProxyDestination(helperState)) {
+        return sendWithTemporaryLoopback();
+    }
+
+    auto const initialResult = LocalPeerTransportHelperSend(
+        helperState, socketOverride, data, length, transportAddress);
+    if (initialResult == SOCKET_ERROR
+        && IsLocalPeerTransportDefaultProxyDestination(helperState)) {
+        return sendWithTemporaryLoopback();
+    }
+    return initialResult;
+}
+
 template <class T, size_t N>
 static T ResolveExactGameFunction(uintptr_t rva, uint8_t const (&preamble)[N])
 {
@@ -684,18 +731,24 @@ int Hooks::OnSocketOverrideSend(int (*wrapped)(void*, char const*, int, void con
             && transportAddress.Id == LocalPeerTransportSyntheticId
             && transportAddress.SecondaryId == 0) {
             auto const helperState = *reinterpret_cast<void**>(reinterpret_cast<uint8_t*>(socketOverride) + 0x18);
-            auto const helperResult = helperState != nullptr
-                ? LocalPeerTransportHelperSend(helperState, socketOverride, data, length, &transportAddress)
-                : SOCKET_ERROR;
+            bool routeAdjusted{ false };
+            auto const helperResult = SendLocalPeerTransportToLoopbackProxy(
+                helperState,
+                socketOverride,
+                data,
+                length,
+                &transportAddress,
+                routeAdjusted);
             auto const result = helperResult > 0 ? length : helperResult;
 
             uint32_t eventIndex;
             if (BeginLocalPeerTransportPrototypeEvent(eventIndex)) {
-                INFO("[MP_LOCAL_TRANSPORT] event=send index=%u length=%d result=%d helper_result=%d peer_scope=reserved payload_logging=disabled address_logging=disabled id_logging=disabled",
+                INFO("[MP_LOCAL_TRANSPORT] event=send index=%u length=%d result=%d helper_result=%d proxy_route=%s peer_scope=reserved payload_logging=disabled address_logging=disabled id_logging=disabled",
                     eventIndex,
                     length,
                     result,
-                    helperResult);
+                    helperResult,
+                    routeAdjusted ? "loopback" : "unchanged");
             }
             return result;
         }
