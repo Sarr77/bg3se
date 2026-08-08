@@ -22,6 +22,8 @@ public:
         void* self, char const* data, int length, void const* systemAddress);
     int OnWinSockRecvFrom(int (*wrapped)(uintptr_t, char*, int, int, void*, int*),
         uintptr_t socket, char* buffer, int length, int flags, void* from, int* fromLength);
+    int OnWinSockSendTo(int (*wrapped)(uintptr_t, char const*, int, int, void const*, int),
+        uintptr_t socket, char const* buffer, int length, int flags, void const* to, int toLength);
     bool OnAbstractPeerBindSocket(net::AbstractPeerBindSocketProc* wrapped, net::AbstractPeer* peer, uint16_t port, uint32_t socketType);
     void OnAbstractPeerSendMessageSinglePeer(net::AbstractPeerSendMessageSinglePeerProc* wrapped,
         net::AbstractPeer* peer, TPeerId peerId, net::Message* message);
@@ -56,6 +58,8 @@ public:
     WrappableFunction<SocketOverrideSendTag, int(void*, char const*, int, void const*)> stm__SteamSocketOverride__RakNetSendTo;
     enum class WinSockRecvFromTag{};
     WrappableFunction<WinSockRecvFromTag, int(uintptr_t, char*, int, int, void*, int*)> winsock__recvfrom;
+    enum class WinSockSendToTag{};
+    WrappableFunction<WinSockSendToTag, int(uintptr_t, char const*, int, int, void const*, int)> winsock__sendto;
 
 private:
     char const* GetLocalPeerMessageTraceSource(net::AbstractPeer* peer) const;
@@ -63,6 +67,7 @@ private:
     bool BeginInitialPeerSerializerTelemetryEvent(uint32_t& eventIndex);
     bool BeginSocketOverrideSendTelemetryEvent(uint32_t& eventIndex);
     bool BeginRakNetRecvTelemetryEvent(uint32_t& eventIndex);
+    bool BeginRakNetSendTelemetryEvent(uint32_t& eventIndex);
 
     bool loaded_{ false };
     bool networkingInitialized_{ false };
@@ -71,6 +76,7 @@ private:
     std::atomic<uint32_t> initialPeerSerializerTelemetryEventCount_{ 0 };
     std::atomic<uint32_t> socketOverrideSendTelemetryEventCount_{ 0 };
     std::atomic<uint32_t> rakNetRecvTelemetryEventCount_{ 0 };
+    std::atomic<uint32_t> rakNetSendTelemetryEventCount_{ 0 };
 };
 
 END_SE()

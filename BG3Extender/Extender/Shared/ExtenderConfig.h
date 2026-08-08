@@ -99,6 +99,9 @@ struct ExtenderConfig
     // Loopback-only metadata trace for recvfrom() on the RakNet host port.
     bool EnableRakNetRecvTelemetry{ false };
     uint32_t RakNetRecvTelemetryMaxEvents{ 64 };
+    // Loopback-only metadata trace for sendto() from the RakNet host port.
+    bool EnableRakNetSendTelemetry{ false };
+    uint32_t RakNetSendTelemetryMaxEvents{ 64 };
     // Experimental native RakNet peer capacity override. 0 disables the hook.
     uint32_t ExperimentalNativeMultiplayerPeerLimit{ 0 };
 

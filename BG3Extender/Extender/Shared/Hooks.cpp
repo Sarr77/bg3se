@@ -19,6 +19,7 @@ decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)* decltype(Hooks::net__
 decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)::gHook;
 decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)* decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)::gHook;
 decltype(Hooks::winsock__recvfrom)* decltype(Hooks::winsock__recvfrom)::gHook;
+decltype(Hooks::winsock__sendto)* decltype(Hooks::winsock__sendto)::gHook;
 
 static constexpr uintptr_t SteamSocketOverrideSendRva7398727 = 0x4061C20;
 static constexpr uint8_t SteamSocketOverrideSendPreamble7398727[] = {
@@ -77,6 +78,17 @@ static int (*ResolveWinSockRecvFrom())(uintptr_t, char*, int, int, void*, int*)
 
     return reinterpret_cast<int (*)(uintptr_t, char*, int, int, void*, int*)>(
         GetProcAddress(module, "recvfrom"));
+}
+
+static int (*ResolveWinSockSendTo())(uintptr_t, char const*, int, int, void const*, int)
+{
+    auto const module = GetModuleHandleW(L"Ws2_32.dll");
+    if (module == nullptr) {
+        return nullptr;
+    }
+
+    return reinterpret_cast<int (*)(uintptr_t, char const*, int, int, void const*, int)>(
+        GetProcAddress(module, "sendto"));
 }
 
 void Hooks::Startup()
@@ -208,6 +220,35 @@ void Hooks::Startup()
                     maxEvents);
             } else {
                 ERR("[MP_RAKNET_RECV_TRACE] event=disabled reason=detour_failed status=%ld", status);
+            }
+        }
+    }
+
+
+    if (gExtender->GetConfig().EnableRakNetSendTelemetry) {
+        auto const maxEvents = gExtender->GetConfig().RakNetSendTelemetryMaxEvents;
+        if (!IsValidRakNetRecvTelemetryMaxEvents(maxEvents)) {
+            ERR("[MP_RAKNET_SEND_TRACE] event=disabled reason=invalid_max_events actual=%u allowed=1-1024", maxEvents);
+        } else if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
+            auto const& version = gExtender->GetGameVersion();
+            ERR("[MP_RAKNET_SEND_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.73.98.727",
+                (unsigned)version.Major,
+                (unsigned)version.Minor,
+                (unsigned)version.Revision,
+                (unsigned)version.Build);
+        } else if (auto const target = ResolveWinSockSendTo(); target == nullptr) {
+            ERR("[MP_RAKNET_SEND_TRACE] event=disabled reason=sendto_missing");
+        } else {
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            winsock__sendto.Wrap(target);
+            auto const status = DetourTransactionCommit();
+            if (status == NO_ERROR) {
+                winsock__sendto.SetWrapper(&Hooks::OnWinSockSendTo, this);
+                INFO("[MP_RAKNET_SEND_TRACE] event=hook_enabled max_events=%u host_port=23253 payload_logging=disabled address_logging=disabled loopback_only=true",
+                    maxEvents);
+            } else {
+                ERR("[MP_RAKNET_SEND_TRACE] event=disabled reason=detour_failed status=%ld", status);
             }
         }
     }
@@ -385,6 +426,42 @@ int Hooks::OnWinSockRecvFrom(int (*wrapped)(uintptr_t, char*, int, int, void*, i
             eventIndex,
             result,
             (unsigned)(uint8_t)buffer[0]);
+    }
+
+    return result;
+}
+
+int Hooks::OnWinSockSendTo(int (*wrapped)(uintptr_t, char const*, int, int, void const*, int),
+    uintptr_t socket, char const* buffer, int length, int flags, void const* to, int toLength)
+{
+    auto const result = wrapped(socket, buffer, length, flags, to, toLength);
+    auto const destinationAddressBase = reinterpret_cast<sockaddr const*>(to);
+    if (length <= 0 || buffer == nullptr || destinationAddressBase == nullptr
+        || destinationAddressBase->sa_family != AF_INET) {
+        return result;
+    }
+
+    auto const destination = reinterpret_cast<sockaddr_in const*>(destinationAddressBase);
+    auto const destinationAddress = ntohl(destination->sin_addr.s_addr);
+    if ((destinationAddress >> 24) != 127) {
+        return result;
+    }
+
+    sockaddr_in local{};
+    int localLength = sizeof(local);
+    if (getsockname((SOCKET)socket, reinterpret_cast<sockaddr*>(&local), &localLength) != 0
+        || local.sin_family != AF_INET
+        || ntohs(local.sin_port) != 23253) {
+        return result;
+    }
+
+    uint32_t eventIndex;
+    if (BeginRakNetSendTelemetryEvent(eventIndex)) {
+        INFO("[MP_RAKNET_SEND_TRACE] event=datagram index=%u length=%d message_id=%u result=%d destination_loopback=true host_port=23253 payload_logging=disabled address_logging=disabled",
+            eventIndex,
+            length,
+            (unsigned)(uint8_t)buffer[0],
+            result);
     }
 
     return result;
@@ -582,6 +659,21 @@ bool Hooks::BeginRakNetRecvTelemetryEvent(uint32_t& eventIndex)
 
     if (eventIndex == maxEvents) {
         INFO("[MP_RAKNET_RECV_TRACE] event=limit_reached max_events=%u", maxEvents);
+    }
+
+    return false;
+}
+
+bool Hooks::BeginRakNetSendTelemetryEvent(uint32_t& eventIndex)
+{
+    auto const maxEvents = gExtender->GetConfig().RakNetSendTelemetryMaxEvents;
+    eventIndex = rakNetSendTelemetryEventCount_.fetch_add(1, std::memory_order_relaxed);
+    if (eventIndex < maxEvents) {
+        return true;
+    }
+
+    if (eventIndex == maxEvents) {
+        INFO("[MP_RAKNET_SEND_TRACE] event=limit_reached max_events=%u", maxEvents);
     }
 
     return false;
