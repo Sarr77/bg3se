@@ -7,6 +7,13 @@ BEGIN_SE()
 
 decltype(Hooks::eocnet__ClientConnectMessage__Serialize)* decltype(Hooks::eocnet__ClientConnectMessage__Serialize)::gHook;
 decltype(Hooks::eocnet__InitialPeerHandshakeMessage__Serialize)* decltype(Hooks::eocnet__InitialPeerHandshakeMessage__Serialize)::gHook;
+decltype(Hooks::eocnet__PeerActivateMessage__Serialize)* decltype(Hooks::eocnet__PeerActivateMessage__Serialize)::gHook;
+decltype(Hooks::eocnet__SessionLoadMessage__Serialize)* decltype(Hooks::eocnet__SessionLoadMessage__Serialize)::gHook;
+decltype(Hooks::eocnet__SessionLoadedMessage__Serialize)* decltype(Hooks::eocnet__SessionLoadedMessage__Serialize)::gHook;
+decltype(Hooks::eocnet__LevelLoadMessage__Serialize)* decltype(Hooks::eocnet__LevelLoadMessage__Serialize)::gHook;
+decltype(Hooks::eocnet__LevelLoadedMessage__Serialize)* decltype(Hooks::eocnet__LevelLoadedMessage__Serialize)::gHook;
+decltype(Hooks::eocnet__LoadStartMessage__Serialize)* decltype(Hooks::eocnet__LoadStartMessage__Serialize)::gHook;
+decltype(Hooks::eocnet__LoadStartedMessage__Serialize)* decltype(Hooks::eocnet__LoadStartedMessage__Serialize)::gHook;
 decltype(Hooks::net__AbstractPeer__BindSocket)* decltype(Hooks::net__AbstractPeer__BindSocket)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)* decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)::gHook;
@@ -36,6 +43,13 @@ void Hooks::Startup()
     lib.RPGStats__PreParseDataFolder.SetWrapper(&Hooks::OnParseDataFolder, this);
     eocnet__ClientConnectMessage__Serialize.SetWrapper(&Hooks::OnClientConnectMessage, this);
     eocnet__InitialPeerHandshakeMessage__Serialize.SetWrapper(&Hooks::OnInitialPeerHandshakeMessage, this);
+    eocnet__PeerActivateMessage__Serialize.SetWrapper(&Hooks::OnInitialPeerLoadMessage, this);
+    eocnet__SessionLoadMessage__Serialize.SetWrapper(&Hooks::OnInitialPeerLoadMessage, this);
+    eocnet__SessionLoadedMessage__Serialize.SetWrapper(&Hooks::OnInitialPeerLoadMessage, this);
+    eocnet__LevelLoadMessage__Serialize.SetWrapper(&Hooks::OnInitialPeerLoadMessage, this);
+    eocnet__LevelLoadedMessage__Serialize.SetWrapper(&Hooks::OnInitialPeerLoadMessage, this);
+    eocnet__LoadStartMessage__Serialize.SetWrapper(&Hooks::OnInitialPeerLoadMessage, this);
+    eocnet__LoadStartedMessage__Serialize.SetWrapper(&Hooks::OnInitialPeerLoadMessage, this);
 
     auto const nativePeerLimit = gExtender->GetConfig().ExperimentalNativeMultiplayerPeerLimit;
     if (nativePeerLimit != 0) {
@@ -126,9 +140,27 @@ void Hooks::HookNetworkMessages(net::MessageFactory* factory)
                 (unsigned)version.Minor,
                 (unsigned)version.Revision,
                 (unsigned)version.Build);
+        } else if (factory->MessagePools.size() <= (unsigned)NetMessage::NETMSG_LOAD_STARTED) {
+            ERR("[MP_SERIALIZER_TRACE] event=disabled reason=load_message_pool_missing actual=%u required=%u",
+                factory->MessagePools.size(),
+                (unsigned)NetMessage::NETMSG_LOAD_STARTED + 1);
         } else {
             auto handshake = factory->MessagePools[(unsigned)NetMessage::NETMSG_HANDSHAKE]->Template;
             eocnet__InitialPeerHandshakeMessage__Serialize.Wrap((*(net::Message::VMT**)handshake)->Serialize);
+            auto peerActivate = factory->MessagePools[(unsigned)NetMessage::NETMSG_PEER_ACTIVATE]->Template;
+            auto sessionLoad = factory->MessagePools[(unsigned)NetMessage::NETMSG_SESSION_LOAD]->Template;
+            auto sessionLoaded = factory->MessagePools[(unsigned)NetMessage::NETMSG_SESSION_LOADED]->Template;
+            auto levelLoad = factory->MessagePools[(unsigned)NetMessage::NETMSG_LEVEL_LOAD]->Template;
+            auto levelLoaded = factory->MessagePools[(unsigned)NetMessage::NETMSG_LEVEL_LOADED]->Template;
+            auto loadStart = factory->MessagePools[(unsigned)NetMessage::NETMSG_LOAD_START]->Template;
+            auto loadStarted = factory->MessagePools[(unsigned)NetMessage::NETMSG_LOAD_STARTED]->Template;
+            eocnet__PeerActivateMessage__Serialize.Wrap((*(net::Message::VMT**)peerActivate)->Serialize);
+            eocnet__SessionLoadMessage__Serialize.Wrap((*(net::Message::VMT**)sessionLoad)->Serialize);
+            eocnet__SessionLoadedMessage__Serialize.Wrap((*(net::Message::VMT**)sessionLoaded)->Serialize);
+            eocnet__LevelLoadMessage__Serialize.Wrap((*(net::Message::VMT**)levelLoad)->Serialize);
+            eocnet__LevelLoadedMessage__Serialize.Wrap((*(net::Message::VMT**)levelLoaded)->Serialize);
+            eocnet__LoadStartMessage__Serialize.Wrap((*(net::Message::VMT**)loadStart)->Serialize);
+            eocnet__LoadStartedMessage__Serialize.Wrap((*(net::Message::VMT**)loadStarted)->Serialize);
         }
     }
 
@@ -137,7 +169,8 @@ void Hooks::HookNetworkMessages(net::MessageFactory* factory)
     if (status == NO_ERROR && gExtender->GetConfig().EnableInitialPeerSerializerTelemetry
         && IsValidInitialPeerSerializerTelemetryMaxEvents(
             gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents)
-        && IsNativePeerLimitResearchBuild(gExtender->GetGameVersion())) {
+        && IsNativePeerLimitResearchBuild(gExtender->GetGameVersion())
+        && factory->MessagePools.size() > (unsigned)NetMessage::NETMSG_LOAD_STARTED) {
         INFO("[MP_SERIALIZER_TRACE] event=hook_enabled max_events=%u payload_logging=disabled string_logging=disabled guid_logging=disabled",
             gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents);
     } else if (status != NO_ERROR && gExtender->GetConfig().EnableInitialPeerSerializerTelemetry) {
@@ -226,6 +259,76 @@ void Hooks::OnInitialPeerHandshakeMessage(
             offsetBefore,
             offsetAfter,
             serializer->IsWriting ? scalarBefore : *(uint32_t*)((uint8_t*)msg + 0x28));
+    }
+}
+
+void Hooks::OnInitialPeerLoadMessage(
+    net::Message::SerializeProc* wrapped,
+    net::Message* msg,
+    net::BitstreamSerializer* serializer)
+{
+    auto readSafeMetadata = [msg](uint32_t (&metadata)[3]) {
+        metadata[0] = 0;
+        metadata[1] = 0;
+        metadata[2] = 0;
+        auto const bytes = (uint8_t*)msg;
+        switch ((unsigned)msg->MsgId) {
+        case (unsigned)NetMessage::NETMSG_SESSION_LOAD:
+            metadata[0] = *(uint16_t*)(bytes + 0x40);
+            metadata[1] = (uint32_t)bytes[0x42]
+                | ((uint32_t)bytes[0x43] << 8)
+                | ((uint32_t)bytes[0x44] << 16)
+                | ((uint32_t)bytes[0x45] << 24);
+            break;
+        case (unsigned)NetMessage::NETMSG_SESSION_LOADED:
+            metadata[0] = *(uint32_t*)(bytes + 0x28);
+            break;
+        case (unsigned)NetMessage::NETMSG_LEVEL_LOAD:
+            metadata[0] = *(uint32_t*)(bytes + 0x3c);
+            break;
+        case (unsigned)NetMessage::NETMSG_LEVEL_LOADED:
+            metadata[0] = *(uint32_t*)(bytes + 0xbc);
+            metadata[1] = *(uint32_t*)(bytes + 0xa4);
+            break;
+        case (unsigned)NetMessage::NETMSG_LOAD_START:
+            metadata[0] = *(uint16_t*)(bytes + 0x40);
+            metadata[1] = (uint32_t)bytes[0x43]
+                | ((uint32_t)bytes[0x42] << 8)
+                | ((uint32_t)bytes[0x48] << 16);
+            break;
+        case (unsigned)NetMessage::NETMSG_LOAD_STARTED:
+            metadata[0] = (uint32_t)bytes[0x28] | ((uint32_t)bytes[0x29] << 8);
+            break;
+        default:
+            break;
+        }
+    };
+
+    auto const bitstream = serializer->Bitstream;
+    auto const bitsBefore = bitstream != nullptr ? bitstream->NumBits : 0;
+    auto const offsetBefore = bitstream != nullptr ? bitstream->CurrentOffsetBits : 0;
+    uint32_t metadataBefore[3];
+    readSafeMetadata(metadataBefore);
+    wrapped(msg, serializer);
+
+    uint32_t eventIndex;
+    if (BeginInitialPeerSerializerTelemetryEvent(eventIndex)) {
+        auto const bitsAfter = bitstream != nullptr ? bitstream->NumBits : 0;
+        auto const offsetAfter = bitstream != nullptr ? bitstream->CurrentOffsetBits : 0;
+        uint32_t metadataAfter[3];
+        readSafeMetadata(metadataAfter);
+        auto const metadata = serializer->IsWriting ? metadataBefore : metadataAfter;
+        INFO("[MP_SERIALIZER_TRACE] event=load_phase index=%u direction=%s msg_id=%u bits_before=%u bits_after=%u offset_before=%u offset_after=%u metadata_0=%u metadata_1=%u metadata_2=%u payload_logging=disabled string_logging=disabled fixed_string_logging=disabled",
+            eventIndex,
+            serializer->IsWriting ? "write" : "read",
+            (unsigned)msg->MsgId,
+            bitsBefore,
+            bitsAfter,
+            offsetBefore,
+            offsetAfter,
+            metadata[0],
+            metadata[1],
+            metadata[2]);
     }
 }
 

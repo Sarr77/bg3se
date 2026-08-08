@@ -17,6 +17,7 @@ public:
     void OnParseDataFolder(stats::RPGStats::ParseStructureFolderProc* next, stats::RPGStats* self, Array<STDString>* paths);
     void OnClientConnectMessage(net::Message::SerializeProc* wrapped, net::Message* msg, net::BitstreamSerializer* serializer);
     void OnInitialPeerHandshakeMessage(net::Message::SerializeProc* wrapped, net::Message* msg, net::BitstreamSerializer* serializer);
+    void OnInitialPeerLoadMessage(net::Message::SerializeProc* wrapped, net::Message* msg, net::BitstreamSerializer* serializer);
     bool OnAbstractPeerBindSocket(net::AbstractPeerBindSocketProc* wrapped, net::AbstractPeer* peer, uint16_t port, uint32_t socketType);
     void OnAbstractPeerSendMessageSinglePeer(net::AbstractPeerSendMessageSinglePeerProc* wrapped,
         net::AbstractPeer* peer, TPeerId peerId, net::Message* message);
@@ -27,6 +28,20 @@ public:
     WrappableFunction<ClientConnectMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__ClientConnectMessage__Serialize;
     enum class InitialPeerHandshakeMessageSerializeTag{};
     WrappableFunction<InitialPeerHandshakeMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__InitialPeerHandshakeMessage__Serialize;
+    enum class PeerActivateMessageSerializeTag{};
+    WrappableFunction<PeerActivateMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__PeerActivateMessage__Serialize;
+    enum class SessionLoadMessageSerializeTag{};
+    WrappableFunction<SessionLoadMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__SessionLoadMessage__Serialize;
+    enum class SessionLoadedMessageSerializeTag{};
+    WrappableFunction<SessionLoadedMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__SessionLoadedMessage__Serialize;
+    enum class LevelLoadMessageSerializeTag{};
+    WrappableFunction<LevelLoadMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__LevelLoadMessage__Serialize;
+    enum class LevelLoadedMessageSerializeTag{};
+    WrappableFunction<LevelLoadedMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__LevelLoadedMessage__Serialize;
+    enum class LoadStartMessageSerializeTag{};
+    WrappableFunction<LoadStartMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__LoadStartMessage__Serialize;
+    enum class LoadStartedMessageSerializeTag{};
+    WrappableFunction<LoadStartedMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__LoadStartedMessage__Serialize;
     enum class AbstractPeerBindSocketTag{};
     WrappableFunction<AbstractPeerBindSocketTag, net::AbstractPeerBindSocketProc> net__AbstractPeer__BindSocket;
     enum class AbstractPeerSendMessageSinglePeerTag{};
