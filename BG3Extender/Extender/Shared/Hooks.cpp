@@ -31,7 +31,8 @@ static constexpr uintptr_t SocketOverrideAddOverrideRva7398727 = 0x405B960;
 static constexpr uintptr_t SocketOverrideHelperSendRva7398727 = 0x405B2D0;
 static constexpr uintptr_t SocketOverrideMapSystemAddressRva7398727 = 0x405C340;
 static constexpr uintptr_t SocketOverrideMapTransportAddressRva7398727 = 0x405C420;
-static constexpr uint64_t LocalPeerTransportSyntheticId = 0xE100000000000001ull;
+static constexpr uint64_t LocalPeerTransportSyntheticIdBase = 0xE100000000000001ull;
+static constexpr uint32_t LocalPeerTransportSyntheticPeerCount = 8;
 static constexpr uint8_t SteamSocketOverrideSendPreamble7398727[] = {
     0x48, 0x89, 0x5C, 0x24, 0x10,
     0x48, 0x89, 0x6C, 0x24, 0x18,
@@ -90,6 +91,15 @@ static SocketOverrideAddOverrideProc LocalPeerTransportAddOverride{ nullptr };
 static SocketOverrideHelperSendProc LocalPeerTransportHelperSend{ nullptr };
 static SocketOverrideMapSystemAddressProc LocalPeerTransportMapSystemAddress{ nullptr };
 static SocketOverrideMapTransportAddressProc LocalPeerTransportMapTransportAddress{ nullptr };
+
+static bool IsLocalPeerTransportSyntheticAddress(LocalPeerTransportAddress const& address)
+{
+    return address.Kind == 1
+        && address.Type == 7
+        && address.SecondaryId == 0
+        && address.Id >= LocalPeerTransportSyntheticIdBase
+        && address.Id - LocalPeerTransportSyntheticIdBase < LocalPeerTransportSyntheticPeerCount;
+}
 
 static bool IsLocalPeerTransportDefaultProxyDestination(void* helperState)
 {
@@ -581,8 +591,9 @@ void Hooks::Startup()
                     socketOverrideSendHookInstalled = true;
                 }
                 stm__SteamSocketOverride__RakNetRecvFrom.SetWrapper(&Hooks::OnSocketOverrideReceive, this);
-                INFO("[MP_LOCAL_TRANSPORT] event=hook_enabled max_events=%u peer_scope=one_reserved_id proxy_port=51914 payload_logging=disabled address_logging=disabled id_logging=disabled",
-                    maxEvents);
+                INFO("[MP_LOCAL_TRANSPORT] event=hook_enabled max_events=%u peer_scope=reserved_pool peer_count=%u proxy_port=51914 payload_logging=disabled address_logging=disabled id_logging=disabled",
+                    maxEvents,
+                    LocalPeerTransportSyntheticPeerCount);
             } else {
                 ERR("[MP_LOCAL_TRANSPORT] event=disabled reason=detour_failed status=%ld", status);
             }
@@ -726,10 +737,7 @@ int Hooks::OnSocketOverrideSend(int (*wrapped)(void*, char const*, int, void con
         LocalPeerTransportAddress transportAddress{};
         if (socketOverride != nullptr
             && LocalPeerTransportMapSystemAddress(socketOverride, systemAddress, &transportAddress)
-            && transportAddress.Kind == 1
-            && transportAddress.Type == 7
-            && transportAddress.Id == LocalPeerTransportSyntheticId
-            && transportAddress.SecondaryId == 0) {
+            && IsLocalPeerTransportSyntheticAddress(transportAddress)) {
             auto const helperState = *reinterpret_cast<void**>(reinterpret_cast<uint8_t*>(socketOverride) + 0x18);
             bool routeAdjusted{ false };
             auto const helperResult = SendLocalPeerTransportToLoopbackProxy(
@@ -779,10 +787,7 @@ int Hooks::OnSocketOverrideReceive(int (*wrapped)(void*, char*, void*),
         LocalPeerTransportAddress transportAddress{};
         if (socketOverride != nullptr
             && LocalPeerTransportMapSystemAddress(socketOverride, systemAddress, &transportAddress)
-            && transportAddress.Kind == 1
-            && transportAddress.Type == 7
-            && transportAddress.Id == LocalPeerTransportSyntheticId
-            && transportAddress.SecondaryId == 0) {
+            && IsLocalPeerTransportSyntheticAddress(transportAddress)) {
             uint32_t eventIndex;
             if (BeginLocalPeerTransportPrototypeEvent(eventIndex)) {
                 INFO("[MP_LOCAL_TRANSPORT] event=receive index=%u length=%d peer_scope=reserved payload_logging=disabled address_logging=disabled id_logging=disabled",
@@ -1239,30 +1244,37 @@ bool Hooks::EnsureLocalPeerTransportMapping(void* steamSocketOverride)
         return true;
     }
 
-    LocalPeerTransportAddress transportAddress{
-        1,
-        7,
-        { 0, 0, 0 },
-        LocalPeerTransportSyntheticId,
-        0
-    };
-    LocalPeerTransportAddOverride(socketOverride, &transportAddress);
+    auto mappingReady = true;
+    for (uint32_t peerIndex = 0; peerIndex < LocalPeerTransportSyntheticPeerCount; peerIndex++) {
+        LocalPeerTransportAddress transportAddress{
+            1,
+            7,
+            { 0, 0, 0 },
+            LocalPeerTransportSyntheticIdBase + peerIndex,
+            0
+        };
+        LocalPeerTransportAddOverride(socketOverride, &transportAddress);
 
-    alignas(16) uint8_t systemAddress[128]{};
-    auto transportAddressForLookup = transportAddress;
-    auto const mappingReady = LocalPeerTransportMapTransportAddress(
-        socketOverride,
-        &transportAddressForLookup,
-        systemAddress);
+        alignas(16) uint8_t systemAddress[128]{};
+        auto transportAddressForLookup = transportAddress;
+        if (!LocalPeerTransportMapTransportAddress(
+                socketOverride,
+                &transportAddressForLookup,
+                systemAddress)) {
+            mappingReady = false;
+            break;
+        }
+    }
     if (mappingReady) {
         localPeerTransportMappedOverride_ = socketOverride;
     }
 
     uint32_t eventIndex;
     if (BeginLocalPeerTransportPrototypeEvent(eventIndex)) {
-        INFO("[MP_LOCAL_TRANSPORT] event=mapping_attempt index=%u result=%s peer_scope=reserved payload_logging=disabled address_logging=disabled id_logging=disabled",
+        INFO("[MP_LOCAL_TRANSPORT] event=mapping_attempt index=%u result=%s peer_scope=reserved_pool peer_count=%u payload_logging=disabled address_logging=disabled id_logging=disabled",
             eventIndex,
-            mappingReady ? "ready" : "failed");
+            mappingReady ? "ready" : "failed",
+            LocalPeerTransportSyntheticPeerCount);
     }
     return mappingReady;
 }
