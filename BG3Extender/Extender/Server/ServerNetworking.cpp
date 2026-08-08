@@ -79,8 +79,33 @@ bool NetworkManager::CapacitySnapshot::operator == (CapacitySnapshot const& othe
 void NetworkManager::Update()
 {
     BaseNetworkManager::Update();
+    PruneDisconnectedExtenderPeers();
     MaintainExperimentalPlayerCapacity();
     UpdateCapacityTelemetry();
+}
+
+void NetworkManager::PruneDisconnectedExtenderPeers()
+{
+    auto server = GetServer();
+    if (server == nullptr || peerVersions_.empty()) {
+        return;
+    }
+
+    for (auto it = peerVersions_.begin(); it != peerVersions_.end();) {
+        auto connected = false;
+        for (auto peerId : server->ConnectedPeerIds) {
+            if (peerId == it->first) {
+                connected = true;
+                break;
+            }
+        }
+
+        if (connected) {
+            ++it;
+        } else {
+            it = peerVersions_.erase(it);
+        }
+    }
 }
 
 void NetworkManager::MaintainExperimentalPlayerCapacity()
