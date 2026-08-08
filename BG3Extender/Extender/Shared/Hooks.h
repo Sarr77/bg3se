@@ -6,6 +6,9 @@
 #include <GameDefinitions/Net.h>
 #include <CoreLib/Wrappers.h>
 
+#include <mutex>
+#include <unordered_map>
+
 BEGIN_SE()
 
 class Hooks
@@ -24,6 +27,14 @@ public:
         uintptr_t socket, char* buffer, int length, int flags, void* from, int* fromLength);
     int OnWinSockSendTo(int (*wrapped)(uintptr_t, char const*, int, int, void const*, int),
         uintptr_t socket, char const* buffer, int length, int flags, void const* to, int toLength);
+    int OnWinSockWSARecvFrom(int (*wrapped)(uintptr_t, void*, uint32_t, uint32_t*, uint32_t*, void*, int*, void*, void*),
+        uintptr_t socket, void* buffers, uint32_t bufferCount, uint32_t* numberOfBytesReceived, uint32_t* flags,
+        void* from, int* fromLength, void* overlapped, void* completionRoutine);
+    int OnWinSockWSAGetOverlappedResult(int (*wrapped)(uintptr_t, void*, uint32_t*, int, uint32_t*),
+        uintptr_t socket, void* overlapped, uint32_t* transferred, int wait, uint32_t* flags);
+    int OnWinSockWSASendTo(int (*wrapped)(uintptr_t, void*, uint32_t, uint32_t*, uint32_t, void const*, int, void*, void*),
+        uintptr_t socket, void* buffers, uint32_t bufferCount, uint32_t* numberOfBytesSent, uint32_t flags,
+        void const* to, int toLength, void* overlapped, void* completionRoutine);
     bool OnAbstractPeerBindSocket(net::AbstractPeerBindSocketProc* wrapped, net::AbstractPeer* peer, uint16_t port, uint32_t socketType);
     void OnAbstractPeerSendMessageSinglePeer(net::AbstractPeerSendMessageSinglePeerProc* wrapped,
         net::AbstractPeer* peer, TPeerId peerId, net::Message* message);
@@ -60,6 +71,15 @@ public:
     WrappableFunction<WinSockRecvFromTag, int(uintptr_t, char*, int, int, void*, int*)> winsock__recvfrom;
     enum class WinSockSendToTag{};
     WrappableFunction<WinSockSendToTag, int(uintptr_t, char const*, int, int, void const*, int)> winsock__sendto;
+    enum class WinSockWSARecvFromTag{};
+    WrappableFunction<WinSockWSARecvFromTag, int(uintptr_t, void*, uint32_t, uint32_t*, uint32_t*, void*, int*, void*, void*)>
+        winsock__WSARecvFrom;
+    enum class WinSockWSAGetOverlappedResultTag{};
+    WrappableFunction<WinSockWSAGetOverlappedResultTag, int(uintptr_t, void*, uint32_t*, int, uint32_t*)>
+        winsock__WSAGetOverlappedResult;
+    enum class WinSockWSASendToTag{};
+    WrappableFunction<WinSockWSASendToTag, int(uintptr_t, void*, uint32_t, uint32_t*, uint32_t, void const*, int, void*, void*)>
+        winsock__WSASendTo;
 
 private:
     char const* GetLocalPeerMessageTraceSource(net::AbstractPeer* peer) const;
@@ -68,6 +88,16 @@ private:
     bool BeginSocketOverrideSendTelemetryEvent(uint32_t& eventIndex);
     bool BeginRakNetRecvTelemetryEvent(uint32_t& eventIndex);
     bool BeginRakNetSendTelemetryEvent(uint32_t& eventIndex);
+    bool BeginPartyWinSocketTelemetryEvent(uint32_t& eventIndex);
+
+    struct PendingPartyWinReceive
+    {
+        uintptr_t Socket;
+        void* Buffers;
+        uint32_t BufferCount;
+        void* From;
+        int* FromLength;
+    };
 
     bool loaded_{ false };
     bool networkingInitialized_{ false };
@@ -77,6 +107,9 @@ private:
     std::atomic<uint32_t> socketOverrideSendTelemetryEventCount_{ 0 };
     std::atomic<uint32_t> rakNetRecvTelemetryEventCount_{ 0 };
     std::atomic<uint32_t> rakNetSendTelemetryEventCount_{ 0 };
+    std::atomic<uint32_t> partyWinSocketTelemetryEventCount_{ 0 };
+    std::mutex pendingPartyWinReceivesMutex_;
+    std::unordered_map<void*, PendingPartyWinReceive> pendingPartyWinReceives_;
 };
 
 END_SE()

@@ -34,6 +34,11 @@ inline constexpr bool IsValidRakNetRecvTelemetryMaxEvents(uint32_t maxEvents)
     return maxEvents >= 1 && maxEvents <= 1024;
 }
 
+inline constexpr bool IsValidPartyWinSocketTelemetryMaxEvents(uint32_t maxEvents)
+{
+    return maxEvents >= 1 && maxEvents <= 1024;
+}
+
 static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(0));
 static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(8));
 static_assert(IsValidExperimentalNativeMultiplayerPeerLimit(9));
@@ -54,6 +59,11 @@ static_assert(IsValidRakNetRecvTelemetryMaxEvents(1));
 static_assert(IsValidRakNetRecvTelemetryMaxEvents(64));
 static_assert(IsValidRakNetRecvTelemetryMaxEvents(1024));
 static_assert(!IsValidRakNetRecvTelemetryMaxEvents(1025));
+static_assert(!IsValidPartyWinSocketTelemetryMaxEvents(0));
+static_assert(IsValidPartyWinSocketTelemetryMaxEvents(1));
+static_assert(IsValidPartyWinSocketTelemetryMaxEvents(256));
+static_assert(IsValidPartyWinSocketTelemetryMaxEvents(1024));
+static_assert(!IsValidPartyWinSocketTelemetryMaxEvents(1025));
 
 struct ExtenderConfig
 {
@@ -102,6 +112,9 @@ struct ExtenderConfig
     // Loopback-only metadata trace for sendto() from the RakNet host port.
     bool EnableRakNetSendTelemetry{ false };
     uint32_t RakNetSendTelemetryMaxEvents{ 64 };
+    // Loopback-only metadata trace for PartyWin's overlapped Winsock transport.
+    bool EnablePartyWinSocketTelemetry{ false };
+    uint32_t PartyWinSocketTelemetryMaxEvents{ 256 };
     // Experimental native RakNet peer capacity override. 0 disables the hook.
     uint32_t ExperimentalNativeMultiplayerPeerLimit{ 0 };
 

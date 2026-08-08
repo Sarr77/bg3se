@@ -44,6 +44,8 @@ void ApplyConfig(ExtenderConfig& config, Document& root)
     ConfigGet(root, "RakNetRecvTelemetryMaxEvents", config.RakNetRecvTelemetryMaxEvents);
     ConfigGet(root, "EnableRakNetSendTelemetry", config.EnableRakNetSendTelemetry);
     ConfigGet(root, "RakNetSendTelemetryMaxEvents", config.RakNetSendTelemetryMaxEvents);
+    ConfigGet(root, "EnablePartyWinSocketTelemetry", config.EnablePartyWinSocketTelemetry);
+    ConfigGet(root, "PartyWinSocketTelemetryMaxEvents", config.PartyWinSocketTelemetryMaxEvents);
     ConfigGet(root, "ExperimentalNativeMultiplayerPeerLimit", config.ExperimentalNativeMultiplayerPeerLimit);
 
     ConfigGet(root, "DebuggerPort", config.DebuggerPort);

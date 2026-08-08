@@ -20,6 +20,9 @@ decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks:
 decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)* decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)::gHook;
 decltype(Hooks::winsock__recvfrom)* decltype(Hooks::winsock__recvfrom)::gHook;
 decltype(Hooks::winsock__sendto)* decltype(Hooks::winsock__sendto)::gHook;
+decltype(Hooks::winsock__WSARecvFrom)* decltype(Hooks::winsock__WSARecvFrom)::gHook;
+decltype(Hooks::winsock__WSAGetOverlappedResult)* decltype(Hooks::winsock__WSAGetOverlappedResult)::gHook;
+decltype(Hooks::winsock__WSASendTo)* decltype(Hooks::winsock__WSASendTo)::gHook;
 
 static constexpr uintptr_t SteamSocketOverrideSendRva7398727 = 0x4061C20;
 static constexpr uint8_t SteamSocketOverrideSendPreamble7398727[] = {
@@ -89,6 +92,91 @@ static int (*ResolveWinSockSendTo())(uintptr_t, char const*, int, int, void cons
 
     return reinterpret_cast<int (*)(uintptr_t, char const*, int, int, void const*, int)>(
         GetProcAddress(module, "sendto"));
+}
+
+static int (*ResolveWinSockWSARecvFrom())(uintptr_t, void*, uint32_t, uint32_t*, uint32_t*, void*, int*, void*, void*)
+{
+    auto const module = GetModuleHandleW(L"Ws2_32.dll");
+    if (module == nullptr) {
+        return nullptr;
+    }
+
+    return reinterpret_cast<int (*)(uintptr_t, void*, uint32_t, uint32_t*, uint32_t*, void*, int*, void*, void*)>(
+        GetProcAddress(module, "WSARecvFrom"));
+}
+
+static int (*ResolveWinSockWSAGetOverlappedResult())(uintptr_t, void*, uint32_t*, int, uint32_t*)
+{
+    auto const module = GetModuleHandleW(L"Ws2_32.dll");
+    if (module == nullptr) {
+        return nullptr;
+    }
+
+    return reinterpret_cast<int (*)(uintptr_t, void*, uint32_t*, int, uint32_t*)>(
+        GetProcAddress(module, "WSAGetOverlappedResult"));
+}
+
+static int (*ResolveWinSockWSASendTo())(uintptr_t, void*, uint32_t, uint32_t*, uint32_t, void const*, int, void*, void*)
+{
+    auto const module = GetModuleHandleW(L"Ws2_32.dll");
+    if (module == nullptr) {
+        return nullptr;
+    }
+
+    return reinterpret_cast<int (*)(uintptr_t, void*, uint32_t, uint32_t*, uint32_t, void const*, int, void*, void*)>(
+        GetProcAddress(module, "WSASendTo"));
+}
+
+static bool IsRakNetHostSocket(SOCKET socket)
+{
+    sockaddr_in local{};
+    int localLength = sizeof(local);
+    return getsockname(socket, reinterpret_cast<sockaddr*>(&local), &localLength) == 0
+        && local.sin_family == AF_INET
+        && ntohs(local.sin_port) == 23253;
+}
+
+static_assert(sizeof(uintptr_t) == sizeof(SOCKET));
+static_assert(sizeof(uint32_t) == sizeof(DWORD));
+static_assert(sizeof(int) == sizeof(BOOL));
+static_assert(sizeof(void*) == sizeof(LPWSAOVERLAPPED));
+static_assert(sizeof(void*) == sizeof(LPWSAOVERLAPPED_COMPLETION_ROUTINE));
+
+static bool IsLoopbackAddress(sockaddr const* address)
+{
+    if (address == nullptr || address->sa_family != AF_INET) {
+        return false;
+    }
+
+    auto const ipv4 = reinterpret_cast<sockaddr_in const*>(address);
+    return (ntohl(ipv4->sin_addr.s_addr) >> 24) == 127;
+}
+
+static bool TryGetFirstWsaBufferByte(LPWSABUF buffers, DWORD bufferCount, DWORD transferred, uint8_t& byte)
+{
+    if (buffers == nullptr || transferred == 0) {
+        return false;
+    }
+
+    for (DWORD i = 0; i < bufferCount; i++) {
+        if (buffers[i].buf != nullptr && buffers[i].len != 0) {
+            byte = static_cast<uint8_t>(buffers[i].buf[0]);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static uint64_t GetWsaBufferLength(LPWSABUF buffers, DWORD bufferCount)
+{
+    uint64_t length{ 0 };
+    if (buffers != nullptr) {
+        for (DWORD i = 0; i < bufferCount; i++) {
+            length += buffers[i].len;
+        }
+    }
+    return length;
 }
 
 void Hooks::Startup()
@@ -249,6 +337,44 @@ void Hooks::Startup()
                     maxEvents);
             } else {
                 ERR("[MP_RAKNET_SEND_TRACE] event=disabled reason=detour_failed status=%ld", status);
+            }
+        }
+    }
+
+    if (gExtender->GetConfig().EnablePartyWinSocketTelemetry) {
+        auto const maxEvents = gExtender->GetConfig().PartyWinSocketTelemetryMaxEvents;
+        auto const recvTarget = ResolveWinSockWSARecvFrom();
+        auto const resultTarget = ResolveWinSockWSAGetOverlappedResult();
+        auto const sendTarget = ResolveWinSockWSASendTo();
+        if (!IsValidPartyWinSocketTelemetryMaxEvents(maxEvents)) {
+            ERR("[MP_PARTYWIN_SOCKET_TRACE] event=disabled reason=invalid_max_events actual=%u allowed=1-1024", maxEvents);
+        } else if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
+            auto const& version = gExtender->GetGameVersion();
+            ERR("[MP_PARTYWIN_SOCKET_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.73.98.727",
+                (unsigned)version.Major,
+                (unsigned)version.Minor,
+                (unsigned)version.Revision,
+                (unsigned)version.Build);
+        } else if (recvTarget == nullptr || resultTarget == nullptr || sendTarget == nullptr) {
+            ERR("[MP_PARTYWIN_SOCKET_TRACE] event=disabled reason=winsock_symbol_missing recv=%d result=%d send=%d",
+                recvTarget != nullptr,
+                resultTarget != nullptr,
+                sendTarget != nullptr);
+        } else {
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            winsock__WSARecvFrom.Wrap(recvTarget);
+            winsock__WSAGetOverlappedResult.Wrap(resultTarget);
+            winsock__WSASendTo.Wrap(sendTarget);
+            auto const status = DetourTransactionCommit();
+            if (status == NO_ERROR) {
+                winsock__WSARecvFrom.SetWrapper(&Hooks::OnWinSockWSARecvFrom, this);
+                winsock__WSAGetOverlappedResult.SetWrapper(&Hooks::OnWinSockWSAGetOverlappedResult, this);
+                winsock__WSASendTo.SetWrapper(&Hooks::OnWinSockWSASendTo, this);
+                INFO("[MP_PARTYWIN_SOCKET_TRACE] event=hook_enabled max_events=%u host_port=23253 payload_logging=disabled address_logging=disabled loopback_only=true",
+                    maxEvents);
+            } else {
+                ERR("[MP_PARTYWIN_SOCKET_TRACE] event=disabled reason=detour_failed status=%ld", status);
             }
         }
     }
@@ -467,6 +593,136 @@ int Hooks::OnWinSockSendTo(int (*wrapped)(uintptr_t, char const*, int, int, void
     return result;
 }
 
+int Hooks::OnWinSockWSARecvFrom(int (*wrapped)(uintptr_t, void*, uint32_t, uint32_t*, uint32_t*, void*, int*, void*, void*),
+    uintptr_t socket, void* buffers, uint32_t bufferCount, uint32_t* numberOfBytesReceived, uint32_t* flags,
+    void* from, int* fromLength, void* overlapped, void* completionRoutine)
+{
+    auto const hostSocket = IsRakNetHostSocket((SOCKET)socket);
+    auto tracked = false;
+    if (hostSocket && overlapped != nullptr) {
+        std::lock_guard<std::mutex> lock(pendingPartyWinReceivesMutex_);
+        if (pendingPartyWinReceives_.size() < 1024 || pendingPartyWinReceives_.find(overlapped) != pendingPartyWinReceives_.end()) {
+            pendingPartyWinReceives_[overlapped] = PendingPartyWinReceive{
+                socket, buffers, bufferCount, from, fromLength
+            };
+            tracked = true;
+        }
+    }
+
+    auto const result = wrapped(socket, buffers, bufferCount, numberOfBytesReceived, flags,
+        from, fromLength, overlapped, completionRoutine);
+    auto const error = result == SOCKET_ERROR ? WSAGetLastError() : 0;
+    if (!hostSocket) {
+        return result;
+    }
+
+    if (overlapped != nullptr && (result != SOCKET_ERROR || error != WSA_IO_PENDING)) {
+        std::lock_guard<std::mutex> lock(pendingPartyWinReceivesMutex_);
+        pendingPartyWinReceives_.erase(overlapped);
+    }
+
+    uint32_t eventIndex;
+    if (result == SOCKET_ERROR && error == WSA_IO_PENDING) {
+        if (BeginPartyWinSocketTelemetryEvent(eventIndex)) {
+            INFO("[MP_PARTYWIN_SOCKET_TRACE] event=recv_posted index=%u buffers=%u overlapped=true tracked=%d host_port=23253 payload_logging=disabled address_logging=disabled",
+                eventIndex,
+                (unsigned)bufferCount,
+                tracked);
+        }
+        return result;
+    }
+
+    auto const transferred = result == 0 && numberOfBytesReceived != nullptr ? *numberOfBytesReceived : 0;
+    uint8_t messageId{};
+    if (result == 0 && IsLoopbackAddress(reinterpret_cast<sockaddr const*>(from))
+        && TryGetFirstWsaBufferByte(reinterpret_cast<LPWSABUF>(buffers), bufferCount, transferred, messageId)
+        && BeginPartyWinSocketTelemetryEvent(eventIndex)) {
+        INFO("[MP_PARTYWIN_SOCKET_TRACE] event=recv_complete index=%u mode=immediate length=%u message_id=%u result=0 source_loopback=true host_port=23253 payload_logging=disabled address_logging=disabled",
+            eventIndex,
+            (unsigned)transferred,
+            (unsigned)messageId);
+    } else if (result == SOCKET_ERROR && error != WSAEWOULDBLOCK
+        && BeginPartyWinSocketTelemetryEvent(eventIndex)) {
+        INFO("[MP_PARTYWIN_SOCKET_TRACE] event=recv_failed index=%u mode=immediate error=%d host_port=23253 payload_logging=disabled address_logging=disabled",
+            eventIndex,
+            error);
+    }
+
+    return result;
+}
+
+int Hooks::OnWinSockWSAGetOverlappedResult(int (*wrapped)(uintptr_t, void*, uint32_t*, int, uint32_t*),
+    uintptr_t socket, void* overlapped, uint32_t* transferred, int wait, uint32_t* flags)
+{
+    auto const result = wrapped(socket, overlapped, transferred, wait, flags);
+    auto const error = result == FALSE ? WSAGetLastError() : 0;
+
+    PendingPartyWinReceive pending{};
+    auto found = false;
+    {
+        std::lock_guard<std::mutex> lock(pendingPartyWinReceivesMutex_);
+        auto const it = pendingPartyWinReceives_.find(overlapped);
+        if (it != pendingPartyWinReceives_.end()) {
+            pending = it->second;
+            found = true;
+            if (result != FALSE || error != WSA_IO_INCOMPLETE) {
+                pendingPartyWinReceives_.erase(it);
+            }
+        }
+    }
+
+    if (!found || (result == FALSE && error == WSA_IO_INCOMPLETE)) {
+        return result;
+    }
+
+    uint32_t eventIndex;
+    auto const length = result != FALSE && transferred != nullptr ? *transferred : 0;
+    uint8_t messageId{};
+    if (result != FALSE && IsLoopbackAddress(reinterpret_cast<sockaddr const*>(pending.From))
+        && TryGetFirstWsaBufferByte(reinterpret_cast<LPWSABUF>(pending.Buffers), pending.BufferCount, length, messageId)
+        && BeginPartyWinSocketTelemetryEvent(eventIndex)) {
+        INFO("[MP_PARTYWIN_SOCKET_TRACE] event=recv_complete index=%u mode=overlapped length=%u message_id=%u result=1 source_loopback=true host_port=23253 payload_logging=disabled address_logging=disabled",
+            eventIndex,
+            (unsigned)length,
+            (unsigned)messageId);
+    } else if (result == FALSE && BeginPartyWinSocketTelemetryEvent(eventIndex)) {
+        INFO("[MP_PARTYWIN_SOCKET_TRACE] event=recv_failed index=%u mode=overlapped error=%d host_port=23253 payload_logging=disabled address_logging=disabled",
+            eventIndex,
+            error);
+    }
+
+    return result;
+}
+
+int Hooks::OnWinSockWSASendTo(int (*wrapped)(uintptr_t, void*, uint32_t, uint32_t*, uint32_t, void const*, int, void*, void*),
+    uintptr_t socket, void* buffers, uint32_t bufferCount, uint32_t* numberOfBytesSent, uint32_t flags,
+    void const* to, int toLength, void* overlapped, void* completionRoutine)
+{
+    auto const trace = IsRakNetHostSocket((SOCKET)socket)
+        && IsLoopbackAddress(reinterpret_cast<sockaddr const*>(to));
+    auto const length = trace ? GetWsaBufferLength(reinterpret_cast<LPWSABUF>(buffers), bufferCount) : 0;
+    uint8_t messageId{};
+    auto const hasMessageId = trace && TryGetFirstWsaBufferByte(reinterpret_cast<LPWSABUF>(buffers), bufferCount,
+        static_cast<DWORD>(std::min<uint64_t>(length, UINT32_MAX)), messageId);
+
+    auto const result = wrapped(socket, buffers, bufferCount, numberOfBytesSent, flags,
+        to, toLength, overlapped, completionRoutine);
+    auto const error = result == SOCKET_ERROR ? WSAGetLastError() : 0;
+
+    uint32_t eventIndex;
+    if (hasMessageId && BeginPartyWinSocketTelemetryEvent(eventIndex)) {
+        INFO("[MP_PARTYWIN_SOCKET_TRACE] event=send index=%u length=%llu message_id=%u result=%d error=%d overlapped=%d destination_loopback=true host_port=23253 payload_logging=disabled address_logging=disabled",
+            eventIndex,
+            (unsigned long long)length,
+            (unsigned)messageId,
+            result,
+            error,
+            overlapped != nullptr);
+    }
+
+    return result;
+}
+
 void Hooks::OnInitialPeerHandshakeMessage(
     net::Message::SerializeProc* wrapped,
     net::Message* msg,
@@ -674,6 +930,21 @@ bool Hooks::BeginRakNetSendTelemetryEvent(uint32_t& eventIndex)
 
     if (eventIndex == maxEvents) {
         INFO("[MP_RAKNET_SEND_TRACE] event=limit_reached max_events=%u", maxEvents);
+    }
+
+    return false;
+}
+
+bool Hooks::BeginPartyWinSocketTelemetryEvent(uint32_t& eventIndex)
+{
+    auto const maxEvents = gExtender->GetConfig().PartyWinSocketTelemetryMaxEvents;
+    eventIndex = partyWinSocketTelemetryEventCount_.fetch_add(1, std::memory_order_relaxed);
+    if (eventIndex < maxEvents) {
+        return true;
+    }
+
+    if (eventIndex == maxEvents) {
+        INFO("[MP_PARTYWIN_SOCKET_TRACE] event=limit_reached max_events=%u", maxEvents);
     }
 
     return false;
