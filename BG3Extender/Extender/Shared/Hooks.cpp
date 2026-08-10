@@ -330,6 +330,7 @@ static_assert(offsetof(SerializedByteBufferView, Data) == 0x00);
 static_assert(offsetof(SerializedByteBufferView, Capacity) == 0x08);
 static_assert(offsetof(SerializedByteBufferView, Length) == 0x0C);
 static_assert(sizeof(SerializedByteBufferView) == 0x10);
+static_assert(offsetof(net::Message, Reliability) == 0x0C);
 
 static bool WriteNetworkTracePayload(
     uint32_t eventIndex,
@@ -1189,6 +1190,8 @@ void Hooks::Startup()
         gExtender->GetConfig().EnableLoadProtocolWireTrace;
     auto const enableSyntheticSessionLoadBypass =
         gExtender->GetConfig().EnableSyntheticPeerSessionLoadBypassPrototype;
+    auto const enableSyntheticUncompressedLoadReceiveBypass =
+        gExtender->GetConfig().EnableSyntheticPeerUncompressedLoadReceiveBypassPrototype;
     if (enableSyntheticSessionLoadBypass || enableLoadProtocolWireTrace) {
         auto const target = ResolveAbstractPeerSendGeneralMessage();
         if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
@@ -1228,9 +1231,13 @@ void Hooks::Startup()
         }
     }
 
-    if (enableLoadProtocolWireTrace) {
-        auto const clientTarget = ResolveClientLoadProtocolProcessMessage();
-        auto const serverTarget = ResolveServerLoadProtocolProcessMessage();
+    if (enableLoadProtocolWireTrace || enableSyntheticUncompressedLoadReceiveBypass) {
+        auto const clientTarget = enableLoadProtocolWireTrace
+            ? ResolveClientLoadProtocolProcessMessage()
+            : nullptr;
+        auto const serverTarget = enableLoadProtocolWireTrace
+            ? ResolveServerLoadProtocolProcessMessage()
+            : nullptr;
         auto const receiveTarget = ResolveAbstractPeerReceiveGeneralMessage();
         if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
             auto const& version = gExtender->GetGameVersion();
@@ -1239,8 +1246,9 @@ void Hooks::Startup()
                 (unsigned)version.Minor,
                 (unsigned)version.Revision,
                 (unsigned)version.Build);
-        } else if (clientTarget == nullptr || serverTarget == nullptr
-            || receiveTarget == nullptr) {
+        } else if (receiveTarget == nullptr
+            || (enableLoadProtocolWireTrace
+                && (clientTarget == nullptr || serverTarget == nullptr))) {
             ERR("[MP_LOAD_TRACE] event=disabled reason=receive_or_process_guard_failed receive=%u client=%u server=%u",
                 receiveTarget != nullptr ? 1u : 0u,
                 clientTarget != nullptr ? 1u : 0u,
@@ -1256,19 +1264,26 @@ void Hooks::Startup()
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             net__AbstractPeer__ReceiveGeneralMessage.Wrap(receiveTarget);
-            eocnet__ClientLoadProtocol__ProcessMessage.Wrap(clientTarget);
-            eocnet__ServerLoadProtocol__ProcessMessage.Wrap(serverTarget);
+            if (enableLoadProtocolWireTrace) {
+                eocnet__ClientLoadProtocol__ProcessMessage.Wrap(clientTarget);
+                eocnet__ServerLoadProtocol__ProcessMessage.Wrap(serverTarget);
+            }
             auto const status = DetourTransactionCommit();
             if (status == NO_ERROR) {
                 net__AbstractPeer__ReceiveGeneralMessage.SetWrapper(
                     &Hooks::OnAbstractPeerReceiveGeneralMessage, this);
-                eocnet__ClientLoadProtocol__ProcessMessage.SetWrapper(
-                    &Hooks::OnClientLoadProtocolProcessMessage, this);
-                eocnet__ServerLoadProtocol__ProcessMessage.SetWrapper(
-                    &Hooks::OnServerLoadProtocolProcessMessage, this);
-                INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled message_mutation=0",
-                    gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
-                    gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
+                if (enableLoadProtocolWireTrace) {
+                    eocnet__ClientLoadProtocol__ProcessMessage.SetWrapper(
+                        &Hooks::OnClientLoadProtocolProcessMessage, this);
+                    eocnet__ServerLoadProtocol__ProcessMessage.SetWrapper(
+                        &Hooks::OnServerLoadProtocolProcessMessage, this);
+                    INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled message_mutation=0",
+                        gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
+                        gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
+                }
+                if (enableSyntheticUncompressedLoadReceiveBypass) {
+                    INFO("[MP_SYNTHETIC_SESSION_LOAD] event=receive_bypass_hook_enabled receive_rva=0x4062320 peers=marked_synthetic ids=167,168,172 wrapper_flags=0 scope=message_reliability_guard");
+                }
             } else {
                 ERR("[MP_LOAD_TRACE] event=disabled reason=process_msg_detour_failed status=%ld", status);
             }
@@ -2413,7 +2428,39 @@ bool Hooks::OnAbstractPeerReceiveGeneralMessage(
             (unsigned)nextByte);
     }
 
+    auto const bypassUncompressedCompressionUpdate =
+        gExtender->GetConfig().EnableSyntheticPeerUncompressedLoadReceiveBypassPrototype
+        && IsMarkedSyntheticPeer(peerId)
+        && nextByteValid
+        && nextByte == 0
+        && message != nullptr
+        && (messageId == 167 || messageId == 168 || messageId == 172)
+        && message->Reliability == 4;
+    auto const originalReliability = message != nullptr ? message->Reliability : 0u;
+    if (bypassUncompressedCompressionUpdate) {
+        // Exact-build RVA 0x4062320 gates its receive-side PrANS update on
+        // Message::Reliability == 4. Incoming Message objects are private to
+        // this dispatch; changing only this field for the wrapper call avoids
+        // mutating the shared compressor object or the serialized body.
+        message->Reliability = 0;
+        INFO("[MP_SYNTHETIC_SESSION_LOAD] event=uncompressed_receive_compression_bypass_enter peer=%u msg_id=%u wrapper_flags=%u original_reliability=%u effective_reliability=%u body_mutation=0",
+            (unsigned)peerId,
+            messageId,
+            (unsigned)nextByte,
+            originalReliability,
+            message->Reliability);
+    }
+
     auto const result = wrapped(compressor, input, peerId, message);
+
+    if (bypassUncompressedCompressionUpdate) {
+        message->Reliability = originalReliability;
+        INFO("[MP_SYNTHETIC_SESSION_LOAD] event=uncompressed_receive_compression_bypass_exit peer=%u msg_id=%u result=%u restored_reliability=%u body_mutation=0",
+            (unsigned)peerId,
+            messageId,
+            result ? 1u : 0u,
+            message->Reliability);
+    }
     auto const bitsAfter = bitstream != nullptr ? bitstream->NumBits : 0u;
     auto const offsetAfter = bitstream != nullptr ? bitstream->CurrentOffsetBits : 0u;
     uint32_t exitIndex{ 0 };

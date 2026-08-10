@@ -155,6 +155,11 @@ struct ExtenderConfig
     // Exact-build, per-peer SESSION_LOAD experiment. Only marked synthetic
     // identities admitted by the prototype can use the uncompressed branch.
     bool EnableSyntheticPeerSessionLoadBypassPrototype{ false };
+    // Exact-build, per-message receive workaround for marked synthetic peers.
+    // It prevents the native PrANS model from being updated while an explicitly
+    // uncompressed load response is parsed; the body and message serializer are
+    // otherwise left unchanged.
+    bool EnableSyntheticPeerUncompressedLoadReceiveBypassPrototype{ false };
     // Exact-build, observation-only trace of the real join/load message path.
     // Raw serialized buffers are written to a local trace directory. The
     // research repository decides which bounded samples are worth preserving.
