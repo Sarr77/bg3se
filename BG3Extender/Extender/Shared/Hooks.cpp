@@ -18,6 +18,7 @@ decltype(Hooks::net__AbstractPeer__BindSocket)* decltype(Hooks::net__AbstractPee
 decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)* decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)::gHook;
 decltype(Hooks::net__AbstractPeer__SendGeneralMessage)* decltype(Hooks::net__AbstractPeer__SendGeneralMessage)::gHook;
+decltype(Hooks::net__AbstractPeer__ReceiveGeneralMessage)* decltype(Hooks::net__AbstractPeer__ReceiveGeneralMessage)::gHook;
 decltype(Hooks::eocnet__JoiningProtocol__ProcessMessage)* decltype(Hooks::eocnet__JoiningProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)::gHook;
@@ -41,6 +42,7 @@ static constexpr uintptr_t JoiningProtocolProcessMessageRva7398727 = 0x426A9A0;
 static constexpr uintptr_t LobbyMembershipCheckRva7398727 = 0x404E570;
 static constexpr uintptr_t LobbyIsReadyRva7398727 = 0x404DA40;
 static constexpr uintptr_t AbstractPeerSendGeneralMessageRva7398727 = 0x4061F20;
+static constexpr uintptr_t AbstractPeerReceiveGeneralMessageRva7398727 = 0x4062320;
 static constexpr uintptr_t ClientLoadProtocolProcessMessageRva7398727 = 0x1FEE910;
 static constexpr uintptr_t ServerLoadProtocolProcessMessageRva7398727 = 0x2F9F170;
 static constexpr uintptr_t NativePlayerSlotPatchRvas7398727[] = {
@@ -156,6 +158,13 @@ static constexpr uint8_t AbstractPeerSendGeneralMessagePreamble7398727[] = {
     0x57, 0x41, 0x54, 0x41, 0x56, 0x41, 0x57, 0x48,
     0x83, 0xEC, 0x50, 0x41, 0x0F, 0xB6, 0xE9, 0x48,
     0x8B, 0xF2, 0x48, 0x8B, 0xD9
+};
+
+static constexpr uint8_t AbstractPeerReceiveGeneralMessagePreamble7398727[] = {
+    0x44, 0x89, 0x44, 0x24, 0x18, 0x55, 0x53, 0x56,
+    0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41,
+    0x57, 0x48, 0x8D, 0xAC, 0x24, 0x48, 0xFF, 0xFF,
+    0xFF, 0x48, 0x81, 0xEC, 0xB8, 0x01, 0x00, 0x00
 };
 
 static constexpr uint8_t ClientLoadProtocolProcessMessagePreamble7398727[] = {
@@ -730,6 +739,15 @@ static void (*ResolveAbstractPeerSendGeneralMessage())(
         AbstractPeerSendGeneralMessagePreamble7398727);
 }
 
+static bool (*ResolveAbstractPeerReceiveGeneralMessage())(
+    void*, net::BitstreamSerializer*, TPeerId, net::Message*)
+{
+    return ResolveExactGameFunction<bool (*)(
+        void*, net::BitstreamSerializer*, TPeerId, net::Message*)>(
+        AbstractPeerReceiveGeneralMessageRva7398727,
+        AbstractPeerReceiveGeneralMessagePreamble7398727);
+}
+
 static net::ProtocolResult (*ResolveClientLoadProtocolProcessMessage())(
     net::Protocol*, void*, net::MessageContext*, net::Message*)
 {
@@ -1213,6 +1231,7 @@ void Hooks::Startup()
     if (enableLoadProtocolWireTrace) {
         auto const clientTarget = ResolveClientLoadProtocolProcessMessage();
         auto const serverTarget = ResolveServerLoadProtocolProcessMessage();
+        auto const receiveTarget = ResolveAbstractPeerReceiveGeneralMessage();
         if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
             auto const& version = gExtender->GetGameVersion();
             ERR("[MP_LOAD_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.73.98.727",
@@ -1220,8 +1239,10 @@ void Hooks::Startup()
                 (unsigned)version.Minor,
                 (unsigned)version.Revision,
                 (unsigned)version.Build);
-        } else if (clientTarget == nullptr || serverTarget == nullptr) {
-            ERR("[MP_LOAD_TRACE] event=disabled reason=process_msg_guard_failed client=%u server=%u",
+        } else if (clientTarget == nullptr || serverTarget == nullptr
+            || receiveTarget == nullptr) {
+            ERR("[MP_LOAD_TRACE] event=disabled reason=receive_or_process_guard_failed receive=%u client=%u server=%u",
+                receiveTarget != nullptr ? 1u : 0u,
                 clientTarget != nullptr ? 1u : 0u,
                 serverTarget != nullptr ? 1u : 0u);
         } else if (!IsValidLoadProtocolWireTraceMaxEvents(
@@ -1234,15 +1255,18 @@ void Hooks::Startup()
         } else {
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
+            net__AbstractPeer__ReceiveGeneralMessage.Wrap(receiveTarget);
             eocnet__ClientLoadProtocol__ProcessMessage.Wrap(clientTarget);
             eocnet__ServerLoadProtocol__ProcessMessage.Wrap(serverTarget);
             auto const status = DetourTransactionCommit();
             if (status == NO_ERROR) {
+                net__AbstractPeer__ReceiveGeneralMessage.SetWrapper(
+                    &Hooks::OnAbstractPeerReceiveGeneralMessage, this);
                 eocnet__ClientLoadProtocol__ProcessMessage.SetWrapper(
                     &Hooks::OnClientLoadProtocolProcessMessage, this);
                 eocnet__ServerLoadProtocol__ProcessMessage.SetWrapper(
                     &Hooks::OnServerLoadProtocolProcessMessage, this);
-                INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled",
+                INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled message_mutation=0",
                     gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
                     gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
             } else {
@@ -2336,6 +2360,77 @@ void Hooks::OnAbstractPeerSendGeneralMessage(
             (unsigned)peerId,
             (unsigned)effectiveFlags);
     }
+}
+
+bool Hooks::OnAbstractPeerReceiveGeneralMessage(
+    bool (*wrapped)(void*, net::BitstreamSerializer*, TPeerId, net::Message*),
+    void* compressor,
+    net::BitstreamSerializer* input,
+    TPeerId peerId,
+    net::Message* message)
+{
+    auto const messageId = message != nullptr
+        ? static_cast<uint32_t>(message->MsgId)
+        : UINT32_MAX;
+    auto const traceMessage = messageId == 166
+        || messageId == 167
+        || messageId == 168
+        || messageId == 169
+        || messageId == 170
+        || messageId == 171
+        || messageId == 172
+        || messageId == 174
+        || messageId == 194
+        || messageId == 200;
+    auto const bitstream = input != nullptr ? input->Bitstream : nullptr;
+    auto const bitsBefore = bitstream != nullptr ? bitstream->NumBits : 0u;
+    auto const allocatedBits = bitstream != nullptr ? bitstream->AllocatedBits : 0u;
+    auto const offsetBefore = bitstream != nullptr ? bitstream->CurrentOffsetBits : 0u;
+    auto const nextByteValid = bitstream != nullptr
+        && bitstream->Buf != nullptr
+        && offsetBefore % 8u == 0
+        && offsetBefore + 8u <= bitsBefore
+        && offsetBefore + 8u <= allocatedBits;
+    auto const nextByte = nextByteValid
+        ? bitstream->Buf[offsetBefore / 8u]
+        : uint8_t{ 0 };
+
+    uint32_t enterIndex{ 0 };
+    auto const trace = traceMessage && BeginLoadProtocolWireTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_LOAD_TRACE] event=receive_wrapper_enter index=%u thread=%lu msg_id=%u peer=%u marked_synthetic=%u serializer=%s bits=%u allocated_bits=%u offset=%u offset_mod8=%u next_byte_valid=%u next_byte=%u message_mutation=0",
+            enterIndex,
+            GetCurrentThreadId(),
+            messageId,
+            (unsigned)peerId,
+            IsMarkedSyntheticPeer(peerId) ? 1u : 0u,
+            input != nullptr && input->IsWriting ? "write" : "read",
+            bitsBefore,
+            allocatedBits,
+            offsetBefore,
+            offsetBefore % 8u,
+            nextByteValid ? 1u : 0u,
+            (unsigned)nextByte);
+    }
+
+    auto const result = wrapped(compressor, input, peerId, message);
+    auto const bitsAfter = bitstream != nullptr ? bitstream->NumBits : 0u;
+    auto const offsetAfter = bitstream != nullptr ? bitstream->CurrentOffsetBits : 0u;
+    uint32_t exitIndex{ 0 };
+    if (trace && BeginLoadProtocolWireTraceEvent(exitIndex)) {
+        INFO("[MP_LOAD_TRACE] event=receive_wrapper_exit index=%u call_index=%u thread=%lu msg_id=%u peer=%u result=%u bits=%u offset_before=%u offset_after=%u consumed_bits=%u message_mutation=0",
+            exitIndex,
+            enterIndex,
+            GetCurrentThreadId(),
+            messageId,
+            (unsigned)peerId,
+            result ? 1u : 0u,
+            bitsAfter,
+            offsetBefore,
+            offsetAfter,
+            offsetAfter >= offsetBefore ? offsetAfter - offsetBefore : 0u);
+    }
+    return result;
 }
 
 bool Hooks::IsMarkedSyntheticPeer(TPeerId peerId) const

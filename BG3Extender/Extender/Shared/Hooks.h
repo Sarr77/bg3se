@@ -46,6 +46,10 @@ public:
         void (*wrapped)(void*, void*, TPeerId, uint8_t, void*, net::Message*),
         void* compressor, void* output, TPeerId peerId, uint8_t flags,
         void* input, net::Message* message);
+    bool OnAbstractPeerReceiveGeneralMessage(
+        bool (*wrapped)(void*, net::BitstreamSerializer*, TPeerId, net::Message*),
+        void* compressor, net::BitstreamSerializer* input, TPeerId peerId,
+        net::Message* message);
     net::ProtocolResult OnJoiningProtocolProcessMessage(
         net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
         net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
@@ -85,6 +89,9 @@ public:
     enum class AbstractPeerSendGeneralMessageTag{};
     WrappableFunction<AbstractPeerSendGeneralMessageTag,
         void(void*, void*, TPeerId, uint8_t, void*, net::Message*)> net__AbstractPeer__SendGeneralMessage;
+    enum class AbstractPeerReceiveGeneralMessageTag{};
+    WrappableFunction<AbstractPeerReceiveGeneralMessageTag,
+        bool(void*, net::BitstreamSerializer*, TPeerId, net::Message*)> net__AbstractPeer__ReceiveGeneralMessage;
     enum class JoiningProtocolProcessMessageTag{};
     WrappableFunction<JoiningProtocolProcessMessageTag,
         net::ProtocolResult(net::Protocol*, void*, net::MessageContext*, net::Message*)> eocnet__JoiningProtocol__ProcessMessage;
