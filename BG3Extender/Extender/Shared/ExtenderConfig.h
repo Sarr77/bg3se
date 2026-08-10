@@ -132,6 +132,9 @@ struct ExtenderConfig
     // The marker is the upper 32 bits of the synthetic uint64 identity; zero is invalid.
     bool EnableSyntheticLobbyBypassPrototype{ false };
     uint32_t SyntheticLobbyBypassMarker{ 0 };
+    // Exact-build, per-peer SESSION_LOAD experiment. Only marked synthetic
+    // identities admitted by the prototype can use the uncompressed branch.
+    bool EnableSyntheticPeerSessionLoadBypassPrototype{ false };
     // Experimental native RakNet peer capacity override. 0 disables the hook.
     uint32_t ExperimentalNativeMultiplayerPeerLimit{ 0 };
     // Exact-build research switch: retain the normal envelope but use its

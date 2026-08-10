@@ -42,10 +42,15 @@ public:
         net::AbstractPeer* peer, TPeerId peerId, net::Message* message);
     void OnAbstractPeerSendMessageMultiPeerMoveIds(net::AbstractPeerSendMessageMultiPeerMoveIdsProc* wrapped,
         net::AbstractPeer* peer, Array<PeerId>* recipients, net::Message* message, TPeerId excludePeerId);
+    void OnAbstractPeerSendGeneralMessage(
+        void (*wrapped)(void*, void*, TPeerId, uint8_t, void*, net::Message*),
+        void* compressor, void* output, TPeerId peerId, uint8_t flags,
+        void* input, net::Message* message);
     net::ProtocolResult OnJoiningProtocolProcessMessage(
         net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
         net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
     uint8_t OnLobbyMembershipCheck(uint8_t (*wrapped)(void*, int8_t), void* lobby, int8_t backend);
+    uint8_t OnLobbyIsReady(uint8_t (*wrapped)(void*), void* lobby);
 
     enum class ClientConnectMessageSerializeTag{};
     WrappableFunction<ClientConnectMessageSerializeTag, void(net::Message*, net::BitstreamSerializer*)> eocnet__ClientConnectMessage__Serialize;
@@ -71,11 +76,16 @@ public:
     WrappableFunction<AbstractPeerSendMessageSinglePeerTag, net::AbstractPeerSendMessageSinglePeerProc> net__AbstractPeer__SendMessageSinglePeer;
     enum class AbstractPeerSendMessageMultiPeerMoveIdsTag{};
     WrappableFunction<AbstractPeerSendMessageMultiPeerMoveIdsTag, net::AbstractPeerSendMessageMultiPeerMoveIdsProc> net__AbstractPeer__SendMessageMultiPeerMoveIds;
+    enum class AbstractPeerSendGeneralMessageTag{};
+    WrappableFunction<AbstractPeerSendGeneralMessageTag,
+        void(void*, void*, TPeerId, uint8_t, void*, net::Message*)> net__AbstractPeer__SendGeneralMessage;
     enum class JoiningProtocolProcessMessageTag{};
     WrappableFunction<JoiningProtocolProcessMessageTag,
         net::ProtocolResult(net::Protocol*, void*, net::MessageContext*, net::Message*)> eocnet__JoiningProtocol__ProcessMessage;
     enum class LobbyMembershipCheckTag{};
     WrappableFunction<LobbyMembershipCheckTag, uint8_t(void*, int8_t)> eocnet__Lobby__CheckMembership;
+    enum class LobbyIsReadyTag{};
+    WrappableFunction<LobbyIsReadyTag, uint8_t(void*)> eocnet__Lobby__IsReady;
     enum class SocketOverrideSendTag{};
     WrappableFunction<SocketOverrideSendTag, int(void*, char const*, int, void const*)> stm__SteamSocketOverride__RakNetSendTo;
     enum class SocketOverrideReceiveTag{};
@@ -104,6 +114,7 @@ private:
     bool BeginPartyWinSocketTelemetryEvent(uint32_t& eventIndex);
     bool BeginLocalPeerTransportPrototypeEvent(uint32_t& eventIndex);
     bool EnsureLocalPeerTransportMapping(void* steamSocketOverride);
+    bool IsMarkedSyntheticPeer(TPeerId peerId) const;
 
     struct PendingPartyWinReceive
     {
@@ -125,6 +136,7 @@ private:
     std::atomic<uint32_t> rakNetSendTelemetryEventCount_{ 0 };
     std::atomic<uint32_t> partyWinSocketTelemetryEventCount_{ 0 };
     std::atomic<uint32_t> localPeerTransportPrototypeEventCount_{ 0 };
+    std::atomic<uint32_t> markedSyntheticPeerMask_{ 0 };
     std::mutex localPeerTransportMappingMutex_;
     void* localPeerTransportMappedOverride_{ nullptr };
     std::mutex pendingPartyWinReceivesMutex_;

@@ -50,6 +50,7 @@ void ApplyConfig(ExtenderConfig& config, Document& root)
     ConfigGet(root, "LocalPeerTransportPrototypeMaxEvents", config.LocalPeerTransportPrototypeMaxEvents);
     ConfigGet(root, "EnableSyntheticLobbyBypassPrototype", config.EnableSyntheticLobbyBypassPrototype);
     ConfigGet(root, "SyntheticLobbyBypassMarker", config.SyntheticLobbyBypassMarker);
+    ConfigGet(root, "EnableSyntheticPeerSessionLoadBypassPrototype", config.EnableSyntheticPeerSessionLoadBypassPrototype);
     ConfigGet(root, "ExperimentalNativeMultiplayerPeerLimit", config.ExperimentalNativeMultiplayerPeerLimit);
     ConfigGet(root, "DisableNetMessageCompressionForResearch", config.DisableNetMessageCompressionForResearch);
 

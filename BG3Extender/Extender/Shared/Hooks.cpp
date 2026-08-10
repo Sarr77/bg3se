@@ -17,8 +17,10 @@ decltype(Hooks::eocnet__LoadStartedMessage__Serialize)* decltype(Hooks::eocnet__
 decltype(Hooks::net__AbstractPeer__BindSocket)* decltype(Hooks::net__AbstractPeer__BindSocket)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)* decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)::gHook;
 decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)::gHook;
+decltype(Hooks::net__AbstractPeer__SendGeneralMessage)* decltype(Hooks::net__AbstractPeer__SendGeneralMessage)::gHook;
 decltype(Hooks::eocnet__JoiningProtocol__ProcessMessage)* decltype(Hooks::eocnet__JoiningProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__Lobby__CheckMembership)* decltype(Hooks::eocnet__Lobby__CheckMembership)::gHook;
+decltype(Hooks::eocnet__Lobby__IsReady)* decltype(Hooks::eocnet__Lobby__IsReady)::gHook;
 decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)* decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)::gHook;
 decltype(Hooks::stm__SteamSocketOverride__RakNetRecvFrom)* decltype(Hooks::stm__SteamSocketOverride__RakNetRecvFrom)::gHook;
 decltype(Hooks::winsock__recvfrom)* decltype(Hooks::winsock__recvfrom)::gHook;
@@ -35,6 +37,18 @@ static constexpr uintptr_t SocketOverrideMapSystemAddressRva7398727 = 0x405C340;
 static constexpr uintptr_t SocketOverrideMapTransportAddressRva7398727 = 0x405C420;
 static constexpr uintptr_t JoiningProtocolProcessMessageRva7398727 = 0x426A9A0;
 static constexpr uintptr_t LobbyMembershipCheckRva7398727 = 0x404E570;
+static constexpr uintptr_t LobbyIsReadyRva7398727 = 0x404DA40;
+static constexpr uintptr_t AbstractPeerSendGeneralMessageRva7398727 = 0x4061F20;
+static constexpr uintptr_t NativePlayerSlotPatchRvas7398727[] = {
+    0x14AF947,
+    0x14B1020,
+    0x18846D5,
+    0x3297E2C,
+    0x15485BF,
+    0x11DC4A5,
+    0x14B0C34,
+    0x14B18B4
+};
 static constexpr uint64_t LocalPeerTransportSyntheticIdBase = 0xE100000000000001ull;
 static constexpr uint32_t LocalPeerTransportSyntheticPeerCount = 8;
 static constexpr uint8_t SteamSocketOverrideSendPreamble7398727[] = {
@@ -93,6 +107,72 @@ static constexpr uint8_t LobbyMembershipCheckPreamble7398727[] = {
     0x24, 0x40, 0x48, 0x8B, 0xCB, 0xFF, 0x15, 0x8D,
     0xDF, 0x1F, 0x01
 };
+
+static constexpr uint8_t LobbyIsReadyPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x08, 0x57, 0x48, 0x83,
+    0xEC, 0x20, 0x48, 0x8B, 0x99, 0x28, 0x04, 0x00,
+    0x00, 0x48, 0x8B, 0xF9, 0x48, 0x8B, 0xCB, 0xFF
+};
+
+static constexpr uintptr_t LobbyCanStartGetterRva7398727 = 0x140CEA0;
+static constexpr uint8_t LobbyCanStartGetterExpected7398727[] = {
+    0x0F, 0xB6, 0x81, 0x38, 0x08, 0x00, 0x00, 0xC3
+};
+static constexpr uint8_t LobbyCanStartGetterBypass7398727[] = {
+    0xB0, 0x01, 0xC3, 0x90, 0x90, 0x90, 0x90, 0x90
+};
+
+// LobbyManager::StartGame rejects an otherwise joined synthetic peer when its
+// platform identity is absent from the backend-owned session-member list. A
+// real platform client populates that list; the local protocol emulator cannot.
+// Keep this exact-build patch behind EnableSyntheticLobbyBypassPrototype and
+// redirect only the two early-return branches to the normal next-record path.
+static constexpr uintptr_t LobbyStartMembershipPatchRvas7398727[] = {
+    0x2A9654C,
+    0x2A96574
+};
+static constexpr uint8_t LobbyStartMembershipExpected7398727[][6] = {
+    { 0x0F, 0x84, 0x61, 0x04, 0x00, 0x00 },
+    { 0x0F, 0x84, 0x39, 0x04, 0x00, 0x00 }
+};
+static constexpr uint8_t LobbyStartMembershipBypass7398727[][6] = {
+    // When the member array is absent, continue with the next lobby record.
+    { 0x0F, 0x84, 0x28, 0x00, 0x00, 0x00 },
+    // A missing member now falls through to the next lobby record.
+    { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 }
+};
+
+static_assert(std::size(LobbyStartMembershipPatchRvas7398727)
+    == std::size(LobbyStartMembershipExpected7398727));
+static_assert(std::size(LobbyStartMembershipPatchRvas7398727)
+    == std::size(LobbyStartMembershipBypass7398727));
+
+static constexpr uint8_t AbstractPeerSendGeneralMessagePreamble7398727[] = {
+    0x44, 0x89, 0x44, 0x24, 0x18, 0x53, 0x55, 0x56,
+    0x57, 0x41, 0x54, 0x41, 0x56, 0x41, 0x57, 0x48,
+    0x83, 0xEC, 0x50, 0x41, 0x0F, 0xB6, 0xE9, 0x48,
+    0x8B, 0xF2, 0x48, 0x8B, 0xD9
+};
+
+static constexpr uint8_t NativePlayerSlotPatchExpected7398727[][8] = {
+    { 0x83, 0xFD, 0x04, 0x0F, 0x8C, 0xA0, 0xFE, 0xFF },
+    { 0x41, 0x83, 0xFE, 0x04, 0x0F, 0x8C, 0x66, 0xFF },
+    { 0x41, 0x80, 0xFE, 0x04, 0x0F, 0x86, 0x91, 0xFE },
+    { 0xC6, 0x40, 0x38, 0x04, 0x48, 0x8B, 0x4E, 0x08 },
+    { 0xC6, 0x40, 0x38, 0x04, 0x48, 0x8B, 0x4B, 0x08 },
+    { 0xC6, 0x41, 0x38, 0x04, 0x4C, 0x89, 0x41, 0x40 },
+    { 0x01, 0x83, 0xFB, 0x04, 0x0F, 0x8D, 0xA0, 0x00 },
+    { 0x41, 0x83, 0xFC, 0x04, 0x48, 0x8B, 0x44, 0x24 }
+};
+
+static constexpr uint8_t NativePlayerSlotPatchImmediateOffsets7398727[] = {
+    2, 3, 3, 3, 3, 3, 3, 3
+};
+
+static_assert(std::size(NativePlayerSlotPatchRvas7398727)
+    == std::size(NativePlayerSlotPatchExpected7398727));
+static_assert(std::size(NativePlayerSlotPatchRvas7398727)
+    == std::size(NativePlayerSlotPatchImmediateOffsets7398727));
 
 static thread_local bool SyntheticLobbyAdmissionActive{ false };
 
@@ -212,6 +292,201 @@ static bool IsSocketOverrideTelemetryResearchBuild(GameVersionInfo const& versio
         && version.Build == 727;
 }
 
+static bool WriteExecutableByte(uint8_t* address, uint8_t value)
+{
+    DWORD oldProtection{ 0 };
+    if (!VirtualProtect(address, 1, PAGE_EXECUTE_READWRITE, &oldProtection)) {
+        return false;
+    }
+
+    *address = value;
+    FlushInstructionCache(GetCurrentProcess(), address, 1);
+
+    DWORD ignored{ 0 };
+    return VirtualProtect(address, 1, oldProtection, &ignored) != FALSE;
+}
+
+static bool ApplyNativePlayerSlotExpansion7398727(uint8_t target)
+{
+    auto const module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
+    if (module == 0) {
+        ERR("[MP_PLAYER_SLOTS] event=disabled reason=main_module_missing target=%u", (unsigned)target);
+        return false;
+    }
+
+    // Validate every exact-build signature before changing any executable byte.
+    for (size_t i = 0; i < std::size(NativePlayerSlotPatchRvas7398727); i++) {
+        auto const address = reinterpret_cast<uint8_t const*>(
+            module + NativePlayerSlotPatchRvas7398727[i]);
+        auto const immediateOffset = NativePlayerSlotPatchImmediateOffsets7398727[i];
+        auto matches = true;
+        for (size_t byteIndex = 0; byteIndex < 8; byteIndex++) {
+            if (byteIndex != immediateOffset
+                && address[byteIndex] != NativePlayerSlotPatchExpected7398727[i][byteIndex]) {
+                matches = false;
+                break;
+            }
+        }
+        auto const immediate = address[immediateOffset];
+        if (!matches || (immediate != 4 && immediate != target)) {
+            ERR("[MP_PLAYER_SLOTS] event=disabled reason=signature_guard_failed patch=P%u rva=0x%llx current_immediate=%u target=%u",
+                (unsigned)(i + 1),
+                (unsigned long long)NativePlayerSlotPatchRvas7398727[i],
+                (unsigned)immediate,
+                (unsigned)target);
+            return false;
+        }
+    }
+
+    size_t applied{ 0 };
+    bool changed[std::size(NativePlayerSlotPatchRvas7398727)]{};
+    for (size_t i = 0; i < std::size(NativePlayerSlotPatchRvas7398727); i++) {
+        auto const immediateOffset = NativePlayerSlotPatchImmediateOffsets7398727[i];
+        auto address = reinterpret_cast<uint8_t*>(
+            module + NativePlayerSlotPatchRvas7398727[i] + immediateOffset);
+        if (*address == target) {
+            continue;
+        }
+        if (!WriteExecutableByte(address, target)) {
+            // The byte write can succeed even when restoring page protection fails.
+            // Include the current patch in rollback if its immediate changed.
+            changed[i] = *address == target;
+            auto rollbackSucceeded = true;
+            for (size_t rollbackIndex = 0; rollbackIndex <= i; rollbackIndex++) {
+                if (!changed[rollbackIndex]) {
+                    continue;
+                }
+                auto const rollbackOffset = NativePlayerSlotPatchImmediateOffsets7398727[rollbackIndex];
+                auto rollbackAddress = reinterpret_cast<uint8_t*>(
+                    module + NativePlayerSlotPatchRvas7398727[rollbackIndex] + rollbackOffset);
+                if (*rollbackAddress == target && !WriteExecutableByte(rollbackAddress, 4)) {
+                    rollbackSucceeded = false;
+                }
+            }
+            ERR("[MP_PLAYER_SLOTS] event=disabled reason=memory_write_failed patch=P%u target=%u rollback_succeeded=%u",
+                (unsigned)(i + 1),
+                (unsigned)target,
+                rollbackSucceeded ? 1u : 0u);
+            return false;
+        }
+        changed[i] = true;
+        applied++;
+    }
+
+    INFO("[MP_PLAYER_SLOTS] event=applied target=%u patches=8 newly_written=%u exact_build=4.73.98.727 p5_register_preserved=RBX file_modified=0",
+        (unsigned)target,
+        (unsigned)applied);
+    return true;
+}
+
+static bool ApplySyntheticLobbyCanStartBypass7398727()
+{
+    auto const module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
+    if (module == 0) {
+        ERR("[MP_SYNTHETIC_LOBBY] event=can_start_bypass_disabled reason=main_module_missing");
+        return false;
+    }
+
+    auto address = reinterpret_cast<uint8_t*>(module + LobbyCanStartGetterRva7398727);
+    if (memcmp(address, LobbyCanStartGetterBypass7398727,
+            sizeof(LobbyCanStartGetterBypass7398727)) == 0) {
+        INFO("[MP_SYNTHETIC_LOBBY] event=can_start_bypass_enabled newly_written=0 exact_build=4.73.98.727 file_modified=0");
+        return true;
+    }
+    if (memcmp(address, LobbyCanStartGetterExpected7398727,
+            sizeof(LobbyCanStartGetterExpected7398727)) != 0) {
+        ERR("[MP_SYNTHETIC_LOBBY] event=can_start_bypass_disabled reason=signature_guard_failed rva=0x%llx",
+            (unsigned long long)LobbyCanStartGetterRva7398727);
+        return false;
+    }
+
+    size_t written{ 0 };
+    for (; written < sizeof(LobbyCanStartGetterBypass7398727); written++) {
+        if (!WriteExecutableByte(address + written, LobbyCanStartGetterBypass7398727[written])) {
+            auto rollbackSucceeded = true;
+            for (size_t rollback = 0; rollback < written; rollback++) {
+                if (!WriteExecutableByte(address + rollback, LobbyCanStartGetterExpected7398727[rollback])) {
+                    rollbackSucceeded = false;
+                }
+            }
+            ERR("[MP_SYNTHETIC_LOBBY] event=can_start_bypass_disabled reason=memory_write_failed byte=%u rollback_succeeded=%u",
+                (unsigned)written,
+                rollbackSucceeded ? 1u : 0u);
+            return false;
+        }
+    }
+
+    INFO("[MP_SYNTHETIC_LOBBY] event=can_start_bypass_enabled newly_written=8 exact_build=4.73.98.727 file_modified=0");
+    return true;
+}
+
+static bool ApplySyntheticLobbyStartMembershipBypass7398727()
+{
+    auto const module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
+    if (module == 0) {
+        ERR("[MP_SYNTHETIC_LOBBY] event=start_membership_bypass_disabled reason=main_module_missing");
+        return false;
+    }
+
+    bool changed[std::size(LobbyStartMembershipPatchRvas7398727)][6]{};
+    size_t newlyWritten{ 0 };
+    for (size_t patch = 0; patch < std::size(LobbyStartMembershipPatchRvas7398727); patch++) {
+        auto const address = reinterpret_cast<uint8_t*>(
+            module + LobbyStartMembershipPatchRvas7398727[patch]);
+        if (memcmp(address, LobbyStartMembershipBypass7398727[patch],
+                sizeof(LobbyStartMembershipBypass7398727[patch])) == 0) {
+            continue;
+        }
+        if (memcmp(address, LobbyStartMembershipExpected7398727[patch],
+                sizeof(LobbyStartMembershipExpected7398727[patch])) != 0) {
+            ERR("[MP_SYNTHETIC_LOBBY] event=start_membership_bypass_disabled reason=signature_guard_failed patch=%u rva=0x%llx",
+                (unsigned)(patch + 1),
+                (unsigned long long)LobbyStartMembershipPatchRvas7398727[patch]);
+            return false;
+        }
+    }
+
+    for (size_t patch = 0; patch < std::size(LobbyStartMembershipPatchRvas7398727); patch++) {
+        auto const address = reinterpret_cast<uint8_t*>(
+            module + LobbyStartMembershipPatchRvas7398727[patch]);
+        for (size_t byte = 0; byte < sizeof(LobbyStartMembershipBypass7398727[patch]); byte++) {
+            if (address[byte] == LobbyStartMembershipBypass7398727[patch][byte]) {
+                continue;
+            }
+            if (!WriteExecutableByte(address + byte,
+                    LobbyStartMembershipBypass7398727[patch][byte])) {
+                auto rollbackSucceeded = true;
+                for (size_t rollbackPatch = 0;
+                    rollbackPatch < std::size(LobbyStartMembershipPatchRvas7398727);
+                    rollbackPatch++) {
+                    auto rollbackAddress = reinterpret_cast<uint8_t*>(
+                        module + LobbyStartMembershipPatchRvas7398727[rollbackPatch]);
+                    for (size_t rollbackByte = 0;
+                        rollbackByte < sizeof(LobbyStartMembershipExpected7398727[rollbackPatch]);
+                        rollbackByte++) {
+                        if (changed[rollbackPatch][rollbackByte]
+                            && !WriteExecutableByte(rollbackAddress + rollbackByte,
+                                LobbyStartMembershipExpected7398727[rollbackPatch][rollbackByte])) {
+                            rollbackSucceeded = false;
+                        }
+                    }
+                }
+                ERR("[MP_SYNTHETIC_LOBBY] event=start_membership_bypass_disabled reason=memory_write_failed patch=%u byte=%u rollback_succeeded=%u",
+                    (unsigned)(patch + 1),
+                    (unsigned)byte,
+                    rollbackSucceeded ? 1u : 0u);
+                return false;
+            }
+            changed[patch][byte] = true;
+            newlyWritten++;
+        }
+    }
+
+    INFO("[MP_SYNTHETIC_LOBBY] event=start_membership_bypass_enabled patches=2 newly_written=%u exact_build=4.73.98.727 file_modified=0 scope=synthetic_research_only",
+        (unsigned)newlyWritten);
+    return true;
+}
+
 static int (*ResolveSteamSocketOverrideSend())(void*, char const*, int, void const*)
 {
     auto const module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
@@ -278,6 +553,22 @@ static uint8_t (*ResolveLobbyMembershipCheck())(void*, int8_t)
     return ResolveExactGameFunction<uint8_t (*)(void*, int8_t)>(
         LobbyMembershipCheckRva7398727,
         LobbyMembershipCheckPreamble7398727);
+}
+
+static uint8_t (*ResolveLobbyIsReady())(void*)
+{
+    return ResolveExactGameFunction<uint8_t (*)(void*)>(
+        LobbyIsReadyRva7398727,
+        LobbyIsReadyPreamble7398727);
+}
+
+static void (*ResolveAbstractPeerSendGeneralMessage())(
+    void*, void*, TPeerId, uint8_t, void*, net::Message*)
+{
+    return ResolveExactGameFunction<void (*)(
+        void*, void*, TPeerId, uint8_t, void*, net::Message*)>(
+        AbstractPeerSendGeneralMessageRva7398727,
+        AbstractPeerSendGeneralMessagePreamble7398727);
 }
 
 static int (*ResolveWinSockRecvFrom())(uintptr_t, char*, int, int, void*, int*)
@@ -415,6 +706,10 @@ void Hooks::Startup()
                 (unsigned)version.Minor,
                 (unsigned)version.Revision,
                 (unsigned)version.Build);
+        } else if (IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())
+            && !ApplyNativePlayerSlotExpansion7398727(static_cast<uint8_t>(nativePeerLimit))) {
+            ERR("[MP_PEER_LIMIT] event=disabled reason=player_slot_expansion_failed target=%u",
+                nativePeerLimit);
         } else if (GetStaticSymbols().net__AbstractPeer__BindSocket == nullptr) {
             ERR("[MP_PEER_LIMIT] event=disabled reason=bind_socket_symbol_missing target=%u", nativePeerLimit);
         } else {
@@ -424,7 +719,7 @@ void Hooks::Startup()
             auto const status = DetourTransactionCommit();
             if (status == NO_ERROR) {
                 net__AbstractPeer__BindSocket.SetWrapper(&Hooks::OnAbstractPeerBindSocket, this);
-                INFO("[MP_PEER_LIMIT] event=hook_enabled target=%u transport=1 player_capacity=module_info",
+                INFO("[MP_PEER_LIMIT] event=hook_enabled target=%u transport=1 player_capacity=module_info player_slot_tables=1",
                     nativePeerLimit);
             } else {
                 ERR("[MP_PEER_LIMIT] event=disabled reason=detour_failed target=%u status=%ld", nativePeerLimit, status);
@@ -432,7 +727,8 @@ void Hooks::Startup()
         }
     }
 
-    if (gExtender->GetConfig().EnableLocalPeerMessageTrace) {
+    auto const enableMessageTrace = gExtender->GetConfig().EnableLocalPeerMessageTrace;
+    if (enableMessageTrace) {
         if (!IsNativePeerLimitResearchBuild(gExtender->GetGameVersion())) {
             auto const& version = gExtender->GetGameVersion();
             ERR("[MP_MESSAGE_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.72.9.685,4.73.98.727",
@@ -649,6 +945,7 @@ void Hooks::Startup()
         auto const peerLimit = gExtender->GetConfig().ExperimentalNativeMultiplayerPeerLimit;
         auto const processMessageTarget = ResolveJoiningProtocolProcessMessage();
         auto const membershipCheckTarget = ResolveLobbyMembershipCheck();
+        auto const lobbyIsReadyTarget = ResolveLobbyIsReady();
         if (marker == 0) {
             ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=invalid_marker marker_must_be_nonzero=true");
         } else if (!localPeerTransportHookInstalled) {
@@ -662,24 +959,59 @@ void Hooks::Startup()
                 (unsigned)version.Minor,
                 (unsigned)version.Revision,
                 (unsigned)version.Build);
-        } else if (processMessageTarget == nullptr || membershipCheckTarget == nullptr) {
-            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=function_guard_failed joining_protocol=%d membership_check=%d",
+        } else if (!ApplySyntheticLobbyCanStartBypass7398727()) {
+            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=can_start_bypass_failed");
+        } else if (!ApplySyntheticLobbyStartMembershipBypass7398727()) {
+            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=start_membership_bypass_failed");
+        } else if (processMessageTarget == nullptr || membershipCheckTarget == nullptr
+            || lobbyIsReadyTarget == nullptr) {
+            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=function_guard_failed joining_protocol=%d membership_check=%d lobby_is_ready=%d",
                 processMessageTarget != nullptr,
-                membershipCheckTarget != nullptr);
+                membershipCheckTarget != nullptr,
+                lobbyIsReadyTarget != nullptr);
         } else {
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             eocnet__JoiningProtocol__ProcessMessage.Wrap(processMessageTarget);
             eocnet__Lobby__CheckMembership.Wrap(membershipCheckTarget);
+            eocnet__Lobby__IsReady.Wrap(lobbyIsReadyTarget);
             auto const status = DetourTransactionCommit();
             if (status == NO_ERROR) {
                 eocnet__JoiningProtocol__ProcessMessage.SetWrapper(
                     &Hooks::OnJoiningProtocolProcessMessage, this);
                 eocnet__Lobby__CheckMembership.SetWrapper(
                     &Hooks::OnLobbyMembershipCheck, this);
-                INFO("[MP_SYNTHETIC_LOBBY] event=hook_enabled scope=marked_local_client_connect peer_range=2-9 identity_logging=disabled marker_logging=disabled");
+                eocnet__Lobby__IsReady.SetWrapper(
+                    &Hooks::OnLobbyIsReady, this);
+                INFO("[MP_SYNTHETIC_LOBBY] event=hook_enabled scope=marked_local_client_connect peer_range=2-9 ready_bypass=1 identity_logging=disabled marker_logging=disabled");
             } else {
                 ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=detour_failed status=%ld", status);
+            }
+        }
+    }
+
+    if (gExtender->GetConfig().EnableSyntheticPeerSessionLoadBypassPrototype) {
+        auto const target = ResolveAbstractPeerSendGeneralMessage();
+        if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
+            auto const& version = gExtender->GetGameVersion();
+            ERR("[MP_SYNTHETIC_SESSION_LOAD] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.73.98.727",
+                (unsigned)version.Major,
+                (unsigned)version.Minor,
+                (unsigned)version.Revision,
+                (unsigned)version.Build);
+        } else if (target == nullptr) {
+            ERR("[MP_SYNTHETIC_SESSION_LOAD] event=disabled reason=function_guard_failed rva=0x4061F20");
+        } else {
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            net__AbstractPeer__SendGeneralMessage.Wrap(target);
+            auto const status = DetourTransactionCommit();
+            if (status == NO_ERROR) {
+                net__AbstractPeer__SendGeneralMessage.SetWrapper(
+                    &Hooks::OnAbstractPeerSendGeneralMessage, this);
+                INFO("[MP_SYNTHETIC_SESSION_LOAD] event=hook_enabled scope=general_wrapper marked_synthetic_peers=1 msg_id=194 global_compression_unchanged=1");
+            } else {
+                ERR("[MP_SYNTHETIC_SESSION_LOAD] event=disabled reason=detour_failed status=%ld", status);
             }
         }
     }
@@ -1176,6 +1508,8 @@ bool Hooks::OnAbstractPeerBindSocket(
     auto const gameServer = eocServer != nullptr ? eocServer->GameServer : nullptr;
 
     if (gameServer != nullptr && static_cast<net::AbstractPeer*>(gameServer) == peer) {
+        markedSyntheticPeerMask_.store(0, std::memory_order_release);
+
         // Do not detour the NumPlayers getter at RVA 0x3033120. Its optimized caller at
         // RVA 0x30A3D1F relies on RCX surviving the leaf call, which a normal x64 C++
         // wrapper does not guarantee. Changing the field keeps the original code path.
@@ -1215,11 +1549,15 @@ bool Hooks::OnAbstractPeerBindSocket(
         }
     }
 
-    if (disableCompression && gameServer != nullptr
-        && static_cast<net::AbstractPeer*>(gameServer) == peer) {
+    if (disableCompression) {
         auto const previous = peer->Compressor.field_A0;
         peer->Compressor.field_A0 = false;
-        INFO("[MP_PEER_LIMIT] event=net_compression_disabled previous=%u exact_build_research=1",
+        auto const role = gameServer != nullptr
+            && static_cast<net::AbstractPeer*>(gameServer) == peer
+            ? "server"
+            : "client_or_other";
+        INFO("[MP_PEER_LIMIT] event=net_compression_disabled role=%s previous=%u exact_build_research=1",
+            role,
             previous ? 1u : 0u);
     }
     return wrapped(peer, port, socketType);
@@ -1252,6 +1590,20 @@ net::ProtocolResult Hooks::OnJoiningProtocolProcessMessage(
             && connect->field_78.size() == 5
             && connect->field_A8 >= 1 && connect->field_A8 <= 16
             && connect->field_AC == 1;
+
+        if (peerId < 32) {
+            auto const peerBit = uint32_t{ 1 } << peerId;
+            if (matchesSyntheticAdmission) {
+                auto const previous = markedSyntheticPeerMask_.fetch_or(peerBit, std::memory_order_acq_rel);
+                if ((previous & peerBit) == 0
+                    && gExtender->GetConfig().EnableSyntheticPeerSessionLoadBypassPrototype) {
+                    INFO("[MP_SYNTHETIC_SESSION_LOAD] event=peer_marked peer=%u identity_logging=disabled marker_logging=disabled",
+                        peerId);
+                }
+            } else {
+                markedSyntheticPeerMask_.fetch_and(~peerBit, std::memory_order_acq_rel);
+            }
+        }
     }
 
     auto const previousAdmission = SyntheticLobbyAdmissionActive;
@@ -1274,6 +1626,14 @@ uint8_t Hooks::OnLobbyMembershipCheck(
     return wrapped(lobby, backend);
 }
 
+uint8_t Hooks::OnLobbyIsReady(uint8_t (*wrapped)(void*), void* lobby)
+{
+    // Preserve the original readiness function's side effects while allowing
+    // synthetic protocol clients (which have no UI) to cross the lobby gate.
+    (void)wrapped(lobby);
+    return 1;
+}
+
 char const* Hooks::GetLocalPeerMessageTraceSource(net::AbstractPeer* peer) const
 {
     auto const eocServer = GetStaticSymbols().GetEoCServer();
@@ -1291,6 +1651,10 @@ char const* Hooks::GetLocalPeerMessageTraceSource(net::AbstractPeer* peer) const
 
 bool Hooks::BeginLocalPeerMessageTraceEvent(uint32_t& eventIndex)
 {
+    if (!gExtender->GetConfig().EnableLocalPeerMessageTrace) {
+        return false;
+    }
+
     auto const maxEvents = gExtender->GetConfig().LocalPeerMessageTraceMaxEvents;
     eventIndex = localPeerMessageTraceEventCount_.fetch_add(1, std::memory_order_relaxed);
     if (eventIndex < maxEvents) {
@@ -1510,6 +1874,42 @@ void Hooks::OnAbstractPeerSendMessageMultiPeerMoveIds(
     }
 
     wrapped(peer, recipients, message, excludePeerId);
+}
+
+void Hooks::OnAbstractPeerSendGeneralMessage(
+    void (*wrapped)(void*, void*, TPeerId, uint8_t, void*, net::Message*),
+    void* compressor,
+    void* output,
+    TPeerId peerId,
+    uint8_t flags,
+    void* input,
+    net::Message* message)
+{
+    auto const bypassSessionLoad =
+        gExtender->GetConfig().EnableSyntheticPeerSessionLoadBypassPrototype
+        && message != nullptr
+        && message->MsgId == NetMessage::NETMSG_SESSION_LOAD
+        && IsMarkedSyntheticPeer(peerId);
+    auto const effectiveFlags = bypassSessionLoad
+        ? static_cast<uint8_t>(flags & ~uint8_t{ 1 })
+        : flags;
+    if (bypassSessionLoad) {
+        INFO("[MP_SYNTHETIC_SESSION_LOAD] event=compression_bit_cleared peer=%u previous=%u effective=%u",
+            (unsigned)peerId,
+            (unsigned)(flags & 1),
+            (unsigned)(effectiveFlags & 1));
+    }
+    wrapped(compressor, output, peerId, effectiveFlags, input, message);
+}
+
+bool Hooks::IsMarkedSyntheticPeer(TPeerId peerId) const
+{
+    if (peerId >= 32) {
+        return false;
+    }
+
+    auto const peerBit = uint32_t{ 1 } << peerId;
+    return (markedSyntheticPeerMask_.load(std::memory_order_acquire) & peerBit) != 0;
 }
 
 END_SE()
