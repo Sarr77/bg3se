@@ -44,6 +44,16 @@ inline constexpr bool IsValidLocalPeerTransportPrototypeMaxEvents(uint32_t maxEv
     return maxEvents >= 1 && maxEvents <= 256;
 }
 
+inline constexpr bool IsValidLoadProtocolWireTraceMaxEvents(uint32_t maxEvents)
+{
+    return maxEvents >= 1 && maxEvents <= 4096;
+}
+
+inline constexpr bool IsValidLoadProtocolWireTraceMaxPayloadBytes(uint32_t maxBytes)
+{
+    return maxBytes >= 64 && maxBytes <= 16 * 1024 * 1024;
+}
+
 static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(0));
 static_assert(!IsValidExperimentalNativeMultiplayerPeerLimit(8));
 static_assert(IsValidExperimentalNativeMultiplayerPeerLimit(9));
@@ -74,6 +84,16 @@ static_assert(IsValidLocalPeerTransportPrototypeMaxEvents(1));
 static_assert(IsValidLocalPeerTransportPrototypeMaxEvents(64));
 static_assert(IsValidLocalPeerTransportPrototypeMaxEvents(256));
 static_assert(!IsValidLocalPeerTransportPrototypeMaxEvents(257));
+static_assert(!IsValidLoadProtocolWireTraceMaxEvents(0));
+static_assert(IsValidLoadProtocolWireTraceMaxEvents(1));
+static_assert(IsValidLoadProtocolWireTraceMaxEvents(512));
+static_assert(IsValidLoadProtocolWireTraceMaxEvents(4096));
+static_assert(!IsValidLoadProtocolWireTraceMaxEvents(4097));
+static_assert(!IsValidLoadProtocolWireTraceMaxPayloadBytes(63));
+static_assert(IsValidLoadProtocolWireTraceMaxPayloadBytes(64));
+static_assert(IsValidLoadProtocolWireTraceMaxPayloadBytes(1024 * 1024));
+static_assert(IsValidLoadProtocolWireTraceMaxPayloadBytes(16 * 1024 * 1024));
+static_assert(!IsValidLoadProtocolWireTraceMaxPayloadBytes(16 * 1024 * 1024 + 1));
 
 struct ExtenderConfig
 {
@@ -135,6 +155,12 @@ struct ExtenderConfig
     // Exact-build, per-peer SESSION_LOAD experiment. Only marked synthetic
     // identities admitted by the prototype can use the uncompressed branch.
     bool EnableSyntheticPeerSessionLoadBypassPrototype{ false };
+    // Exact-build, observation-only trace of the real join/load message path.
+    // Raw serialized buffers are written to a local trace directory. The
+    // research repository decides which bounded samples are worth preserving.
+    bool EnableLoadProtocolWireTrace{ false };
+    uint32_t LoadProtocolWireTraceMaxEvents{ 512 };
+    uint32_t LoadProtocolWireTraceMaxPayloadBytes{ 16 * 1024 * 1024 };
     // Experimental native RakNet peer capacity override. 0 disables the hook.
     uint32_t ExperimentalNativeMultiplayerPeerLimit{ 0 };
     // Exact-build research switch: retain the normal envelope but use its

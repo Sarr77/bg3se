@@ -51,6 +51,9 @@ void ApplyConfig(ExtenderConfig& config, Document& root)
     ConfigGet(root, "EnableSyntheticLobbyBypassPrototype", config.EnableSyntheticLobbyBypassPrototype);
     ConfigGet(root, "SyntheticLobbyBypassMarker", config.SyntheticLobbyBypassMarker);
     ConfigGet(root, "EnableSyntheticPeerSessionLoadBypassPrototype", config.EnableSyntheticPeerSessionLoadBypassPrototype);
+    ConfigGet(root, "EnableLoadProtocolWireTrace", config.EnableLoadProtocolWireTrace);
+    ConfigGet(root, "LoadProtocolWireTraceMaxEvents", config.LoadProtocolWireTraceMaxEvents);
+    ConfigGet(root, "LoadProtocolWireTraceMaxPayloadBytes", config.LoadProtocolWireTraceMaxPayloadBytes);
     ConfigGet(root, "ExperimentalNativeMultiplayerPeerLimit", config.ExperimentalNativeMultiplayerPeerLimit);
     ConfigGet(root, "DisableNetMessageCompressionForResearch", config.DisableNetMessageCompressionForResearch);
 

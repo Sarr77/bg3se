@@ -19,6 +19,8 @@ decltype(Hooks::net__AbstractPeer__SendMessageSinglePeer)* decltype(Hooks::net__
 decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)::gHook;
 decltype(Hooks::net__AbstractPeer__SendGeneralMessage)* decltype(Hooks::net__AbstractPeer__SendGeneralMessage)::gHook;
 decltype(Hooks::eocnet__JoiningProtocol__ProcessMessage)* decltype(Hooks::eocnet__JoiningProtocol__ProcessMessage)::gHook;
+decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)::gHook;
+decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__Lobby__CheckMembership)* decltype(Hooks::eocnet__Lobby__CheckMembership)::gHook;
 decltype(Hooks::eocnet__Lobby__IsReady)* decltype(Hooks::eocnet__Lobby__IsReady)::gHook;
 decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)* decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)::gHook;
@@ -39,6 +41,8 @@ static constexpr uintptr_t JoiningProtocolProcessMessageRva7398727 = 0x426A9A0;
 static constexpr uintptr_t LobbyMembershipCheckRva7398727 = 0x404E570;
 static constexpr uintptr_t LobbyIsReadyRva7398727 = 0x404DA40;
 static constexpr uintptr_t AbstractPeerSendGeneralMessageRva7398727 = 0x4061F20;
+static constexpr uintptr_t ClientLoadProtocolProcessMessageRva7398727 = 0x1FEE910;
+static constexpr uintptr_t ServerLoadProtocolProcessMessageRva7398727 = 0x2F9F170;
 static constexpr uintptr_t NativePlayerSlotPatchRvas7398727[] = {
     0x14AF947,
     0x14B1020,
@@ -152,6 +156,20 @@ static constexpr uint8_t AbstractPeerSendGeneralMessagePreamble7398727[] = {
     0x57, 0x41, 0x54, 0x41, 0x56, 0x41, 0x57, 0x48,
     0x83, 0xEC, 0x50, 0x41, 0x0F, 0xB6, 0xE9, 0x48,
     0x8B, 0xF2, 0x48, 0x8B, 0xD9
+};
+
+static constexpr uint8_t ClientLoadProtocolProcessMessagePreamble7398727[] = {
+    0x48, 0x8B, 0xC4, 0x48, 0x89, 0x58, 0x10, 0x55,
+    0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56,
+    0x41, 0x57, 0x48, 0x8D, 0xA8, 0xC8, 0xFE, 0xFF,
+    0xFF, 0x48, 0x81, 0xEC, 0x00, 0x02, 0x00, 0x00
+};
+
+static constexpr uint8_t ServerLoadProtocolProcessMessagePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x55, 0x56, 0x57,
+    0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+    0x48, 0x8D, 0x6C, 0x24, 0xF0, 0x48, 0x81, 0xEC,
+    0x10, 0x01, 0x00, 0x00, 0x48, 0x8B, 0x05
 };
 
 static constexpr uint8_t NativePlayerSlotPatchExpected7398727[][8] = {
@@ -290,6 +308,147 @@ static bool IsSocketOverrideTelemetryResearchBuild(GameVersionInfo const& versio
         && version.Minor == 73
         && version.Revision == 98
         && version.Build == 727;
+}
+
+struct SerializedByteBufferView
+{
+    uint8_t* Data;
+    uint32_t Capacity;
+    uint32_t Length;
+};
+
+static_assert(offsetof(SerializedByteBufferView, Data) == 0x00);
+static_assert(offsetof(SerializedByteBufferView, Capacity) == 0x08);
+static_assert(offsetof(SerializedByteBufferView, Length) == 0x0C);
+static_assert(sizeof(SerializedByteBufferView) == 0x10);
+
+static bool WriteNetworkTracePayload(
+    uint32_t eventIndex,
+    TPeerId peerId,
+    uint32_t messageId,
+    SerializedByteBufferView const& body,
+    uint32_t maxPayloadBytes,
+    DWORD& error)
+{
+    error = ERROR_SUCCESS;
+    if (body.Length > maxPayloadBytes || (body.Length > 0 && body.Data == nullptr)) {
+        error = ERROR_INVALID_DATA;
+        return false;
+    }
+
+    wchar_t localAppData[32768];
+    auto const localAppDataLength = GetEnvironmentVariableW(
+        L"LOCALAPPDATA", localAppData, static_cast<DWORD>(std::size(localAppData)));
+    if (localAppDataLength == 0 || localAppDataLength >= std::size(localAppData)) {
+        error = GetLastError();
+        return false;
+    }
+
+    std::wstring extenderDirectory(localAppData, localAppDataLength);
+    extenderDirectory += L"\\BG3ScriptExtender";
+    if (!CreateDirectoryW(extenderDirectory.c_str(), nullptr)
+        && GetLastError() != ERROR_ALREADY_EXISTS) {
+        error = GetLastError();
+        return false;
+    }
+
+    auto traceDirectory = extenderDirectory + L"\\NetworkTrace";
+    if (!CreateDirectoryW(traceDirectory.c_str(), nullptr)
+        && GetLastError() != ERROR_ALREADY_EXISTS) {
+        error = GetLastError();
+        return false;
+    }
+
+    wchar_t filename[192];
+    swprintf_s(filename, L"\\trace-pid%lu-event%u-send-id%u-peer%u.bin",
+        GetCurrentProcessId(), eventIndex, messageId, static_cast<uint32_t>(peerId));
+    auto const path = traceDirectory + filename;
+    auto const file = CreateFileW(
+        path.c_str(),
+        GENERIC_WRITE,
+        FILE_SHARE_READ,
+        nullptr,
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH,
+        nullptr);
+    if (file == INVALID_HANDLE_VALUE) {
+        error = GetLastError();
+        return false;
+    }
+
+    DWORD written{ 0 };
+    auto const writeSucceeded = body.Length == 0
+        || WriteFile(file, body.Data, body.Length, &written, nullptr) != FALSE;
+    if (!writeSucceeded || written != body.Length) {
+        error = writeSucceeded ? ERROR_WRITE_FAULT : GetLastError();
+        CloseHandle(file);
+        return false;
+    }
+
+    if (!FlushFileBuffers(file)) {
+        error = GetLastError();
+        CloseHandle(file);
+        return false;
+    }
+    CloseHandle(file);
+    return true;
+}
+
+static void TraceSerializerSnapshot(
+    uint32_t eventIndex,
+    net::Message* message,
+    net::BitstreamSerializer* serializer,
+    uint32_t bitsBefore,
+    uint32_t offsetBefore,
+    uint32_t maxPayloadBytes)
+{
+    auto const bitstream = serializer != nullptr ? serializer->Bitstream : nullptr;
+    auto const messageId = message != nullptr
+        ? static_cast<uint32_t>(message->MsgId)
+        : UINT32_MAX;
+    auto const bitsAfter = bitstream != nullptr ? bitstream->NumBits : 0;
+    auto const offsetAfter = bitstream != nullptr ? bitstream->CurrentOffsetBits : 0;
+    auto const capacityBytes = bitstream != nullptr
+        ? (bitstream->AllocatedBits + 7u) / 8u
+        : 0u;
+    auto const lengthBytes = bitstream != nullptr
+        ? (bitstream->NumBits + 7u) / 8u
+        : 0u;
+    SerializedByteBufferView snapshot{
+        bitstream != nullptr ? bitstream->Buf : nullptr,
+        capacityBytes,
+        lengthBytes
+    };
+    DWORD payloadError{ ERROR_SUCCESS };
+    if (lengthBytes > capacityBytes) {
+        payloadError = ERROR_INVALID_DATA;
+    }
+    auto const payloadWritten = serializer != nullptr
+        && serializer->IsWriting != 0
+        && lengthBytes <= capacityBytes
+        && WriteNetworkTracePayload(
+            eventIndex,
+            UINT32_MAX,
+            messageId,
+            snapshot,
+            maxPayloadBytes,
+            payloadError);
+    INFO("[MP_LOAD_TRACE] event=serializer_snapshot index=%u thread=%lu direction=%s msg_id=%u bits_before=%u bits_after=%u offset_before=%u offset_after=%u snapshot_bytes=%u payload_written=%u payload_error=%lu payload_name=trace-pid%lu-event%u-send-id%u-peer%u.bin",
+        eventIndex,
+        GetCurrentThreadId(),
+        serializer != nullptr && serializer->IsWriting ? "write" : "read",
+        messageId,
+        bitsBefore,
+        bitsAfter,
+        offsetBefore,
+        offsetAfter,
+        lengthBytes,
+        payloadWritten ? 1u : 0u,
+        payloadError,
+        GetCurrentProcessId(),
+        eventIndex,
+        messageId,
+        UINT32_MAX);
 }
 
 static bool WriteExecutableByte(uint8_t* address, uint8_t value)
@@ -569,6 +728,24 @@ static void (*ResolveAbstractPeerSendGeneralMessage())(
         void*, void*, TPeerId, uint8_t, void*, net::Message*)>(
         AbstractPeerSendGeneralMessageRva7398727,
         AbstractPeerSendGeneralMessagePreamble7398727);
+}
+
+static net::ProtocolResult (*ResolveClientLoadProtocolProcessMessage())(
+    net::Protocol*, void*, net::MessageContext*, net::Message*)
+{
+    return ResolveExactGameFunction<net::ProtocolResult (*)(
+        net::Protocol*, void*, net::MessageContext*, net::Message*)>(
+        ClientLoadProtocolProcessMessageRva7398727,
+        ClientLoadProtocolProcessMessagePreamble7398727);
+}
+
+static net::ProtocolResult (*ResolveServerLoadProtocolProcessMessage())(
+    net::Protocol*, void*, net::MessageContext*, net::Message*)
+{
+    return ResolveExactGameFunction<net::ProtocolResult (*)(
+        net::Protocol*, void*, net::MessageContext*, net::Message*)>(
+        ServerLoadProtocolProcessMessageRva7398727,
+        ServerLoadProtocolProcessMessagePreamble7398727);
 }
 
 static int (*ResolveWinSockRecvFrom())(uintptr_t, char*, int, int, void*, int*)
@@ -990,7 +1167,11 @@ void Hooks::Startup()
         }
     }
 
-    if (gExtender->GetConfig().EnableSyntheticPeerSessionLoadBypassPrototype) {
+    auto const enableLoadProtocolWireTrace =
+        gExtender->GetConfig().EnableLoadProtocolWireTrace;
+    auto const enableSyntheticSessionLoadBypass =
+        gExtender->GetConfig().EnableSyntheticPeerSessionLoadBypassPrototype;
+    if (enableSyntheticSessionLoadBypass || enableLoadProtocolWireTrace) {
         auto const target = ResolveAbstractPeerSendGeneralMessage();
         if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
             auto const& version = gExtender->GetGameVersion();
@@ -1001,6 +1182,14 @@ void Hooks::Startup()
                 (unsigned)version.Build);
         } else if (target == nullptr) {
             ERR("[MP_SYNTHETIC_SESSION_LOAD] event=disabled reason=function_guard_failed rva=0x4061F20");
+        } else if (enableLoadProtocolWireTrace
+            && (!IsValidLoadProtocolWireTraceMaxEvents(
+                    gExtender->GetConfig().LoadProtocolWireTraceMaxEvents)
+                || !IsValidLoadProtocolWireTraceMaxPayloadBytes(
+                    gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes))) {
+            ERR("[MP_LOAD_TRACE] event=disabled reason=invalid_limits max_events=%u max_payload_bytes=%u",
+                gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
+                gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
         } else {
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
@@ -1009,9 +1198,55 @@ void Hooks::Startup()
             if (status == NO_ERROR) {
                 net__AbstractPeer__SendGeneralMessage.SetWrapper(
                     &Hooks::OnAbstractPeerSendGeneralMessage, this);
-                INFO("[MP_SYNTHETIC_SESSION_LOAD] event=hook_enabled scope=general_wrapper marked_synthetic_peers=1 msg_id=194 global_compression_unchanged=1");
+                if (enableSyntheticSessionLoadBypass) {
+                    INFO("[MP_SYNTHETIC_SESSION_LOAD] event=hook_enabled scope=general_wrapper marked_synthetic_peers=1 msg_id=194 global_compression_unchanged=1");
+                }
+                if (enableLoadProtocolWireTrace) {
+                    INFO("[MP_LOAD_TRACE] event=send_hook_enabled rva=0x4061F20 payload_capture=1 message_mutation=0");
+                }
             } else {
                 ERR("[MP_SYNTHETIC_SESSION_LOAD] event=disabled reason=detour_failed status=%ld", status);
+            }
+        }
+    }
+
+    if (enableLoadProtocolWireTrace) {
+        auto const clientTarget = ResolveClientLoadProtocolProcessMessage();
+        auto const serverTarget = ResolveServerLoadProtocolProcessMessage();
+        if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
+            auto const& version = gExtender->GetGameVersion();
+            ERR("[MP_LOAD_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.73.98.727",
+                (unsigned)version.Major,
+                (unsigned)version.Minor,
+                (unsigned)version.Revision,
+                (unsigned)version.Build);
+        } else if (clientTarget == nullptr || serverTarget == nullptr) {
+            ERR("[MP_LOAD_TRACE] event=disabled reason=process_msg_guard_failed client=%u server=%u",
+                clientTarget != nullptr ? 1u : 0u,
+                serverTarget != nullptr ? 1u : 0u);
+        } else if (!IsValidLoadProtocolWireTraceMaxEvents(
+                gExtender->GetConfig().LoadProtocolWireTraceMaxEvents)
+            || !IsValidLoadProtocolWireTraceMaxPayloadBytes(
+                gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes)) {
+            ERR("[MP_LOAD_TRACE] event=disabled reason=invalid_limits max_events=%u max_payload_bytes=%u",
+                gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
+                gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
+        } else {
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            eocnet__ClientLoadProtocol__ProcessMessage.Wrap(clientTarget);
+            eocnet__ServerLoadProtocol__ProcessMessage.Wrap(serverTarget);
+            auto const status = DetourTransactionCommit();
+            if (status == NO_ERROR) {
+                eocnet__ClientLoadProtocol__ProcessMessage.SetWrapper(
+                    &Hooks::OnClientLoadProtocolProcessMessage, this);
+                eocnet__ServerLoadProtocol__ProcessMessage.SetWrapper(
+                    &Hooks::OnServerLoadProtocolProcessMessage, this);
+                INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled",
+                    gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
+                    gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
+            } else {
+                ERR("[MP_LOAD_TRACE] event=disabled reason=process_msg_detour_failed status=%ld", status);
             }
         }
     }
@@ -1036,8 +1271,13 @@ void Hooks::HookNetworkMessages(net::MessageFactory* factory)
     auto clientConnect = factory->MessagePools[(unsigned)NetMessage::NETMSG_CLIENT_CONNECT]->Template;
     eocnet__ClientConnectMessage__Serialize.Wrap((*(net::Message::VMT**)clientConnect)->Serialize);
 
-    if (gExtender->GetConfig().EnableInitialPeerSerializerTelemetry) {
-        if (!IsValidInitialPeerSerializerTelemetryMaxEvents(
+    auto const enableInitialSerializerTelemetry =
+        gExtender->GetConfig().EnableInitialPeerSerializerTelemetry;
+    auto const enableLoadSerializerTrace =
+        gExtender->GetConfig().EnableLoadProtocolWireTrace;
+    if (enableInitialSerializerTelemetry || enableLoadSerializerTrace) {
+        if (enableInitialSerializerTelemetry
+            && !IsValidInitialPeerSerializerTelemetryMaxEvents(
                 gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents)) {
             ERR("[MP_SERIALIZER_TRACE] event=disabled reason=invalid_max_events actual=%u allowed=1-1024",
                 gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents);
@@ -1074,7 +1314,7 @@ void Hooks::HookNetworkMessages(net::MessageFactory* factory)
 
     auto const status = DetourTransactionCommit();
 
-    if (status == NO_ERROR && gExtender->GetConfig().EnableInitialPeerSerializerTelemetry
+    if (status == NO_ERROR && enableInitialSerializerTelemetry
         && IsValidInitialPeerSerializerTelemetryMaxEvents(
             gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents)
         && IsNativePeerLimitResearchBuild(gExtender->GetGameVersion())
@@ -1083,6 +1323,14 @@ void Hooks::HookNetworkMessages(net::MessageFactory* factory)
             gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents);
     } else if (status != NO_ERROR && gExtender->GetConfig().EnableInitialPeerSerializerTelemetry) {
         ERR("[MP_SERIALIZER_TRACE] event=disabled reason=detour_failed status=%ld", status);
+    }
+
+    if (status == NO_ERROR && enableLoadSerializerTrace
+        && IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())
+        && factory->MessagePools.size() > (unsigned)NetMessage::NETMSG_LOAD_STARTED) {
+        INFO("[MP_LOAD_TRACE] event=serializer_hooks_enabled client_connect=1 handshake=1 peer_activate=1 session_load=1 session_loaded=1 level_load=1 shared_level_descriptor=1 load_start=1 load_started=1");
+    } else if (status != NO_ERROR && enableLoadSerializerTrace) {
+        ERR("[MP_LOAD_TRACE] event=serializer_hooks_disabled reason=detour_failed status=%ld", status);
     }
 
     networkingInitialized_ = status == NO_ERROR;
@@ -1114,6 +1362,17 @@ void Hooks::OnClientConnectMessage(net::Message::SerializeProc* wrapped, net::Me
     auto const bitsBefore = bitstream != nullptr ? bitstream->NumBits : 0;
     auto const offsetBefore = bitstream != nullptr ? bitstream->CurrentOffsetBits : 0;
     wrapped(msg, serializer);
+
+    uint32_t wireTraceIndex;
+    if (BeginLoadProtocolWireTraceEvent(wireTraceIndex)) {
+        TraceSerializerSnapshot(
+            wireTraceIndex,
+            msg,
+            serializer,
+            bitsBefore,
+            offsetBefore,
+            gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
+    }
 
     uint32_t eventIndex;
     if (gExtender->GetConfig().EnableInitialPeerSerializerTelemetry
@@ -1410,6 +1669,17 @@ void Hooks::OnInitialPeerHandshakeMessage(
     auto const scalarBefore = *(uint32_t*)((uint8_t*)msg + 0x28);
     wrapped(msg, serializer);
 
+    uint32_t wireTraceIndex;
+    if (BeginLoadProtocolWireTraceEvent(wireTraceIndex)) {
+        TraceSerializerSnapshot(
+            wireTraceIndex,
+            msg,
+            serializer,
+            bitsBefore,
+            offsetBefore,
+            gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
+    }
+
     uint32_t eventIndex;
     if (BeginInitialPeerSerializerTelemetryEvent(eventIndex)) {
         auto const bitsAfter = bitstream != nullptr ? bitstream->NumBits : 0;
@@ -1474,6 +1744,17 @@ void Hooks::OnInitialPeerLoadMessage(
     uint32_t metadataBefore[3];
     readSafeMetadata(metadataBefore);
     wrapped(msg, serializer);
+
+    uint32_t wireTraceIndex;
+    if (BeginLoadProtocolWireTraceEvent(wireTraceIndex)) {
+        TraceSerializerSnapshot(
+            wireTraceIndex,
+            msg,
+            serializer,
+            bitsBefore,
+            offsetBefore,
+            gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
+    }
 
     uint32_t eventIndex;
     if (BeginInitialPeerSerializerTelemetryEvent(eventIndex)) {
@@ -1570,6 +1851,19 @@ net::ProtocolResult Hooks::OnJoiningProtocolProcessMessage(
     net::MessageContext* context,
     net::Message* message)
 {
+    uint32_t traceEnterIndex;
+    auto const traceJoining = BeginLoadProtocolWireTraceEvent(traceEnterIndex);
+    if (traceJoining) {
+        INFO("[MP_LOAD_TRACE] event=process_enter index=%u side=server protocol=joining thread=%lu msg_id=%u user_id=%u peer=%u peer_class_count=%u user_count=%u",
+            traceEnterIndex,
+            GetCurrentThreadId(),
+            message != nullptr ? (unsigned)message->MsgId : UINT32_MAX,
+            context != nullptr ? context->UserID.Id : UserId::Unassigned,
+            context != nullptr ? (unsigned)context->UserID.GetPeerId() : UINT32_MAX,
+            context != nullptr ? context->PeerIDClassNames.size() : 0,
+            context != nullptr ? context->UserIDs.size() : 0);
+    }
+
     auto matchesSyntheticAdmission = false;
     if (context != nullptr && message != nullptr
         && message->MsgId == NetMessage::NETMSG_CLIENT_CONNECT) {
@@ -1610,6 +1904,74 @@ net::ProtocolResult Hooks::OnJoiningProtocolProcessMessage(
     SyntheticLobbyAdmissionActive = matchesSyntheticAdmission;
     auto const result = wrapped(protocol, unused, context, message);
     SyntheticLobbyAdmissionActive = previousAdmission;
+    uint32_t traceExitIndex;
+    if (traceJoining && BeginLoadProtocolWireTraceEvent(traceExitIndex)) {
+        INFO("[MP_LOAD_TRACE] event=process_exit index=%u call_index=%u side=server protocol=joining thread=%lu msg_id=%u result=%d",
+            traceExitIndex,
+            traceEnterIndex,
+            GetCurrentThreadId(),
+            message != nullptr ? (unsigned)message->MsgId : UINT32_MAX,
+            (int)result);
+    }
+    return result;
+}
+
+net::ProtocolResult Hooks::OnClientLoadProtocolProcessMessage(
+    net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+    net::Protocol* protocol,
+    void* unused,
+    net::MessageContext* context,
+    net::Message* message)
+{
+    return OnLoadProtocolProcessMessage(
+        "client", wrapped, protocol, unused, context, message);
+}
+
+net::ProtocolResult Hooks::OnServerLoadProtocolProcessMessage(
+    net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+    net::Protocol* protocol,
+    void* unused,
+    net::MessageContext* context,
+    net::Message* message)
+{
+    return OnLoadProtocolProcessMessage(
+        "server", wrapped, protocol, unused, context, message);
+}
+
+net::ProtocolResult Hooks::OnLoadProtocolProcessMessage(
+    char const* side,
+    net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+    net::Protocol* protocol,
+    void* unused,
+    net::MessageContext* context,
+    net::Message* message)
+{
+    uint32_t enterIndex;
+    auto const trace = BeginLoadProtocolWireTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_LOAD_TRACE] event=process_enter index=%u side=%s protocol=load thread=%lu msg_id=%u user_id=%u peer=%u peer_class_count=%u user_count=%u",
+            enterIndex,
+            side,
+            GetCurrentThreadId(),
+            message != nullptr ? (unsigned)message->MsgId : UINT32_MAX,
+            context != nullptr ? context->UserID.Id : UserId::Unassigned,
+            context != nullptr ? (unsigned)context->UserID.GetPeerId() : UINT32_MAX,
+            context != nullptr ? context->PeerIDClassNames.size() : 0,
+            context != nullptr ? context->UserIDs.size() : 0);
+    }
+
+    auto const result = wrapped(protocol, unused, context, message);
+
+    uint32_t exitIndex;
+    if (trace && BeginLoadProtocolWireTraceEvent(exitIndex)) {
+        INFO("[MP_LOAD_TRACE] event=process_exit index=%u call_index=%u side=%s protocol=load thread=%lu msg_id=%u result=%d",
+            exitIndex,
+            enterIndex,
+            side,
+            GetCurrentThreadId(),
+            message != nullptr ? (unsigned)message->MsgId : UINT32_MAX,
+            (int)result);
+    }
     return result;
 }
 
@@ -1670,6 +2032,12 @@ bool Hooks::BeginLocalPeerMessageTraceEvent(uint32_t& eventIndex)
 
 bool Hooks::BeginInitialPeerSerializerTelemetryEvent(uint32_t& eventIndex)
 {
+    if (!gExtender->GetConfig().EnableInitialPeerSerializerTelemetry
+        || !IsValidInitialPeerSerializerTelemetryMaxEvents(
+            gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents)) {
+        return false;
+    }
+
     auto const maxEvents = gExtender->GetConfig().InitialPeerSerializerTelemetryMaxEvents;
     eventIndex = initialPeerSerializerTelemetryEventCount_.fetch_add(1, std::memory_order_relaxed);
     if (eventIndex < maxEvents) {
@@ -1681,6 +2049,18 @@ bool Hooks::BeginInitialPeerSerializerTelemetryEvent(uint32_t& eventIndex)
     }
 
     return false;
+}
+
+bool Hooks::BeginLoadProtocolWireTraceEvent(uint32_t& eventIndex)
+{
+    if (!gExtender->GetConfig().EnableLoadProtocolWireTrace
+        || !IsValidLoadProtocolWireTraceMaxEvents(
+            gExtender->GetConfig().LoadProtocolWireTraceMaxEvents)) {
+        return false;
+    }
+
+    eventIndex = loadProtocolWireTraceEventCount_.fetch_add(1, std::memory_order_relaxed);
+    return eventIndex < gExtender->GetConfig().LoadProtocolWireTraceMaxEvents;
 }
 
 bool Hooks::BeginSocketOverrideSendTelemetryEvent(uint32_t& eventIndex)
@@ -1885,6 +2265,51 @@ void Hooks::OnAbstractPeerSendGeneralMessage(
     void* input,
     net::Message* message)
 {
+    uint32_t traceIndex;
+    auto const trace = BeginLoadProtocolWireTraceEvent(traceIndex);
+    auto const messageId = message != nullptr
+        ? static_cast<uint32_t>(message->MsgId)
+        : UINT32_MAX;
+    if (trace) {
+        if (message != nullptr && messageId > 14 && input != nullptr) {
+            auto const& body = *static_cast<SerializedByteBufferView const*>(input);
+            DWORD payloadError{ ERROR_SUCCESS };
+            auto const capacityValid = body.Length <= body.Capacity;
+            auto const payloadWritten = capacityValid
+                && WriteNetworkTracePayload(
+                    traceIndex,
+                    peerId,
+                    messageId,
+                    body,
+                    gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes,
+                    payloadError);
+            INFO("[MP_LOAD_TRACE] event=send_serialized index=%u thread=%lu msg_id=%u peer=%u flags=%u compressed=%u body_bytes=%u body_capacity=%u payload_written=%u payload_error=%lu payload_name=trace-pid%lu-event%u-send-id%u-peer%u.bin",
+                traceIndex,
+                GetCurrentThreadId(),
+                messageId,
+                (unsigned)peerId,
+                (unsigned)flags,
+                (unsigned)(flags & 1),
+                body.Length,
+                body.Capacity,
+                payloadWritten ? 1u : 0u,
+                payloadError,
+                GetCurrentProcessId(),
+                traceIndex,
+                messageId,
+                (unsigned)peerId);
+        } else {
+            INFO("[MP_LOAD_TRACE] event=send_serialized index=%u thread=%lu msg_id=%u peer=%u flags=%u compressed=%u body_layout=%s payload_written=0",
+                traceIndex,
+                GetCurrentThreadId(),
+                messageId,
+                (unsigned)peerId,
+                (unsigned)flags,
+                (unsigned)(flags & 1),
+                messageId <= 14 ? "special_vtable_path" : "unavailable");
+        }
+    }
+
     auto const bypassSessionLoad =
         gExtender->GetConfig().EnableSyntheticPeerSessionLoadBypassPrototype
         && message != nullptr
@@ -1900,6 +2325,17 @@ void Hooks::OnAbstractPeerSendGeneralMessage(
             (unsigned)(effectiveFlags & 1));
     }
     wrapped(compressor, output, peerId, effectiveFlags, input, message);
+
+    uint32_t traceExitIndex;
+    if (trace && BeginLoadProtocolWireTraceEvent(traceExitIndex)) {
+        INFO("[MP_LOAD_TRACE] event=send_complete index=%u call_index=%u thread=%lu msg_id=%u peer=%u effective_flags=%u",
+            traceExitIndex,
+            traceIndex,
+            GetCurrentThreadId(),
+            messageId,
+            (unsigned)peerId,
+            (unsigned)effectiveFlags);
+    }
 }
 
 bool Hooks::IsMarkedSyntheticPeer(TPeerId peerId) const
