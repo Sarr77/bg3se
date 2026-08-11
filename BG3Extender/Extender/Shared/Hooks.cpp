@@ -1416,6 +1416,19 @@ void Hooks::Startup()
                         &Hooks::OnEntityReplicationSystemUpdate, this);
                     ecs__EntityReplicationCommandBuffer__Flush.SetWrapper(
                         &Hooks::OnEntityReplicationCommandBufferFlush, this);
+                    {
+                        std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
+                        entityReplicationCommandEnqueueCallerRvas_.clear();
+                        entityReplicationAuthorityInsertCallerRvas_.clear();
+                        entityReplicationPendingInsertNext_ = 0;
+                        entityReplicationPendingInsertCount_ = 0;
+                        entityReplicationPendingInsertTotal_ = 0;
+                    }
+                    entityReplicationCommandBufferMismatchCount_.store(0, std::memory_order_release);
+                    EntityReplicationTraceForCurrentThread = {};
+                    entityReplicationPreBindCaptureEnabled_.store(true, std::memory_order_release);
+                    INFO("[MP_REPLICATION_TRACE] event=prebind_capture_started phase=hook_install capture_scope=process capacity=%llu capture_enabled=1 message_mutation=0",
+                        static_cast<unsigned long long>(entityReplicationPendingInserts_.size()));
                     INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 character_creation_server_process_rva=0x373C020 entity_handle_set_insert_rva=0x1135EB0 replication_system_update_rva=0x3158380 replication_command_buffer_flush_rva=0x4287190 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled character_creation_logging=net_id_resolved_entity replication_enqueue_correlation=command_buffer_and_authority message_mutation=0",
                         gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
                         gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
@@ -1968,10 +1981,21 @@ bool Hooks::OnAbstractPeerBindSocket(
 
     if (gameServer != nullptr && static_cast<net::AbstractPeer*>(gameServer) == peer) {
         markedSyntheticPeerMask_.store(0, std::memory_order_release);
-        entityReplicationPreBindCaptureEnabled_.store(true, std::memory_order_release);
-        entityReplicationCommandBufferMismatchCount_.store(0, std::memory_order_release);
         EntityReplicationTraceForCurrentThread = {};
-        {
+        if (gExtender->GetConfig().EnableLoadProtocolWireTrace) {
+            size_t retained{};
+            uint64_t total{};
+            {
+                std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
+                retained = entityReplicationPendingInsertCount_;
+                total = entityReplicationPendingInsertTotal_;
+            }
+            INFO("[MP_REPLICATION_TRACE] event=server_bind_history_preserved phase=server_bind capture_scope=process capture_enabled=%u retained=%llu total=%llu overwritten=%u message_mutation=0",
+                entityReplicationPreBindCaptureEnabled_.load(std::memory_order_acquire) ? 1u : 0u,
+                static_cast<unsigned long long>(retained),
+                static_cast<unsigned long long>(total),
+                total > entityReplicationPendingInserts_.size() ? 1u : 0u);
+        } else {
             std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
             entityReplicationCommandEnqueueCallerRvas_.clear();
             entityReplicationAuthorityInsertCallerRvas_.clear();
