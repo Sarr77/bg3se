@@ -2200,6 +2200,11 @@ net::ProtocolResult Hooks::OnServerCharacterCreationProtocolProcessMessage(
             static_cast<unsigned>(field30),
             static_cast<unsigned>(field38),
             static_cast<unsigned>(field3C));
+        if (messageId == 240 && resolvedEntityHandle != 0) {
+            entityReplicationPreBindCaptureEnabled_.store(false, std::memory_order_release);
+            INFO("[MP_REPLICATION_TRACE] event=prebind_capture_stopped phase=character_create_resolved msg_id=240 entity_handle=0x%016llX capture_scope=process capture_enabled=0 message_mutation=0",
+                static_cast<unsigned long long>(resolvedEntityHandle));
+        }
     }
 
     auto const result = wrapped(protocol, unused, context, message);
@@ -2345,8 +2350,8 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
         }
     }
 
-    if (isServerCommandBuffer && entityReplicationPreBindCaptureEnabled_.exchange(
-            false, std::memory_order_acq_rel)) {
+    if (isServerCommandBuffer
+        && entityReplicationPreBindCaptureEnabled_.load(std::memory_order_acquire)) {
         auto const commandReplicateEntities = reinterpret_cast<void*>(address + 0x48);
         size_t scanned{};
         uint64_t total{};
@@ -2354,6 +2359,10 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
         size_t matched{};
         size_t promoted{};
         uint32_t firstProducerThread{};
+        void* sampleSet{};
+        uint64_t sampleHandle{};
+        uintptr_t sampleCallerRva{};
+        uint32_t sampleThread{};
         {
             std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
             scanned = entityReplicationPendingInsertCount_;
@@ -2361,6 +2370,12 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
             overwritten = total > entityReplicationPendingInserts_.size();
             for (size_t i = 0; i < entityReplicationPendingInsertCount_; i++) {
                 auto const& pending = entityReplicationPendingInserts_[i];
+                if (sampleSet == nullptr) {
+                    sampleSet = pending.Set;
+                    sampleHandle = pending.EntityHandle;
+                    sampleCallerRva = pending.CallerRva;
+                    sampleThread = pending.ThreadId;
+                }
                 if (pending.Set == commandReplicateEntities
                     && pending.EntityHandle != 0
                     && entityReplicationCommandEnqueueCallerRvas_.size() < 65536) {
@@ -2381,8 +2396,8 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
             entityReplicationPendingInsertTotal_ = 0;
         }
 
-        if (BeginLoadProtocolWireTraceEvent(eventIndex)) {
-            INFO("[MP_REPLICATION_TRACE] event=prebind_inserts_promoted index=%u thread=%lu command_buffer=0x%p replicate_set=0x%p scanned=%llu total=%llu overwritten=%u matched=%llu promoted=%llu producer_thread=%lu authority_scope=server capture_scope=process capture_disabled=1 message_mutation=0",
+        if (total != 0 && BeginLoadProtocolWireTraceEvent(eventIndex)) {
+            INFO("[MP_REPLICATION_TRACE] event=pending_inserts_promoted index=%u thread=%lu command_buffer=0x%p replicate_set=0x%p scanned=%llu total=%llu overwritten=%u matched=%llu promoted=%llu producer_thread=%lu sample_set=0x%p sample_handle=0x%016llX sample_caller_rva=0x%llX sample_thread=%lu authority_scope=server capture_scope=process capture_continues=1 message_mutation=0",
                 eventIndex,
                 GetCurrentThreadId(),
                 commandBuffer,
@@ -2392,7 +2407,11 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
                 overwritten ? 1u : 0u,
                 static_cast<unsigned long long>(matched),
                 static_cast<unsigned long long>(promoted),
-                firstProducerThread);
+                firstProducerThread,
+                sampleSet,
+                static_cast<unsigned long long>(sampleHandle),
+                static_cast<unsigned long long>(sampleCallerRva),
+                sampleThread);
         }
     }
     wrapped(commandBuffer, host, replicationAuthority);
