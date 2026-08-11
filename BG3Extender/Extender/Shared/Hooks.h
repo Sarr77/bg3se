@@ -173,6 +173,7 @@ public:
 
 private:
     char const* GetLocalPeerMessageTraceSource(net::AbstractPeer* peer) const;
+    void TraceCharacterLifecycleEnqueue(net::AbstractPeer* peer, TPeerId peerId, net::Message* message);
     bool BeginLocalPeerMessageTraceEvent(uint32_t& eventIndex);
     bool BeginInitialPeerSerializerTelemetryEvent(uint32_t& eventIndex);
     bool BeginSocketOverrideSendTelemetryEvent(uint32_t& eventIndex);

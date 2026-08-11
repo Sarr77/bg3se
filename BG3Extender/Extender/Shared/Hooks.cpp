@@ -3294,6 +3294,8 @@ void Hooks::OnAbstractPeerSendMessageSinglePeer(
     TPeerId peerId,
     net::Message* message)
 {
+    TraceCharacterLifecycleEnqueue(peer, peerId, message);
+
     uint32_t eventIndex;
     if (BeginLocalPeerMessageTraceEvent(eventIndex)) {
         if (message != nullptr) {
@@ -3316,6 +3318,81 @@ void Hooks::OnAbstractPeerSendMessageSinglePeer(
     }
 
     wrapped(peer, peerId, message);
+}
+
+void Hooks::TraceCharacterLifecycleEnqueue(
+    net::AbstractPeer* peer,
+    TPeerId peerId,
+    net::Message* message)
+{
+    if (message == nullptr
+        || !gExtender->GetConfig().EnableLocalPeerMessageTrace
+        || !IsNativePeerLimitResearchBuild(gExtender->GetGameVersion())
+        || GetLocalPeerMessageTraceSource(peer) != std::string_view("server")) {
+        return;
+    }
+
+    auto const messageId = static_cast<uint32_t>(message->MsgId);
+    if (messageId != 26 && messageId != 31) {
+        return;
+    }
+
+    uintptr_t stackRvas[8]{};
+    auto const stackCount = CaptureGameReturnAddressRvas(stackRvas, std::size(stackRvas));
+    if (messageId == 26) {
+        auto const payload = reinterpret_cast<uint8_t const*>(message) + 0x28;
+        INFO("[MP_CHARACTER_LIFECYCLE_TRACE] event=enqueue msg_id=26 target_peer=%u field28=%u field29=%u stack_count=%u stack_rva_0=0x%llX stack_rva_1=0x%llX stack_rva_2=0x%llX stack_rva_3=0x%llX stack_rva_4=0x%llX stack_rva_5=0x%llX stack_rva_6=0x%llX stack_rva_7=0x%llX message_mutation=0",
+            static_cast<unsigned>(peerId),
+            static_cast<unsigned>(payload[0]),
+            static_cast<unsigned>(payload[1]),
+            static_cast<unsigned>(stackCount),
+            static_cast<unsigned long long>(stackRvas[0]),
+            static_cast<unsigned long long>(stackRvas[1]),
+            static_cast<unsigned long long>(stackRvas[2]),
+            static_cast<unsigned long long>(stackRvas[3]),
+            static_cast<unsigned long long>(stackRvas[4]),
+            static_cast<unsigned long long>(stackRvas[5]),
+            static_cast<unsigned long long>(stackRvas[6]),
+            static_cast<unsigned long long>(stackRvas[7]));
+        return;
+    }
+
+    // Exact-build serializer RVA 0x11C6250 receives Message + 0x28 as a
+    // LegacyArray<uint64_t>: pointer at +0, capacity at +8, count at +0xC.
+    auto const assignment = reinterpret_cast<uint8_t const*>(message) + 0x28;
+    auto const entries = *reinterpret_cast<uint64_t const* const*>(assignment);
+    auto const capacity = *reinterpret_cast<uint32_t const*>(assignment + 0x8);
+    auto const count = *reinterpret_cast<uint32_t const*>(assignment + 0xC);
+    uint64_t values[8]{};
+    auto const copied = entries != nullptr && count <= capacity && count <= 64
+        ? std::min<size_t>(count, std::size(values))
+        : 0;
+    if (copied != 0) {
+        memcpy(values, entries, copied * sizeof(uint64_t));
+    }
+
+    INFO("[MP_CHARACTER_LIFECYCLE_TRACE] event=enqueue msg_id=31 target_peer=%u count=%u capacity=%u copied=%u entry_0=0x%016llX entry_1=0x%016llX entry_2=0x%016llX entry_3=0x%016llX entry_4=0x%016llX entry_5=0x%016llX entry_6=0x%016llX entry_7=0x%016llX stack_count=%u stack_rva_0=0x%llX stack_rva_1=0x%llX stack_rva_2=0x%llX stack_rva_3=0x%llX stack_rva_4=0x%llX stack_rva_5=0x%llX stack_rva_6=0x%llX stack_rva_7=0x%llX message_mutation=0",
+        static_cast<unsigned>(peerId),
+        count,
+        capacity,
+        static_cast<unsigned>(copied),
+        static_cast<unsigned long long>(values[0]),
+        static_cast<unsigned long long>(values[1]),
+        static_cast<unsigned long long>(values[2]),
+        static_cast<unsigned long long>(values[3]),
+        static_cast<unsigned long long>(values[4]),
+        static_cast<unsigned long long>(values[5]),
+        static_cast<unsigned long long>(values[6]),
+        static_cast<unsigned long long>(values[7]),
+        static_cast<unsigned>(stackCount),
+        static_cast<unsigned long long>(stackRvas[0]),
+        static_cast<unsigned long long>(stackRvas[1]),
+        static_cast<unsigned long long>(stackRvas[2]),
+        static_cast<unsigned long long>(stackRvas[3]),
+        static_cast<unsigned long long>(stackRvas[4]),
+        static_cast<unsigned long long>(stackRvas[5]),
+        static_cast<unsigned long long>(stackRvas[6]),
+        static_cast<unsigned long long>(stackRvas[7]));
 }
 
 void Hooks::OnAbstractPeerSendMessageMultiPeerMoveIds(
