@@ -68,6 +68,9 @@ public:
     void* OnAlternateEntityHandleSetInsert(
         void* (*wrapped)(void*, void*, uint64_t const*),
         void* set, void* result, uint64_t const* entityHandle);
+    void* OnEntityHandleArrayAppend(
+        void* (*wrapped)(void*, uint64_t const*),
+        void* array, uint64_t const* entityHandle);
     void OnEntityReplicationSystemUpdate(
         void (*wrapped)(void*, void*),
         void* replicationSystem, void* context);
@@ -125,6 +128,9 @@ public:
     enum class AlternateEntityHandleSetInsertTag{};
     WrappableFunction<AlternateEntityHandleSetInsertTag,
         void*(void*, void*, uint64_t const*)> ecs__AlternateEntityHandleSet__Insert;
+    enum class EntityHandleArrayAppendTag{};
+    WrappableFunction<EntityHandleArrayAppendTag,
+        void*(void*, uint64_t const*)> ecs__EntityHandleArray__Append;
     enum class EntityReplicationSystemUpdateTag{};
     WrappableFunction<EntityReplicationSystemUpdateTag,
         void(void*, void*)> ecs__EntityReplicationSystem__Update;
