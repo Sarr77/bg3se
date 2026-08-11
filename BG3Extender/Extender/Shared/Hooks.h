@@ -74,6 +74,9 @@ public:
     void* OnEntityReplicationCommandSetInsert(
         void* (*wrapped)(void*, void*, uint64_t const*),
         void* set, void* result, uint64_t const* entityHandle);
+    void OnEntityReplicationCommandBufferReplicate(
+        void (*wrapped)(void*, uint64_t const*),
+        void* context, uint64_t const* entityHandle);
     void OnEntityReplicationSystemUpdate(
         void (*wrapped)(void*, void*),
         void* replicationSystem, void* context);
@@ -137,6 +140,9 @@ public:
     enum class EntityReplicationCommandSetInsertTag{};
     WrappableFunction<EntityReplicationCommandSetInsertTag,
         void*(void*, void*, uint64_t const*)> ecs__EntityReplicationCommandSet__Insert;
+    enum class EntityReplicationCommandBufferReplicateTag{};
+    WrappableFunction<EntityReplicationCommandBufferReplicateTag,
+        void(void*, uint64_t const*)> ecs__EntityReplicationCommandBuffer__Replicate;
     enum class EntityReplicationSystemUpdateTag{};
     WrappableFunction<EntityReplicationSystemUpdateTag,
         void(void*, void*)> ecs__EntityReplicationSystem__Update;
