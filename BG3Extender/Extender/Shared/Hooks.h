@@ -62,6 +62,9 @@ public:
     net::ProtocolResult OnServerCharacterCreationProtocolProcessMessage(
         net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
         net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
+    void* OnEntityHandleSetInsert(
+        void* (*wrapped)(void*, void*, uint64_t const*),
+        void* set, void* result, uint64_t const* entityHandle);
     uint8_t OnLobbyMembershipCheck(uint8_t (*wrapped)(void*, int8_t), void* lobby, int8_t backend);
     uint8_t OnLobbyIsReady(uint8_t (*wrapped)(void*), void* lobby);
 
@@ -107,6 +110,9 @@ public:
     enum class ServerCharacterCreationProtocolProcessMessageTag{};
     WrappableFunction<ServerCharacterCreationProtocolProcessMessageTag,
         net::ProtocolResult(net::Protocol*, void*, net::MessageContext*, net::Message*)> eocnet__ServerCharacterCreationProtocol__ProcessMessage;
+    enum class EntityHandleSetInsertTag{};
+    WrappableFunction<EntityHandleSetInsertTag,
+        void*(void*, void*, uint64_t const*)> ecs__EntityHandleSet__Insert;
     enum class LobbyMembershipCheckTag{};
     WrappableFunction<LobbyMembershipCheckTag, uint8_t(void*, int8_t)> eocnet__Lobby__CheckMembership;
     enum class LobbyIsReadyTag{};
@@ -145,6 +151,8 @@ private:
         net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
     bool EnsureLocalPeerTransportMapping(void* steamSocketOverride);
     bool IsMarkedSyntheticPeer(TPeerId peerId) const;
+    uintptr_t FindGameReturnAddressRva() const;
+    uintptr_t FindEntityReplicationEnqueueCallerRva(uint64_t entityHandle);
 
     struct PendingPartyWinReceive
     {
@@ -172,6 +180,8 @@ private:
     void* localPeerTransportMappedOverride_{ nullptr };
     std::mutex pendingPartyWinReceivesMutex_;
     std::unordered_map<void*, PendingPartyWinReceive> pendingPartyWinReceives_;
+    std::mutex entityReplicationTraceMutex_;
+    std::unordered_map<uint64_t, uintptr_t> entityReplicationEnqueueCallerRvas_;
 };
 
 END_SE()
