@@ -24,6 +24,7 @@ decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)* decltype(Hooks::eoc
 decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__ServerCharacterCreationProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerCharacterCreationProtocol__ProcessMessage)::gHook;
 decltype(Hooks::ecs__EntityHandleSet__Insert)* decltype(Hooks::ecs__EntityHandleSet__Insert)::gHook;
+decltype(Hooks::ecs__AlternateEntityHandleSet__Insert)* decltype(Hooks::ecs__AlternateEntityHandleSet__Insert)::gHook;
 decltype(Hooks::ecs__EntityReplicationSystem__Update)* decltype(Hooks::ecs__EntityReplicationSystem__Update)::gHook;
 decltype(Hooks::ecs__EntityReplicationCommandBuffer__Flush)* decltype(Hooks::ecs__EntityReplicationCommandBuffer__Flush)::gHook;
 decltype(Hooks::eocnet__Lobby__CheckMembership)* decltype(Hooks::eocnet__Lobby__CheckMembership)::gHook;
@@ -51,6 +52,7 @@ static constexpr uintptr_t ClientLoadProtocolProcessMessageRva7398727 = 0x1FEE91
 static constexpr uintptr_t ServerLoadProtocolProcessMessageRva7398727 = 0x2F9F170;
 static constexpr uintptr_t ServerCharacterCreationProtocolProcessMessageRva7398727 = 0x373C020;
 static constexpr uintptr_t EntityHandleSetInsertRva7398727 = 0x1135EB0;
+static constexpr uintptr_t AlternateEntityHandleSetInsertRva7398727 = 0x3148D00;
 static constexpr uintptr_t EntityReplicationSystemUpdateRva7398727 = 0x3158380;
 static constexpr uintptr_t EntityReplicationCommandBufferFlushRva7398727 = 0x4287190;
 static constexpr uintptr_t NativePlayerSlotPatchRvas7398727[] = {
@@ -237,6 +239,23 @@ static constexpr uint8_t EntityHandleSetInsertPreamble7398727[] = {
     0xFF, 0xFF, 0xFF, 0xFF, 0x85, 0xC0, 0x7E, 0x54,
     0x4D, 0x8B, 0x10, 0x4C, 0x8B, 0xC8, 0x33, 0xD2,
     0x49, 0x8B, 0xC2, 0x49, 0xF7, 0xF1
+};
+
+static constexpr uint8_t AlternateEntityHandleSetInsertPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x48, 0x89, 0x6C,
+    0x24, 0x18, 0x48, 0x89, 0x74, 0x24, 0x20, 0x57,
+    0x41, 0x56, 0x41, 0x57, 0x48, 0x83, 0xEC, 0x20,
+    0x48, 0x63, 0x41, 0x08, 0x4D, 0x8B, 0xF0, 0x48,
+    0x8B, 0xF2, 0x48, 0x8B, 0xD9, 0x41, 0xBF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0x85, 0xC0, 0x7E, 0x53, 0x4D,
+    0x8B, 0x10, 0x4C, 0x8B, 0xC8, 0x33, 0xD2, 0x49,
+    0x8B, 0xC2, 0x49, 0xF7, 0xF1, 0x48, 0x8B, 0x03,
+    0x48, 0x63, 0xCA, 0x4C, 0x8B, 0xFA, 0x44, 0x8B,
+    0x04, 0x88, 0x45, 0x85, 0xC0, 0x78, 0x1A, 0x4C,
+    0x8B, 0x4B, 0x20, 0x41, 0x8B, 0xC8, 0x4D, 0x39,
+    0x14, 0xC9, 0x74, 0x13, 0x48, 0x8B, 0x43, 0x10,
+    0x44, 0x8B, 0x04, 0x88, 0x45, 0x85, 0xC0, 0x79,
+    0xEA, 0x41, 0xB8, 0xFF, 0xFF, 0xFF, 0xFF
 };
 
 static constexpr uint8_t EntityReplicationSystemUpdatePreamble7398727[] = {
@@ -860,6 +879,13 @@ static void* (*ResolveEntityHandleSetInsert())(void*, void*, uint64_t const*)
         EntityHandleSetInsertPreamble7398727);
 }
 
+static void* (*ResolveAlternateEntityHandleSetInsert())(void*, void*, uint64_t const*)
+{
+    return ResolveExactGameFunction<void* (*)(void*, void*, uint64_t const*)>(
+        AlternateEntityHandleSetInsertRva7398727,
+        AlternateEntityHandleSetInsertPreamble7398727);
+}
+
 static void (*ResolveEntityReplicationSystemUpdate())(void*, void*)
 {
     return ResolveExactGameFunction<void (*)(void*, void*)>(
@@ -1351,6 +1377,9 @@ void Hooks::Startup()
         auto const entityHandleSetInsertTarget = enableLoadProtocolWireTrace
             ? ResolveEntityHandleSetInsert()
             : nullptr;
+        auto const alternateEntityHandleSetInsertTarget = enableLoadProtocolWireTrace
+            ? ResolveAlternateEntityHandleSetInsert()
+            : nullptr;
         auto const entityReplicationSystemUpdateTarget = enableLoadProtocolWireTrace
             ? ResolveEntityReplicationSystemUpdate()
             : nullptr;
@@ -1370,14 +1399,16 @@ void Hooks::Startup()
                 && (clientTarget == nullptr || serverTarget == nullptr
                     || characterCreationServerTarget == nullptr
                     || entityHandleSetInsertTarget == nullptr
+                    || alternateEntityHandleSetInsertTarget == nullptr
                     || entityReplicationSystemUpdateTarget == nullptr
                     || entityReplicationCommandBufferFlushTarget == nullptr))) {
-            ERR("[MP_LOAD_TRACE] event=disabled reason=receive_or_process_guard_failed receive=%u client=%u server=%u character_creation_server=%u entity_handle_set_insert=%u replication_system_update=%u replication_command_buffer_flush=%u",
+            ERR("[MP_LOAD_TRACE] event=disabled reason=receive_or_process_guard_failed receive=%u client=%u server=%u character_creation_server=%u entity_handle_set_insert=%u alternate_entity_handle_set_insert=%u replication_system_update=%u replication_command_buffer_flush=%u",
                 receiveTarget != nullptr ? 1u : 0u,
                 clientTarget != nullptr ? 1u : 0u,
                 serverTarget != nullptr ? 1u : 0u,
                 characterCreationServerTarget != nullptr ? 1u : 0u,
                 entityHandleSetInsertTarget != nullptr ? 1u : 0u,
+                alternateEntityHandleSetInsertTarget != nullptr ? 1u : 0u,
                 entityReplicationSystemUpdateTarget != nullptr ? 1u : 0u,
                 entityReplicationCommandBufferFlushTarget != nullptr ? 1u : 0u);
         } else if (!IsValidLoadProtocolWireTraceMaxEvents(
@@ -1396,6 +1427,7 @@ void Hooks::Startup()
                 eocnet__ServerLoadProtocol__ProcessMessage.Wrap(serverTarget);
                 eocnet__ServerCharacterCreationProtocol__ProcessMessage.Wrap(characterCreationServerTarget);
                 ecs__EntityHandleSet__Insert.Wrap(entityHandleSetInsertTarget);
+                ecs__AlternateEntityHandleSet__Insert.Wrap(alternateEntityHandleSetInsertTarget);
                 ecs__EntityReplicationSystem__Update.Wrap(entityReplicationSystemUpdateTarget);
                 ecs__EntityReplicationCommandBuffer__Flush.Wrap(entityReplicationCommandBufferFlushTarget);
             }
@@ -1412,6 +1444,8 @@ void Hooks::Startup()
                         &Hooks::OnServerCharacterCreationProtocolProcessMessage, this);
                     ecs__EntityHandleSet__Insert.SetWrapper(
                         &Hooks::OnEntityHandleSetInsert, this);
+                    ecs__AlternateEntityHandleSet__Insert.SetWrapper(
+                        &Hooks::OnAlternateEntityHandleSetInsert, this);
                     ecs__EntityReplicationSystem__Update.SetWrapper(
                         &Hooks::OnEntityReplicationSystemUpdate, this);
                     ecs__EntityReplicationCommandBuffer__Flush.SetWrapper(
@@ -1419,18 +1453,23 @@ void Hooks::Startup()
                     {
                         std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
                         entityReplicationCommandEnqueueCallerRvas_.clear();
+                        entityReplicationCommandEnqueueSourceRvas_.clear();
                         entityReplicationAuthorityInsertCallerRvas_.clear();
+                        entityReplicationCommandFlushHistory_.clear();
                         entityReplicationPendingInsertNext_ = 0;
                         entityReplicationPendingInsertCount_ = 0;
                         entityReplicationPendingInsertTotal_ = 0;
                     }
                     entityReplicationCommandBufferMismatchCount_.store(0, std::memory_order_release);
+                    entityReplicationServerFlushSequence_.store(0, std::memory_order_release);
+                    entityReplicationCommandSetInvalidLayoutCount_.store(0, std::memory_order_release);
+                    entityReplicationAlternateInsertMatchCount_.store(0, std::memory_order_release);
                     entityReplicationServerCommandReplicateSet_.store(0, std::memory_order_release);
                     EntityReplicationTraceForCurrentThread = {};
                     entityReplicationPreBindCaptureEnabled_.store(true, std::memory_order_release);
                     INFO("[MP_REPLICATION_TRACE] event=prebind_capture_started phase=hook_install capture_scope=process capacity=%llu capture_enabled=1 message_mutation=0",
                         static_cast<unsigned long long>(entityReplicationPendingInserts_.size()));
-                    INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 character_creation_server_process_rva=0x373C020 entity_handle_set_insert_rva=0x1135EB0 replication_system_update_rva=0x3158380 replication_command_buffer_flush_rva=0x4287190 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled character_creation_logging=net_id_resolved_entity replication_enqueue_correlation=command_buffer_and_authority message_mutation=0",
+                    INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 character_creation_server_process_rva=0x373C020 entity_handle_set_insert_rva=0x1135EB0 alternate_entity_handle_set_insert_rva=0x3148D00 replication_system_update_rva=0x3158380 replication_command_buffer_flush_rva=0x4287190 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled character_creation_logging=net_id_resolved_entity replication_enqueue_correlation=command_buffer_flush_history_and_insert_sources message_mutation=0",
                         gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
                         gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
                 }
@@ -1999,7 +2038,9 @@ bool Hooks::OnAbstractPeerBindSocket(
         } else {
             std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
             entityReplicationCommandEnqueueCallerRvas_.clear();
+            entityReplicationCommandEnqueueSourceRvas_.clear();
             entityReplicationAuthorityInsertCallerRvas_.clear();
+            entityReplicationCommandFlushHistory_.clear();
             entityReplicationPendingInsertNext_ = 0;
             entityReplicationPendingInsertCount_ = 0;
             entityReplicationPendingInsertTotal_ = 0;
@@ -2185,10 +2226,21 @@ net::ProtocolResult Hooks::OnServerCharacterCreationProtocolProcessMessage(
         auto const enqueueCallerRva = resolvedEntityHandle != 0
             ? FindEntityReplicationEnqueueCallerRva(resolvedEntityHandle)
             : 0;
+        auto const enqueueSourceRva = resolvedEntityHandle != 0
+            ? FindEntityReplicationEnqueueSourceRva(resolvedEntityHandle)
+            : 0;
         auto const authorityInsertCallerRva = resolvedEntityHandle != 0
             ? FindEntityReplicationAuthorityInsertCallerRva(resolvedEntityHandle)
             : 0;
-        INFO("[MP_CHARACTER_CREATE_TRACE] event=process_enter index=%u side=server protocol=character_creation thread=%lu msg_id=%u user_id=%u peer=%u net_id=0x%016llX resolved_entity_handle=0x%016llX replication_command_enqueue_caller_rva=0x%llX replication_authority_insert_caller_rva=0x%llX field30=%u field38=%u field3c=%u",
+        EntityReplicationCommandFlushHistory flushHistory{};
+        if (resolvedEntityHandle != 0) {
+            std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
+            auto const it = entityReplicationCommandFlushHistory_.find(resolvedEntityHandle);
+            if (it != entityReplicationCommandFlushHistory_.end()) {
+                flushHistory = it->second;
+            }
+        }
+        INFO("[MP_CHARACTER_CREATE_TRACE] event=process_enter index=%u side=server protocol=character_creation thread=%lu msg_id=%u user_id=%u peer=%u net_id=0x%016llX resolved_entity_handle=0x%016llX replication_command_enqueue_caller_rva=0x%llX replication_command_enqueue_source_rva=0x%llX replication_authority_insert_caller_rva=0x%llX replication_command_seen_in_flush=%u replication_command_first_flush=%llu replication_command_last_flush=%llu replication_command_flush_occurrences=%u field30=%u field38=%u field3c=%u",
             enterIndex,
             GetCurrentThreadId(),
             messageId,
@@ -2197,7 +2249,12 @@ net::ProtocolResult Hooks::OnServerCharacterCreationProtocolProcessMessage(
             static_cast<unsigned long long>(netId),
             static_cast<unsigned long long>(resolvedEntityHandle),
             static_cast<unsigned long long>(enqueueCallerRva),
+            static_cast<unsigned long long>(enqueueSourceRva),
             static_cast<unsigned long long>(authorityInsertCallerRva),
+            flushHistory.Occurrences != 0 ? 1u : 0u,
+            static_cast<unsigned long long>(flushHistory.FirstSequence),
+            static_cast<unsigned long long>(flushHistory.LastSequence),
+            flushHistory.Occurrences,
             static_cast<unsigned>(field30),
             static_cast<unsigned>(field38),
             static_cast<unsigned>(field3C));
@@ -2229,6 +2286,27 @@ void* Hooks::OnEntityHandleSetInsert(
     void* set,
     void* result,
     uint64_t const* entityHandle)
+{
+    return OnEntityHandleSetInsertImpl(
+        wrapped, set, result, entityHandle, EntityHandleSetInsertRva7398727);
+}
+
+void* Hooks::OnAlternateEntityHandleSetInsert(
+    void* (*wrapped)(void*, void*, uint64_t const*),
+    void* set,
+    void* result,
+    uint64_t const* entityHandle)
+{
+    return OnEntityHandleSetInsertImpl(
+        wrapped, set, result, entityHandle, AlternateEntityHandleSetInsertRva7398727);
+}
+
+void* Hooks::OnEntityHandleSetInsertImpl(
+    void* (*wrapped)(void*, void*, uint64_t const*),
+    void* set,
+    void* result,
+    uint64_t const* entityHandle,
+    uintptr_t sourceRva)
 {
     auto const eocServer = GetStaticSymbols().GetEoCServer();
     auto const gameServer = eocServer != nullptr ? eocServer->GameServer : nullptr;
@@ -2267,6 +2345,7 @@ void* Hooks::OnEntityHandleSetInsert(
                 set,
                 handle,
                 callerRva,
+                sourceRva,
                 GetCurrentThreadId()
             };
             entityReplicationPendingInsertNext_ = (entityReplicationPendingInsertNext_ + 1)
@@ -2278,9 +2357,23 @@ void* Hooks::OnEntityHandleSetInsert(
         }
         if (traceCommand && entityReplicationCommandEnqueueCallerRvas_.size() < 65536) {
             entityReplicationCommandEnqueueCallerRvas_.try_emplace(handle, callerRva);
+            entityReplicationCommandEnqueueSourceRvas_.try_emplace(handle, sourceRva);
         }
         if (traceAuthority && entityReplicationAuthorityInsertCallerRvas_.size() < 65536) {
             entityReplicationAuthorityInsertCallerRvas_.try_emplace(handle, callerRva);
+        }
+    }
+    if (traceCommand && inserted && sourceRva == AlternateEntityHandleSetInsertRva7398727) {
+        auto const matchIndex = entityReplicationAlternateInsertMatchCount_.fetch_add(
+            1, std::memory_order_acq_rel);
+        if (matchIndex < 64) {
+            INFO("[MP_REPLICATION_TRACE] event=alternate_insert_target_match match_index=%u thread=%lu set=0x%p entity_handle=0x%016llX caller_rva=0x%llX source_rva=0x%llX direct_set_tracking=1 message_mutation=0",
+                matchIndex,
+                GetCurrentThreadId(),
+                set,
+                static_cast<unsigned long long>(handle),
+                static_cast<unsigned long long>(callerRva),
+                static_cast<unsigned long long>(sourceRva));
         }
     }
     return wrappedResult;
@@ -2367,6 +2460,69 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
         }
     }
 
+    if (isServerCommandBuffer) {
+        auto const flushSequence = entityReplicationServerFlushSequence_.fetch_add(
+            1, std::memory_order_acq_rel) + 1;
+        uint64_t const* entries{};
+        int32_t count{};
+        auto const setAddress = reinterpret_cast<uintptr_t>(commandReplicateEntities);
+        memcpy(&entries, reinterpret_cast<void const*>(setAddress + 0x20), sizeof(entries));
+        memcpy(&count, reinterpret_cast<void const*>(setAddress + 0x2C), sizeof(count));
+        if (count >= 0 && count <= 65536 && (count == 0 || entries != nullptr)) {
+            uint64_t sampleHandle{};
+            size_t recorded{};
+            {
+                std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
+                for (int32_t i = 0; i < count; i++) {
+                    auto const handle = entries[i];
+                    if (handle == 0) {
+                        continue;
+                    }
+                    if (sampleHandle == 0) {
+                        sampleHandle = handle;
+                    }
+                    if (entityReplicationCommandFlushHistory_.size() >= 131072
+                        && entityReplicationCommandFlushHistory_.find(handle)
+                            == entityReplicationCommandFlushHistory_.end()) {
+                        continue;
+                    }
+                    auto& history = entityReplicationCommandFlushHistory_[handle];
+                    if (history.FirstSequence == 0) {
+                        history.FirstSequence = flushSequence;
+                    }
+                    history.LastSequence = flushSequence;
+                    history.Occurrences++;
+                    recorded++;
+                }
+            }
+            if (count > 0 && BeginLoadProtocolWireTraceEvent(eventIndex)) {
+                INFO("[MP_REPLICATION_TRACE] event=server_command_set_snapshot index=%u thread=%lu flush_sequence=%llu command_buffer=0x%p replicate_set=0x%p count=%d recorded=%llu sample_handle=0x%016llX entries=0x%p layout=entries_20_count_2c message_mutation=0",
+                    eventIndex,
+                    GetCurrentThreadId(),
+                    static_cast<unsigned long long>(flushSequence),
+                    commandBuffer,
+                    commandReplicateEntities,
+                    count,
+                    static_cast<unsigned long long>(recorded),
+                    static_cast<unsigned long long>(sampleHandle),
+                    entries);
+            }
+        } else {
+            auto const invalidIndex = entityReplicationCommandSetInvalidLayoutCount_.fetch_add(
+                1, std::memory_order_acq_rel);
+            if (invalidIndex < 16 && BeginLoadProtocolWireTraceEvent(eventIndex)) {
+                ERR("[MP_REPLICATION_TRACE] event=server_command_set_invalid_layout index=%u invalid_index=%u thread=%lu flush_sequence=%llu replicate_set=0x%p entries=0x%p count=%d expected_layout=entries_20_count_2c message_mutation=0",
+                    eventIndex,
+                    invalidIndex,
+                    GetCurrentThreadId(),
+                    static_cast<unsigned long long>(flushSequence),
+                    commandReplicateEntities,
+                    entries,
+                    count);
+            }
+        }
+    }
+
     if (isServerCommandBuffer && entityReplicationPreBindCaptureEnabled_.exchange(
             false, std::memory_order_acq_rel)) {
         size_t scanned{};
@@ -2378,6 +2534,7 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
         void* sampleSet{};
         uint64_t sampleHandle{};
         uintptr_t sampleCallerRva{};
+        uintptr_t sampleSourceRva{};
         uint32_t sampleThread{};
         {
             std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
@@ -2390,6 +2547,7 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
                     sampleSet = pending.Set;
                     sampleHandle = pending.EntityHandle;
                     sampleCallerRva = pending.CallerRva;
+                    sampleSourceRva = pending.SourceRva;
                     sampleThread = pending.ThreadId;
                 }
                 if (pending.Set == commandReplicateEntities
@@ -2402,6 +2560,9 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
                     auto const [_, inserted] = entityReplicationCommandEnqueueCallerRvas_.try_emplace(
                         pending.EntityHandle,
                         pending.CallerRva);
+                    entityReplicationCommandEnqueueSourceRvas_.try_emplace(
+                        pending.EntityHandle,
+                        pending.SourceRva);
                     if (inserted) {
                         promoted++;
                     }
@@ -2413,7 +2574,7 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
         }
 
         if (total != 0 && BeginLoadProtocolWireTraceEvent(eventIndex)) {
-            INFO("[MP_REPLICATION_TRACE] event=pending_inserts_promoted index=%u thread=%lu command_buffer=0x%p replicate_set=0x%p scanned=%llu total=%llu overwritten=%u matched=%llu promoted=%llu producer_thread=%lu sample_set=0x%p sample_handle=0x%016llX sample_caller_rva=0x%llX sample_thread=%lu authority_scope=server capture_scope=process capture_continues=0 direct_set_tracking=1 message_mutation=0",
+            INFO("[MP_REPLICATION_TRACE] event=pending_inserts_promoted index=%u thread=%lu command_buffer=0x%p replicate_set=0x%p scanned=%llu total=%llu overwritten=%u matched=%llu promoted=%llu producer_thread=%lu sample_set=0x%p sample_handle=0x%016llX sample_caller_rva=0x%llX sample_source_rva=0x%llX sample_thread=%lu authority_scope=server capture_scope=process capture_continues=0 direct_set_tracking=1 message_mutation=0",
                 eventIndex,
                 GetCurrentThreadId(),
                 commandBuffer,
@@ -2427,6 +2588,7 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
                 sampleSet,
                 static_cast<unsigned long long>(sampleHandle),
                 static_cast<unsigned long long>(sampleCallerRva),
+                static_cast<unsigned long long>(sampleSourceRva),
                 sampleThread);
         }
     }
@@ -2458,6 +2620,13 @@ uintptr_t Hooks::FindEntityReplicationEnqueueCallerRva(uint64_t entityHandle)
     std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
     auto const it = entityReplicationCommandEnqueueCallerRvas_.find(entityHandle);
     return it != entityReplicationCommandEnqueueCallerRvas_.end() ? it->second : 0;
+}
+
+uintptr_t Hooks::FindEntityReplicationEnqueueSourceRva(uint64_t entityHandle)
+{
+    std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
+    auto const it = entityReplicationCommandEnqueueSourceRvas_.find(entityHandle);
+    return it != entityReplicationCommandEnqueueSourceRvas_.end() ? it->second : 0;
 }
 
 uintptr_t Hooks::FindEntityReplicationAuthorityInsertCallerRva(uint64_t entityHandle)

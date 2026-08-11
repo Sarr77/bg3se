@@ -65,6 +65,9 @@ public:
     void* OnEntityHandleSetInsert(
         void* (*wrapped)(void*, void*, uint64_t const*),
         void* set, void* result, uint64_t const* entityHandle);
+    void* OnAlternateEntityHandleSetInsert(
+        void* (*wrapped)(void*, void*, uint64_t const*),
+        void* set, void* result, uint64_t const* entityHandle);
     void OnEntityReplicationSystemUpdate(
         void (*wrapped)(void*, void*),
         void* replicationSystem, void* context);
@@ -119,6 +122,9 @@ public:
     enum class EntityHandleSetInsertTag{};
     WrappableFunction<EntityHandleSetInsertTag,
         void*(void*, void*, uint64_t const*)> ecs__EntityHandleSet__Insert;
+    enum class AlternateEntityHandleSetInsertTag{};
+    WrappableFunction<AlternateEntityHandleSetInsertTag,
+        void*(void*, void*, uint64_t const*)> ecs__AlternateEntityHandleSet__Insert;
     enum class EntityReplicationSystemUpdateTag{};
     WrappableFunction<EntityReplicationSystemUpdateTag,
         void(void*, void*)> ecs__EntityReplicationSystem__Update;
@@ -165,7 +171,11 @@ private:
     bool IsMarkedSyntheticPeer(TPeerId peerId) const;
     uintptr_t FindGameReturnAddressRva() const;
     uintptr_t FindEntityReplicationEnqueueCallerRva(uint64_t entityHandle);
+    uintptr_t FindEntityReplicationEnqueueSourceRva(uint64_t entityHandle);
     uintptr_t FindEntityReplicationAuthorityInsertCallerRva(uint64_t entityHandle);
+    void* OnEntityHandleSetInsertImpl(
+        void* (*wrapped)(void*, void*, uint64_t const*),
+        void* set, void* result, uint64_t const* entityHandle, uintptr_t sourceRva);
 
     struct PendingPartyWinReceive
     {
@@ -181,7 +191,15 @@ private:
         void* Set{ nullptr };
         uint64_t EntityHandle{ 0 };
         uintptr_t CallerRva{ 0 };
+        uintptr_t SourceRva{ 0 };
         uint32_t ThreadId{ 0 };
+    };
+
+    struct EntityReplicationCommandFlushHistory
+    {
+        uint64_t FirstSequence{ 0 };
+        uint64_t LastSequence{ 0 };
+        uint32_t Occurrences{ 0 };
     };
 
     bool loaded_{ false };
@@ -205,12 +223,17 @@ private:
     std::atomic<bool> entityReplicationPreBindCaptureEnabled_{ false };
     std::atomic<uintptr_t> entityReplicationServerCommandReplicateSet_{ 0 };
     std::atomic<uint32_t> entityReplicationCommandBufferMismatchCount_{ 0 };
+    std::atomic<uint64_t> entityReplicationServerFlushSequence_{ 0 };
+    std::atomic<uint32_t> entityReplicationCommandSetInvalidLayoutCount_{ 0 };
+    std::atomic<uint32_t> entityReplicationAlternateInsertMatchCount_{ 0 };
     std::array<EntityReplicationPendingInsert, 8192> entityReplicationPendingInserts_{};
     size_t entityReplicationPendingInsertNext_{ 0 };
     size_t entityReplicationPendingInsertCount_{ 0 };
     uint64_t entityReplicationPendingInsertTotal_{ 0 };
     std::unordered_map<uint64_t, uintptr_t> entityReplicationCommandEnqueueCallerRvas_;
+    std::unordered_map<uint64_t, uintptr_t> entityReplicationCommandEnqueueSourceRvas_;
     std::unordered_map<uint64_t, uintptr_t> entityReplicationAuthorityInsertCallerRvas_;
+    std::unordered_map<uint64_t, EntityReplicationCommandFlushHistory> entityReplicationCommandFlushHistory_;
 };
 
 END_SE()
