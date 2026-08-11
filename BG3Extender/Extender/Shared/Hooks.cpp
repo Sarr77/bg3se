@@ -2642,7 +2642,11 @@ void Hooks::OnEntityReplicationCommandBufferReplicate(
         && commandBuffer + 0x48 == serverSet
         && entityHandle != nullptr;
     auto const handle = trace ? *entityHandle : 0;
-    auto const callerRva = trace ? FindGameReturnAddressRva() : 0;
+    uintptr_t stackRvas[8]{};
+    auto const stackCount = trace
+        ? CaptureGameReturnAddressRvas(stackRvas, std::size(stackRvas))
+        : 0;
+    auto const callerRva = stackCount != 0 ? stackRvas[0] : 0;
     wrapped(context, entityHandle);
     if (trace) {
         {
@@ -2653,13 +2657,22 @@ void Hooks::OnEntityReplicationCommandBufferReplicate(
                     = EntityReplicationCommandBufferReplicateRva7398727;
             }
         }
-        INFO("[MP_REPLICATION_TRACE] event=command_buffer_replicate_target_match thread=%lu context=0x%p command_buffer=0x%p entity_handle=0x%016llX caller_rva=0x%llX source_rva=0x%llX direct_command_buffer_tracking=1 message_mutation=0",
+        INFO("[MP_REPLICATION_TRACE] event=command_buffer_replicate_target_match thread=%lu context=0x%p command_buffer=0x%p entity_handle=0x%016llX caller_rva=0x%llX source_rva=0x%llX stack_count=%u stack_rva_0=0x%llX stack_rva_1=0x%llX stack_rva_2=0x%llX stack_rva_3=0x%llX stack_rva_4=0x%llX stack_rva_5=0x%llX stack_rva_6=0x%llX stack_rva_7=0x%llX direct_command_buffer_tracking=1 message_mutation=0",
             GetCurrentThreadId(),
             context,
             reinterpret_cast<void*>(commandBuffer),
             static_cast<unsigned long long>(handle),
             static_cast<unsigned long long>(callerRva),
-            static_cast<unsigned long long>(EntityReplicationCommandBufferReplicateRva7398727));
+            static_cast<unsigned long long>(EntityReplicationCommandBufferReplicateRva7398727),
+            static_cast<unsigned>(stackCount),
+            static_cast<unsigned long long>(stackRvas[0]),
+            static_cast<unsigned long long>(stackRvas[1]),
+            static_cast<unsigned long long>(stackRvas[2]),
+            static_cast<unsigned long long>(stackRvas[3]),
+            static_cast<unsigned long long>(stackRvas[4]),
+            static_cast<unsigned long long>(stackRvas[5]),
+            static_cast<unsigned long long>(stackRvas[6]),
+            static_cast<unsigned long long>(stackRvas[7]));
     }
 }
 
@@ -2969,9 +2982,13 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
     wrapped(commandBuffer, host, replicationAuthority);
 }
 
-uintptr_t Hooks::FindGameReturnAddressRva() const
+size_t Hooks::CaptureGameReturnAddressRvas(uintptr_t* rvas, size_t capacity) const
 {
-    void* frames[16]{};
+    if (rvas == nullptr || capacity == 0) {
+        return 0;
+    }
+
+    void* frames[32]{};
     auto const count = CaptureStackBackTrace(0, static_cast<DWORD>(std::size(frames)), frames, nullptr);
     auto const module = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
     if (module == 0) {
@@ -2980,13 +2997,20 @@ uintptr_t Hooks::FindGameReturnAddressRva() const
 
     // The exact BG3 build is below 0x70000000 bytes. Frames in other modules are
     // ignored so Detours and BG3SE wrapper frames do not hide the native caller.
-    for (USHORT i = 0; i < count; i++) {
+    size_t written = 0;
+    for (USHORT i = 0; i < count && written < capacity; i++) {
         auto const address = reinterpret_cast<uintptr_t>(frames[i]);
         if (address >= module && address < module + 0x70000000ull) {
-            return address - module;
+            rvas[written++] = address - module;
         }
     }
-    return 0;
+    return written;
+}
+
+uintptr_t Hooks::FindGameReturnAddressRva() const
+{
+    uintptr_t rva{};
+    return CaptureGameReturnAddressRvas(&rva, 1) != 0 ? rva : 0;
 }
 
 uintptr_t Hooks::FindEntityReplicationEnqueueCallerRva(uint64_t entityHandle)

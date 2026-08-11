@@ -187,6 +187,7 @@ private:
         net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
     bool EnsureLocalPeerTransportMapping(void* steamSocketOverride);
     bool IsMarkedSyntheticPeer(TPeerId peerId) const;
+    size_t CaptureGameReturnAddressRvas(uintptr_t* rvas, size_t capacity) const;
     uintptr_t FindGameReturnAddressRva() const;
     uintptr_t FindEntityReplicationEnqueueCallerRva(uint64_t entityHandle);
     uintptr_t FindEntityReplicationEnqueueSourceRva(uint64_t entityHandle);
