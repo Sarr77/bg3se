@@ -22,6 +22,7 @@ decltype(Hooks::net__AbstractPeer__ReceiveGeneralMessage)* decltype(Hooks::net__
 decltype(Hooks::eocnet__JoiningProtocol__ProcessMessage)* decltype(Hooks::eocnet__JoiningProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)::gHook;
+decltype(Hooks::eocnet__ServerCharacterCreationProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerCharacterCreationProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__Lobby__CheckMembership)* decltype(Hooks::eocnet__Lobby__CheckMembership)::gHook;
 decltype(Hooks::eocnet__Lobby__IsReady)* decltype(Hooks::eocnet__Lobby__IsReady)::gHook;
 decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)* decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)::gHook;
@@ -45,6 +46,7 @@ static constexpr uintptr_t AbstractPeerSendGeneralMessageRva7398727 = 0x4061F20;
 static constexpr uintptr_t AbstractPeerReceiveGeneralMessageRva7398727 = 0x4062320;
 static constexpr uintptr_t ClientLoadProtocolProcessMessageRva7398727 = 0x1FEE910;
 static constexpr uintptr_t ServerLoadProtocolProcessMessageRva7398727 = 0x2F9F170;
+static constexpr uintptr_t ServerCharacterCreationProtocolProcessMessageRva7398727 = 0x373C020;
 static constexpr uintptr_t NativePlayerSlotPatchRvas7398727[] = {
     0x14AF947,
     0x14B1020,
@@ -179,6 +181,13 @@ static constexpr uint8_t ServerLoadProtocolProcessMessagePreamble7398727[] = {
     0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
     0x48, 0x8D, 0x6C, 0x24, 0xF0, 0x48, 0x81, 0xEC,
     0x10, 0x01, 0x00, 0x00, 0x48, 0x8B, 0x05
+};
+
+static constexpr uint8_t ServerCharacterCreationProtocolProcessMessagePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x55, 0x56, 0x57,
+    0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+    0x48, 0x8D, 0xAC, 0x24, 0x40, 0xFB, 0xFF, 0xFF,
+    0x48, 0x81, 0xEC, 0xC0, 0x05, 0x00, 0x00
 };
 
 static constexpr uint8_t NativePlayerSlotPatchExpected7398727[][8] = {
@@ -767,6 +776,15 @@ static net::ProtocolResult (*ResolveServerLoadProtocolProcessMessage())(
         ServerLoadProtocolProcessMessagePreamble7398727);
 }
 
+static net::ProtocolResult (*ResolveServerCharacterCreationProtocolProcessMessage())(
+    net::Protocol*, void*, net::MessageContext*, net::Message*)
+{
+    return ResolveExactGameFunction<net::ProtocolResult (*)(
+        net::Protocol*, void*, net::MessageContext*, net::Message*)>(
+        ServerCharacterCreationProtocolProcessMessageRva7398727,
+        ServerCharacterCreationProtocolProcessMessagePreamble7398727);
+}
+
 static int (*ResolveWinSockRecvFrom())(uintptr_t, char*, int, int, void*, int*)
 {
     auto const module = GetModuleHandleW(L"Ws2_32.dll");
@@ -1238,6 +1256,9 @@ void Hooks::Startup()
         auto const serverTarget = enableLoadProtocolWireTrace
             ? ResolveServerLoadProtocolProcessMessage()
             : nullptr;
+        auto const characterCreationServerTarget = enableLoadProtocolWireTrace
+            ? ResolveServerCharacterCreationProtocolProcessMessage()
+            : nullptr;
         auto const receiveTarget = ResolveAbstractPeerReceiveGeneralMessage();
         if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
             auto const& version = gExtender->GetGameVersion();
@@ -1248,11 +1269,13 @@ void Hooks::Startup()
                 (unsigned)version.Build);
         } else if (receiveTarget == nullptr
             || (enableLoadProtocolWireTrace
-                && (clientTarget == nullptr || serverTarget == nullptr))) {
-            ERR("[MP_LOAD_TRACE] event=disabled reason=receive_or_process_guard_failed receive=%u client=%u server=%u",
+                && (clientTarget == nullptr || serverTarget == nullptr
+                    || characterCreationServerTarget == nullptr))) {
+            ERR("[MP_LOAD_TRACE] event=disabled reason=receive_or_process_guard_failed receive=%u client=%u server=%u character_creation_server=%u",
                 receiveTarget != nullptr ? 1u : 0u,
                 clientTarget != nullptr ? 1u : 0u,
-                serverTarget != nullptr ? 1u : 0u);
+                serverTarget != nullptr ? 1u : 0u,
+                characterCreationServerTarget != nullptr ? 1u : 0u);
         } else if (!IsValidLoadProtocolWireTraceMaxEvents(
                 gExtender->GetConfig().LoadProtocolWireTraceMaxEvents)
             || !IsValidLoadProtocolWireTraceMaxPayloadBytes(
@@ -1267,6 +1290,7 @@ void Hooks::Startup()
             if (enableLoadProtocolWireTrace) {
                 eocnet__ClientLoadProtocol__ProcessMessage.Wrap(clientTarget);
                 eocnet__ServerLoadProtocol__ProcessMessage.Wrap(serverTarget);
+                eocnet__ServerCharacterCreationProtocol__ProcessMessage.Wrap(characterCreationServerTarget);
             }
             auto const status = DetourTransactionCommit();
             if (status == NO_ERROR) {
@@ -1277,7 +1301,9 @@ void Hooks::Startup()
                         &Hooks::OnClientLoadProtocolProcessMessage, this);
                     eocnet__ServerLoadProtocol__ProcessMessage.SetWrapper(
                         &Hooks::OnServerLoadProtocolProcessMessage, this);
-                    INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled message_mutation=0",
+                    eocnet__ServerCharacterCreationProtocol__ProcessMessage.SetWrapper(
+                        &Hooks::OnServerCharacterCreationProtocolProcessMessage, this);
+                    INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 character_creation_server_process_rva=0x373C020 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled character_creation_logging=decoded_fields message_mutation=0",
                         gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
                         gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
                 }
@@ -1975,6 +2001,55 @@ net::ProtocolResult Hooks::OnServerLoadProtocolProcessMessage(
 {
     return OnLoadProtocolProcessMessage(
         "server", wrapped, protocol, unused, context, message);
+}
+
+net::ProtocolResult Hooks::OnServerCharacterCreationProtocolProcessMessage(
+    net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+    net::Protocol* protocol,
+    void* unused,
+    net::MessageContext* context,
+    net::Message* message)
+{
+    auto const messageId = message != nullptr ? static_cast<uint32_t>(message->MsgId) : UINT32_MAX;
+    auto const traceMessage = messageId >= 238 && messageId <= 240;
+    uint32_t enterIndex{};
+    auto const trace = traceMessage && BeginLoadProtocolWireTraceEvent(enterIndex);
+    uint64_t entityHandle{};
+    uint16_t field30{};
+    uint32_t field38{};
+    uint8_t field3C{};
+    if (trace) {
+        auto const bytes = reinterpret_cast<uint8_t const*>(message);
+        memcpy(&entityHandle, bytes + 0x28, sizeof(entityHandle));
+        memcpy(&field30, bytes + 0x30, sizeof(field30));
+        memcpy(&field38, bytes + 0x38, sizeof(field38));
+        memcpy(&field3C, bytes + 0x3C, sizeof(field3C));
+        INFO("[MP_CHARACTER_CREATE_TRACE] event=process_enter index=%u side=server protocol=character_creation thread=%lu msg_id=%u user_id=%u peer=%u entity_handle=0x%016llX field30=%u field38=%u field3c=%u",
+            enterIndex,
+            GetCurrentThreadId(),
+            messageId,
+            context != nullptr ? context->UserID.Id : UserId::Unassigned,
+            context != nullptr ? static_cast<unsigned>(context->UserID.GetPeerId()) : UINT32_MAX,
+            static_cast<unsigned long long>(entityHandle),
+            static_cast<unsigned>(field30),
+            static_cast<unsigned>(field38),
+            static_cast<unsigned>(field3C));
+    }
+
+    auto const result = wrapped(protocol, unused, context, message);
+
+    uint32_t exitIndex{};
+    if (trace && BeginLoadProtocolWireTraceEvent(exitIndex)) {
+        INFO("[MP_CHARACTER_CREATE_TRACE] event=process_exit index=%u call_index=%u side=server protocol=character_creation thread=%lu msg_id=%u result=%d user_id=%u entity_handle=0x%016llX",
+            exitIndex,
+            enterIndex,
+            GetCurrentThreadId(),
+            messageId,
+            static_cast<int>(result),
+            context != nullptr ? context->UserID.Id : UserId::Unassigned,
+            static_cast<unsigned long long>(entityHandle));
+    }
+    return result;
 }
 
 net::ProtocolResult Hooks::OnLoadProtocolProcessMessage(
