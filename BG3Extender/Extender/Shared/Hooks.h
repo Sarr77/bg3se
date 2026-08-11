@@ -65,6 +65,9 @@ public:
     void* OnEntityHandleSetInsert(
         void* (*wrapped)(void*, void*, uint64_t const*),
         void* set, void* result, uint64_t const* entityHandle);
+    void OnEntityReplicationSystemUpdate(
+        void (*wrapped)(void*, void*),
+        void* replicationSystem, void* context);
     void OnEntityReplicationCommandBufferFlush(
         void (*wrapped)(void*, void*, void*),
         void* commandBuffer, void* host, void* replicationAuthority);
@@ -116,6 +119,9 @@ public:
     enum class EntityHandleSetInsertTag{};
     WrappableFunction<EntityHandleSetInsertTag,
         void*(void*, void*, uint64_t const*)> ecs__EntityHandleSet__Insert;
+    enum class EntityReplicationSystemUpdateTag{};
+    WrappableFunction<EntityReplicationSystemUpdateTag,
+        void(void*, void*)> ecs__EntityReplicationSystem__Update;
     enum class EntityReplicationCommandBufferFlushTag{};
     WrappableFunction<EntityReplicationCommandBufferFlushTag,
         void(void*, void*, void*)> ecs__EntityReplicationCommandBuffer__Flush;
@@ -188,7 +194,7 @@ private:
     std::mutex pendingPartyWinReceivesMutex_;
     std::unordered_map<void*, PendingPartyWinReceive> pendingPartyWinReceives_;
     std::mutex entityReplicationTraceMutex_;
-    std::atomic<uintptr_t> entityReplicationCommandBuffer_{ 0 };
+    std::atomic<uint32_t> entityReplicationCommandBufferMismatchCount_{ 0 };
     std::unordered_map<uint64_t, uintptr_t> entityReplicationCommandEnqueueCallerRvas_;
     std::unordered_map<uint64_t, uintptr_t> entityReplicationAuthorityInsertCallerRvas_;
 };

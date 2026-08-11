@@ -24,6 +24,7 @@ decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)* decltype(Hooks::eoc
 decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__ServerCharacterCreationProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerCharacterCreationProtocol__ProcessMessage)::gHook;
 decltype(Hooks::ecs__EntityHandleSet__Insert)* decltype(Hooks::ecs__EntityHandleSet__Insert)::gHook;
+decltype(Hooks::ecs__EntityReplicationSystem__Update)* decltype(Hooks::ecs__EntityReplicationSystem__Update)::gHook;
 decltype(Hooks::ecs__EntityReplicationCommandBuffer__Flush)* decltype(Hooks::ecs__EntityReplicationCommandBuffer__Flush)::gHook;
 decltype(Hooks::eocnet__Lobby__CheckMembership)* decltype(Hooks::eocnet__Lobby__CheckMembership)::gHook;
 decltype(Hooks::eocnet__Lobby__IsReady)* decltype(Hooks::eocnet__Lobby__IsReady)::gHook;
@@ -50,6 +51,7 @@ static constexpr uintptr_t ClientLoadProtocolProcessMessageRva7398727 = 0x1FEE91
 static constexpr uintptr_t ServerLoadProtocolProcessMessageRva7398727 = 0x2F9F170;
 static constexpr uintptr_t ServerCharacterCreationProtocolProcessMessageRva7398727 = 0x373C020;
 static constexpr uintptr_t EntityHandleSetInsertRva7398727 = 0x1135EB0;
+static constexpr uintptr_t EntityReplicationSystemUpdateRva7398727 = 0x3158380;
 static constexpr uintptr_t EntityReplicationCommandBufferFlushRva7398727 = 0x4287190;
 static constexpr uintptr_t NativePlayerSlotPatchRvas7398727[] = {
     0x14AF947,
@@ -63,6 +65,39 @@ static constexpr uintptr_t NativePlayerSlotPatchRvas7398727[] = {
 };
 static constexpr uint64_t LocalPeerTransportSyntheticIdBase = 0xE100000000000001ull;
 static constexpr uint32_t LocalPeerTransportSyntheticPeerCount = 8;
+
+struct EntityReplicationThreadTraceState
+{
+    uintptr_t ActiveCommandBuffer{ 0 };
+    std::array<uintptr_t, 8> DerivedCommandBuffers{};
+    std::array<uintptr_t, 8> ValidatedCommandBuffers{};
+};
+
+static thread_local EntityReplicationThreadTraceState EntityReplicationTraceForCurrentThread;
+
+template <size_t N>
+static bool MarkEntityReplicationCommandBufferSeen(
+    std::array<uintptr_t, N>& seen,
+    uintptr_t address)
+{
+    if (address == 0) {
+        return false;
+    }
+
+    for (auto const candidate : seen) {
+        if (candidate == address) {
+            return false;
+        }
+    }
+
+    for (auto& candidate : seen) {
+        if (candidate == 0) {
+            candidate = address;
+            return true;
+        }
+    }
+    return false;
+}
 static constexpr uint8_t SteamSocketOverrideSendPreamble7398727[] = {
     0x48, 0x89, 0x5C, 0x24, 0x10,
     0x48, 0x89, 0x6C, 0x24, 0x18,
@@ -203,6 +238,17 @@ static constexpr uint8_t EntityHandleSetInsertPreamble7398727[] = {
     0xFF, 0xFF, 0xFF, 0xFF, 0x85, 0xC0, 0x7E, 0x54,
     0x4D, 0x8B, 0x10, 0x4C, 0x8B, 0xC8, 0x33, 0xD2,
     0x49, 0x8B, 0xC2, 0x49, 0xF7, 0xF1
+};
+
+static constexpr uint8_t EntityReplicationSystemUpdatePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x18, 0x55, 0x56, 0x57,
+    0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+    0x48, 0x8D, 0xAC, 0x24, 0xB0, 0xFD, 0xFF, 0xFF,
+    0x48, 0x81, 0xEC, 0x50, 0x03, 0x00, 0x00,
+    0x48, 0x8B, 0x05, 0xBA, 0xD9, 0xD6, 0x02, 0x48,
+    0x33, 0xC4, 0x48, 0x89, 0x85, 0x40, 0x02, 0x00,
+    0x00, 0x48, 0x8B, 0xF2, 0x48, 0x89, 0x55, 0x90,
+    0x4C, 0x8B, 0xF9
 };
 
 static constexpr uint8_t EntityReplicationCommandBufferFlushPreamble7398727[] = {
@@ -815,6 +861,13 @@ static void* (*ResolveEntityHandleSetInsert())(void*, void*, uint64_t const*)
         EntityHandleSetInsertPreamble7398727);
 }
 
+static void (*ResolveEntityReplicationSystemUpdate())(void*, void*)
+{
+    return ResolveExactGameFunction<void (*)(void*, void*)>(
+        EntityReplicationSystemUpdateRva7398727,
+        EntityReplicationSystemUpdatePreamble7398727);
+}
+
 static void (*ResolveEntityReplicationCommandBufferFlush())(void*, void*, void*)
 {
     return ResolveExactGameFunction<void (*)(void*, void*, void*)>(
@@ -1299,6 +1352,9 @@ void Hooks::Startup()
         auto const entityHandleSetInsertTarget = enableLoadProtocolWireTrace
             ? ResolveEntityHandleSetInsert()
             : nullptr;
+        auto const entityReplicationSystemUpdateTarget = enableLoadProtocolWireTrace
+            ? ResolveEntityReplicationSystemUpdate()
+            : nullptr;
         auto const entityReplicationCommandBufferFlushTarget = enableLoadProtocolWireTrace
             ? ResolveEntityReplicationCommandBufferFlush()
             : nullptr;
@@ -1315,13 +1371,15 @@ void Hooks::Startup()
                 && (clientTarget == nullptr || serverTarget == nullptr
                     || characterCreationServerTarget == nullptr
                     || entityHandleSetInsertTarget == nullptr
+                    || entityReplicationSystemUpdateTarget == nullptr
                     || entityReplicationCommandBufferFlushTarget == nullptr))) {
-            ERR("[MP_LOAD_TRACE] event=disabled reason=receive_or_process_guard_failed receive=%u client=%u server=%u character_creation_server=%u entity_handle_set_insert=%u replication_command_buffer_flush=%u",
+            ERR("[MP_LOAD_TRACE] event=disabled reason=receive_or_process_guard_failed receive=%u client=%u server=%u character_creation_server=%u entity_handle_set_insert=%u replication_system_update=%u replication_command_buffer_flush=%u",
                 receiveTarget != nullptr ? 1u : 0u,
                 clientTarget != nullptr ? 1u : 0u,
                 serverTarget != nullptr ? 1u : 0u,
                 characterCreationServerTarget != nullptr ? 1u : 0u,
                 entityHandleSetInsertTarget != nullptr ? 1u : 0u,
+                entityReplicationSystemUpdateTarget != nullptr ? 1u : 0u,
                 entityReplicationCommandBufferFlushTarget != nullptr ? 1u : 0u);
         } else if (!IsValidLoadProtocolWireTraceMaxEvents(
                 gExtender->GetConfig().LoadProtocolWireTraceMaxEvents)
@@ -1339,6 +1397,7 @@ void Hooks::Startup()
                 eocnet__ServerLoadProtocol__ProcessMessage.Wrap(serverTarget);
                 eocnet__ServerCharacterCreationProtocol__ProcessMessage.Wrap(characterCreationServerTarget);
                 ecs__EntityHandleSet__Insert.Wrap(entityHandleSetInsertTarget);
+                ecs__EntityReplicationSystem__Update.Wrap(entityReplicationSystemUpdateTarget);
                 ecs__EntityReplicationCommandBuffer__Flush.Wrap(entityReplicationCommandBufferFlushTarget);
             }
             auto const status = DetourTransactionCommit();
@@ -1354,9 +1413,11 @@ void Hooks::Startup()
                         &Hooks::OnServerCharacterCreationProtocolProcessMessage, this);
                     ecs__EntityHandleSet__Insert.SetWrapper(
                         &Hooks::OnEntityHandleSetInsert, this);
+                    ecs__EntityReplicationSystem__Update.SetWrapper(
+                        &Hooks::OnEntityReplicationSystemUpdate, this);
                     ecs__EntityReplicationCommandBuffer__Flush.SetWrapper(
                         &Hooks::OnEntityReplicationCommandBufferFlush, this);
-                    INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 character_creation_server_process_rva=0x373C020 entity_handle_set_insert_rva=0x1135EB0 replication_command_buffer_flush_rva=0x4287190 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled character_creation_logging=net_id_resolved_entity replication_enqueue_correlation=command_buffer_and_authority message_mutation=0",
+                    INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 character_creation_server_process_rva=0x373C020 entity_handle_set_insert_rva=0x1135EB0 replication_system_update_rva=0x3158380 replication_command_buffer_flush_rva=0x4287190 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled character_creation_logging=net_id_resolved_entity replication_enqueue_correlation=command_buffer_and_authority message_mutation=0",
                         gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
                         gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
                 }
@@ -1908,7 +1969,8 @@ bool Hooks::OnAbstractPeerBindSocket(
 
     if (gameServer != nullptr && static_cast<net::AbstractPeer*>(gameServer) == peer) {
         markedSyntheticPeerMask_.store(0, std::memory_order_release);
-        entityReplicationCommandBuffer_.store(0, std::memory_order_release);
+        entityReplicationCommandBufferMismatchCount_.store(0, std::memory_order_release);
+        EntityReplicationTraceForCurrentThread = {};
         {
             std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
             entityReplicationCommandEnqueueCallerRvas_.clear();
@@ -2140,7 +2202,7 @@ void* Hooks::OnEntityHandleSetInsert(
     auto const replicateEntities = gameServer != nullptr
         ? static_cast<void*>(&gameServer->Replication.ReplicateEntities)
         : nullptr;
-    auto const commandBuffer = entityReplicationCommandBuffer_.load(std::memory_order_acquire);
+    auto const commandBuffer = EntityReplicationTraceForCurrentThread.ActiveCommandBuffer;
     auto const commandReplicateEntities = commandBuffer != 0
         ? reinterpret_cast<void*>(commandBuffer + 0x48)
         : nullptr;
@@ -2163,6 +2225,35 @@ void* Hooks::OnEntityHandleSetInsert(
     return wrappedResult;
 }
 
+void Hooks::OnEntityReplicationSystemUpdate(
+    void (*wrapped)(void*, void*),
+    void* replicationSystem,
+    void* context)
+{
+    auto const address = replicationSystem != nullptr
+        ? reinterpret_cast<uintptr_t>(replicationSystem) + 0x168
+        : 0;
+    auto const previousForThread = EntityReplicationTraceForCurrentThread.ActiveCommandBuffer;
+    EntityReplicationTraceForCurrentThread.ActiveCommandBuffer = address;
+
+    uint32_t eventIndex{};
+    if (MarkEntityReplicationCommandBufferSeen(
+            EntityReplicationTraceForCurrentThread.DerivedCommandBuffers,
+            address)
+        && BeginLoadProtocolWireTraceEvent(eventIndex)) {
+        INFO("[MP_REPLICATION_TRACE] event=command_buffer_derived index=%u thread=%lu replication_system=0x%p command_buffer=0x%p replicate_set=0x%p stop_replicate_set=0x%p update_rva=0x3158380 command_buffer_offset=0x168 message_mutation=0",
+            eventIndex,
+            GetCurrentThreadId(),
+            replicationSystem,
+            reinterpret_cast<void*>(address),
+            reinterpret_cast<void*>(address + 0x48),
+            reinterpret_cast<void*>(address + 0x78));
+    }
+
+    wrapped(replicationSystem, context);
+    EntityReplicationTraceForCurrentThread.ActiveCommandBuffer = previousForThread;
+}
+
 void Hooks::OnEntityReplicationCommandBufferFlush(
     void (*wrapped)(void*, void*, void*),
     void* commandBuffer,
@@ -2170,15 +2261,29 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
     void* replicationAuthority)
 {
     auto const address = reinterpret_cast<uintptr_t>(commandBuffer);
-    auto const previous = entityReplicationCommandBuffer_.exchange(address, std::memory_order_acq_rel);
+    auto const expected = EntityReplicationTraceForCurrentThread.ActiveCommandBuffer;
     uint32_t eventIndex{};
-    if (address != 0 && address != previous && BeginLoadProtocolWireTraceEvent(eventIndex)) {
-        INFO("[MP_REPLICATION_TRACE] event=command_buffer_bound index=%u thread=%lu command_buffer=0x%p replicate_set=0x%p stop_replicate_set=0x%p flush_rva=0x4287190 message_mutation=0",
+    if (address != 0 && address == expected
+        && MarkEntityReplicationCommandBufferSeen(
+            EntityReplicationTraceForCurrentThread.ValidatedCommandBuffers,
+            address)
+        && BeginLoadProtocolWireTraceEvent(eventIndex)) {
+        INFO("[MP_REPLICATION_TRACE] event=command_buffer_confirmed index=%u thread=%lu replication_system=0x%p command_buffer=0x%p update_rva=0x3158380 flush_rva=0x4287190 message_mutation=0",
             eventIndex,
             GetCurrentThreadId(),
-            commandBuffer,
-            reinterpret_cast<void*>(address + 0x48),
-            reinterpret_cast<void*>(address + 0x78));
+            reinterpret_cast<void*>(address - 0x168),
+            commandBuffer);
+    } else if (address != expected) {
+        auto const mismatchIndex = entityReplicationCommandBufferMismatchCount_.fetch_add(
+            1, std::memory_order_acq_rel);
+        if (mismatchIndex < 16 && BeginLoadProtocolWireTraceEvent(eventIndex)) {
+            ERR("[MP_REPLICATION_TRACE] event=command_buffer_mismatch index=%u mismatch_index=%u thread=%lu expected=0x%p actual=0x%p update_rva=0x3158380 flush_rva=0x4287190 message_mutation=0",
+                eventIndex,
+                mismatchIndex,
+                GetCurrentThreadId(),
+                reinterpret_cast<void*>(expected),
+                commandBuffer);
+        }
     }
     wrapped(commandBuffer, host, replicationAuthority);
 }
