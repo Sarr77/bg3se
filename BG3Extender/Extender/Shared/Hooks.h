@@ -194,6 +194,7 @@ private:
     std::mutex pendingPartyWinReceivesMutex_;
     std::unordered_map<void*, PendingPartyWinReceive> pendingPartyWinReceives_;
     std::mutex entityReplicationTraceMutex_;
+    std::atomic<bool> entityReplicationPreBindCaptureEnabled_{ false };
     std::atomic<uint32_t> entityReplicationCommandBufferMismatchCount_{ 0 };
     std::unordered_map<uint64_t, uintptr_t> entityReplicationCommandEnqueueCallerRvas_;
     std::unordered_map<uint64_t, uintptr_t> entityReplicationAuthorityInsertCallerRvas_;

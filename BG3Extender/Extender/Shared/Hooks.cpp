@@ -65,12 +65,25 @@ static constexpr uintptr_t NativePlayerSlotPatchRvas7398727[] = {
 };
 static constexpr uint64_t LocalPeerTransportSyntheticIdBase = 0xE100000000000001ull;
 static constexpr uint32_t LocalPeerTransportSyntheticPeerCount = 8;
+static constexpr size_t EntityReplicationPreBindInsertCapacity = 8192;
+
+struct EntityReplicationPendingInsert
+{
+    void* Set{ nullptr };
+    uint64_t EntityHandle{ 0 };
+    uintptr_t CallerRva{ 0 };
+};
 
 struct EntityReplicationThreadTraceState
 {
     uintptr_t ActiveCommandBuffer{ 0 };
     std::array<uintptr_t, 8> DerivedCommandBuffers{};
     std::array<uintptr_t, 8> ValidatedCommandBuffers{};
+    std::array<EntityReplicationPendingInsert,
+        EntityReplicationPreBindInsertCapacity> PendingInserts{};
+    size_t PendingInsertNext{ 0 };
+    size_t PendingInsertCount{ 0 };
+    uint64_t PendingInsertTotal{ 0 };
 };
 
 static thread_local EntityReplicationThreadTraceState EntityReplicationTraceForCurrentThread;
@@ -1969,6 +1982,7 @@ bool Hooks::OnAbstractPeerBindSocket(
 
     if (gameServer != nullptr && static_cast<net::AbstractPeer*>(gameServer) == peer) {
         markedSyntheticPeerMask_.store(0, std::memory_order_release);
+        entityReplicationPreBindCaptureEnabled_.store(true, std::memory_order_release);
         entityReplicationCommandBufferMismatchCount_.store(0, std::memory_order_release);
         EntityReplicationTraceForCurrentThread = {};
         {
@@ -2202,18 +2216,43 @@ void* Hooks::OnEntityHandleSetInsert(
     auto const replicateEntities = gameServer != nullptr
         ? static_cast<void*>(&gameServer->Replication.ReplicateEntities)
         : nullptr;
-    auto const commandBuffer = EntityReplicationTraceForCurrentThread.ActiveCommandBuffer;
+    auto commandBuffer = EntityReplicationTraceForCurrentThread.ActiveCommandBuffer;
+    if (commandBuffer == 0) {
+        for (auto const candidate : EntityReplicationTraceForCurrentThread.DerivedCommandBuffers) {
+            if (candidate != 0 && set == reinterpret_cast<void*>(candidate + 0x48)) {
+                commandBuffer = candidate;
+                break;
+            }
+        }
+    }
     auto const commandReplicateEntities = commandBuffer != 0
         ? reinterpret_cast<void*>(commandBuffer + 0x48)
         : nullptr;
     auto const traceAuthority = set == replicateEntities && entityHandle != nullptr;
     auto const traceCommand = set == commandReplicateEntities && entityHandle != nullptr;
     auto const trace = traceAuthority || traceCommand;
-    auto const handle = trace ? *entityHandle : 0;
-    auto const callerRva = trace ? FindGameReturnAddressRva() : 0;
+    auto const tracePreBind = entityReplicationPreBindCaptureEnabled_.load(std::memory_order_acquire)
+        && !trace && entityHandle != nullptr;
+    auto const handle = trace || tracePreBind ? *entityHandle : 0;
+    auto const callerRva = trace || tracePreBind ? FindGameReturnAddressRva() : 0;
 
     auto const wrappedResult = wrapped(set, result, entityHandle);
-    if (trace && result != nullptr && *reinterpret_cast<uint8_t const*>(result) != 0) {
+    auto const inserted = result != nullptr && *reinterpret_cast<uint8_t const*>(result) != 0;
+    if (tracePreBind && inserted) {
+        auto& state = EntityReplicationTraceForCurrentThread;
+        state.PendingInserts[state.PendingInsertNext] = {
+            set,
+            handle,
+            callerRva
+        };
+        state.PendingInsertNext = (state.PendingInsertNext + 1)
+            % state.PendingInserts.size();
+        state.PendingInsertCount = std::min(
+            state.PendingInsertCount + 1,
+            state.PendingInserts.size());
+        state.PendingInsertTotal++;
+    }
+    if (trace && inserted) {
         std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
         if (traceCommand && entityReplicationCommandEnqueueCallerRvas_.size() < 65536) {
             entityReplicationCommandEnqueueCallerRvas_.try_emplace(handle, callerRva);
@@ -2262,6 +2301,13 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
 {
     auto const address = reinterpret_cast<uintptr_t>(commandBuffer);
     auto const expected = EntityReplicationTraceForCurrentThread.ActiveCommandBuffer;
+    auto const eocServer = GetStaticSymbols().GetEoCServer();
+    auto const gameServer = eocServer != nullptr ? eocServer->GameServer : nullptr;
+    auto const serverAuthority = gameServer != nullptr
+        ? static_cast<void*>(&gameServer->Replication)
+        : nullptr;
+    auto const isServerCommandBuffer = serverAuthority != nullptr
+        && replicationAuthority == serverAuthority;
     uint32_t eventIndex{};
     if (address != 0 && address == expected
         && MarkEntityReplicationCommandBufferSeen(
@@ -2284,6 +2330,43 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
                 reinterpret_cast<void*>(expected),
                 commandBuffer);
         }
+    }
+
+    auto& traceState = EntityReplicationTraceForCurrentThread;
+    if (isServerCommandBuffer && entityReplicationPreBindCaptureEnabled_.exchange(
+            false, std::memory_order_acq_rel)) {
+        auto const commandReplicateEntities = reinterpret_cast<void*>(address + 0x48);
+        size_t promoted{};
+        {
+            std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
+            for (size_t i = 0; i < traceState.PendingInsertCount; i++) {
+                auto const& pending = traceState.PendingInserts[i];
+                if (pending.Set == commandReplicateEntities
+                    && pending.EntityHandle != 0
+                    && entityReplicationCommandEnqueueCallerRvas_.size() < 65536) {
+                    auto const [_, inserted] = entityReplicationCommandEnqueueCallerRvas_.try_emplace(
+                        pending.EntityHandle,
+                        pending.CallerRva);
+                    if (inserted) {
+                        promoted++;
+                    }
+                }
+            }
+        }
+
+        if (BeginLoadProtocolWireTraceEvent(eventIndex)) {
+            INFO("[MP_REPLICATION_TRACE] event=prebind_inserts_promoted index=%u thread=%lu command_buffer=0x%p replicate_set=0x%p scanned=%llu total=%llu overwritten=%u promoted=%llu authority_scope=server capture_disabled=1 message_mutation=0",
+                eventIndex,
+                GetCurrentThreadId(),
+                commandBuffer,
+                commandReplicateEntities,
+                static_cast<unsigned long long>(traceState.PendingInsertCount),
+                static_cast<unsigned long long>(traceState.PendingInsertTotal),
+                traceState.PendingInsertTotal > traceState.PendingInserts.size() ? 1u : 0u,
+                static_cast<unsigned long long>(promoted));
+        }
+        traceState.PendingInsertCount = 0;
+        traceState.PendingInsertTotal = 0;
     }
     wrapped(commandBuffer, host, replicationAuthority);
 }
