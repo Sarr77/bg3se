@@ -76,6 +76,188 @@ struct EntityReplicationThreadTraceState
 
 static thread_local EntityReplicationThreadTraceState EntityReplicationTraceForCurrentThread;
 
+struct EntityReplicationCountWriteRecord
+{
+    uintptr_t NextInstruction{ 0 };
+    uint64_t EntityHandle{ 0 };
+    int32_t CountAfter{ 0 };
+    uint32_t ThreadId{ 0 };
+};
+
+static constexpr size_t EntityReplicationCountWriteRecordCapacity = 4096;
+static std::array<EntityReplicationCountWriteRecord,
+    EntityReplicationCountWriteRecordCapacity> EntityReplicationCountWriteRecords;
+static std::atomic<uint32_t> EntityReplicationCountWriteRecordNext{ 0 };
+static std::atomic<uint32_t> EntityReplicationCountWriteRecordPublished{ 0 };
+static std::atomic<uint32_t> EntityReplicationCountWriteRecordDumped{ 0 };
+static std::atomic<uint32_t> EntityReplicationCountWatchState{ 0 };
+static std::atomic<uintptr_t> EntityReplicationCountWatchAddress{ 0 };
+static std::atomic<uintptr_t> EntityReplicationCountWatchSet{ 0 };
+static std::atomic<uint32_t> EntityReplicationCountWatchThreadId{ 0 };
+static void* EntityReplicationCountWatchHandler{ nullptr };
+static HANDLE EntityReplicationCountWatchArmEvent{ nullptr };
+
+static LONG WINAPI EntityReplicationCountWatchExceptionHandler(
+    EXCEPTION_POINTERS* exceptionPointers)
+{
+    if (exceptionPointers == nullptr
+        || exceptionPointers->ExceptionRecord == nullptr
+        || exceptionPointers->ContextRecord == nullptr
+        || exceptionPointers->ExceptionRecord->ExceptionCode != EXCEPTION_SINGLE_STEP
+        || (exceptionPointers->ContextRecord->Dr6 & 1u) == 0
+        || GetCurrentThreadId()
+            != EntityReplicationCountWatchThreadId.load(std::memory_order_relaxed)) {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    auto* context = exceptionPointers->ContextRecord;
+    context->Dr6 &= ~uintptr_t(1u);
+
+    auto const countAddress = EntityReplicationCountWatchAddress.load(
+        std::memory_order_relaxed);
+    auto const setAddress = EntityReplicationCountWatchSet.load(
+        std::memory_order_relaxed);
+    if (countAddress == 0 || setAddress == 0) {
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+    auto const count = *reinterpret_cast<volatile int32_t const*>(countAddress);
+    if (count <= 0 || count > 64) {
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+    auto const entries = *reinterpret_cast<uint64_t const* const*>(setAddress + 0x20);
+    if (entries == nullptr) {
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+    auto const entityHandle = entries[count - 1];
+    if (entityHandle == 0) {
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+    auto const recordIndex = EntityReplicationCountWriteRecordNext.fetch_add(
+        1, std::memory_order_relaxed);
+    if (recordIndex < EntityReplicationCountWriteRecords.size()) {
+        EntityReplicationCountWriteRecords[recordIndex] = {
+            static_cast<uintptr_t>(context->Rip),
+            entityHandle,
+            count,
+            GetCurrentThreadId()
+        };
+        std::atomic_thread_fence(std::memory_order_release);
+        EntityReplicationCountWriteRecordPublished.store(
+            recordIndex + 1, std::memory_order_release);
+    }
+
+    return EXCEPTION_CONTINUE_EXECUTION;
+}
+
+static DWORD WINAPI ArmEntityReplicationCountWatchpoint(void*)
+{
+    auto const threadId = EntityReplicationCountWatchThreadId.load(
+        std::memory_order_acquire);
+    auto const countAddress = EntityReplicationCountWatchAddress.load(
+        std::memory_order_acquire);
+    auto thread = OpenThread(
+        THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT
+            | THREAD_QUERY_INFORMATION,
+        FALSE,
+        threadId);
+    bool armed{};
+    bool suspended{};
+    if (thread != nullptr) {
+        suspended = SuspendThread(thread) != static_cast<DWORD>(-1);
+        if (suspended) {
+            CONTEXT context{};
+            context.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+            if (GetThreadContext(thread, &context)
+                && (context.Dr7 & 1u) == 0
+                && context.Dr0 == 0) {
+                context.Dr0 = countAddress;
+                context.Dr6 = 0;
+                context.Dr7 &= ~uintptr_t(0xF0003u);
+                context.Dr7 |= uintptr_t(1u | (1u << 16) | (3u << 18));
+                armed = SetThreadContext(thread, &context) != FALSE;
+            }
+            ResumeThread(thread);
+        }
+        CloseHandle(thread);
+    }
+
+    EntityReplicationCountWatchState.store(
+        armed ? 2u : 3u, std::memory_order_release);
+    if (EntityReplicationCountWatchArmEvent != nullptr) {
+        SetEvent(EntityReplicationCountWatchArmEvent);
+    }
+    return 0;
+}
+
+static uint32_t EnsureEntityReplicationCountWatchpoint(
+    uintptr_t setAddress,
+    uint32_t threadId)
+{
+    uint32_t expected{};
+    if (!EntityReplicationCountWatchState.compare_exchange_strong(
+            expected, 1u, std::memory_order_acq_rel)) {
+        return EntityReplicationCountWatchState.load(std::memory_order_acquire);
+    }
+
+    EntityReplicationCountWriteRecordNext.store(0, std::memory_order_release);
+    EntityReplicationCountWriteRecordPublished.store(0, std::memory_order_release);
+    EntityReplicationCountWriteRecordDumped.store(0, std::memory_order_release);
+    EntityReplicationCountWatchSet.store(setAddress, std::memory_order_release);
+    EntityReplicationCountWatchAddress.store(setAddress + 0x2C, std::memory_order_release);
+    EntityReplicationCountWatchThreadId.store(threadId, std::memory_order_release);
+
+    EntityReplicationCountWatchHandler = AddVectoredExceptionHandler(
+        1, EntityReplicationCountWatchExceptionHandler);
+    EntityReplicationCountWatchArmEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+    if (EntityReplicationCountWatchHandler == nullptr
+        || EntityReplicationCountWatchArmEvent == nullptr) {
+        EntityReplicationCountWatchState.store(3u, std::memory_order_release);
+        return 3u;
+    }
+
+    auto worker = CreateThread(
+        nullptr, 0, ArmEntityReplicationCountWatchpoint, nullptr, 0, nullptr);
+    if (worker == nullptr) {
+        EntityReplicationCountWatchState.store(3u, std::memory_order_release);
+        return 3u;
+    }
+    WaitForSingleObject(EntityReplicationCountWatchArmEvent, 1000);
+    CloseHandle(worker);
+    return EntityReplicationCountWatchState.load(std::memory_order_acquire);
+}
+
+static void DumpEntityReplicationCountWriteRecords(uint64_t flushSequence)
+{
+    auto const published = std::min<uint32_t>(
+        EntityReplicationCountWriteRecordPublished.load(std::memory_order_acquire),
+        static_cast<uint32_t>(EntityReplicationCountWriteRecords.size()));
+    auto dumped = EntityReplicationCountWriteRecordDumped.load(
+        std::memory_order_acquire);
+    auto const moduleBase = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
+    while (dumped < published) {
+        auto const& record = EntityReplicationCountWriteRecords[dumped];
+        auto const nextInstructionRva = record.NextInstruction >= moduleBase
+            ? record.NextInstruction - moduleBase
+            : 0;
+        INFO("[MP_REPLICATION_TRACE] event=command_count_write index=%u thread=%u flush_sequence=%llu count_after=%d entity_handle=0x%016llX next_instruction=0x%p next_instruction_rva=0x%llX watch_address=0x%p mechanism=hardware_watchpoint message_mutation=0",
+            dumped,
+            record.ThreadId,
+            static_cast<unsigned long long>(flushSequence),
+            record.CountAfter,
+            static_cast<unsigned long long>(record.EntityHandle),
+            reinterpret_cast<void*>(record.NextInstruction),
+            static_cast<unsigned long long>(nextInstructionRva),
+            reinterpret_cast<void*>(EntityReplicationCountWatchAddress.load(
+                std::memory_order_acquire)));
+        dumped++;
+    }
+    EntityReplicationCountWriteRecordDumped.store(dumped, std::memory_order_release);
+}
+
 template <size_t N>
 static bool MarkEntityReplicationCommandBufferSeen(
     std::array<uintptr_t, N>& seen,
@@ -1465,11 +1647,12 @@ void Hooks::Startup()
                     entityReplicationCommandSetInvalidLayoutCount_.store(0, std::memory_order_release);
                     entityReplicationAlternateInsertMatchCount_.store(0, std::memory_order_release);
                     entityReplicationServerCommandReplicateSet_.store(0, std::memory_order_release);
+                    EntityReplicationCountWatchState.store(0, std::memory_order_release);
                     EntityReplicationTraceForCurrentThread = {};
                     entityReplicationPreBindCaptureEnabled_.store(true, std::memory_order_release);
                     INFO("[MP_REPLICATION_TRACE] event=prebind_capture_started phase=hook_install capture_scope=process capacity=%llu capture_enabled=1 message_mutation=0",
                         static_cast<unsigned long long>(entityReplicationPendingInserts_.size()));
-                    INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 character_creation_server_process_rva=0x373C020 entity_handle_set_insert_rva=0x1135EB0 alternate_entity_handle_set_insert_rva=0x3148D00 replication_system_update_rva=0x3158380 replication_command_buffer_flush_rva=0x4287190 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled character_creation_logging=net_id_resolved_entity replication_enqueue_correlation=command_buffer_flush_history_and_insert_sources message_mutation=0",
+                    INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 character_creation_server_process_rva=0x373C020 entity_handle_set_insert_rva=0x1135EB0 alternate_entity_handle_set_insert_rva=0x3148D00 replication_system_update_rva=0x3158380 replication_command_buffer_flush_rva=0x4287190 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled character_creation_logging=net_id_resolved_entity replication_enqueue_correlation=command_buffer_flush_history_insert_sources_and_count_watchpoint message_mutation=0",
                         gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
                         gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
                 }
@@ -2463,6 +2646,18 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
     if (isServerCommandBuffer) {
         auto const flushSequence = entityReplicationServerFlushSequence_.fetch_add(
             1, std::memory_order_acq_rel) + 1;
+        auto const watchState = EnsureEntityReplicationCountWatchpoint(
+            reinterpret_cast<uintptr_t>(commandReplicateEntities),
+            GetCurrentThreadId());
+        if (flushSequence == 1) {
+            INFO("[MP_REPLICATION_TRACE] event=command_count_watchpoint state=%u thread=%lu set=0x%p count_address=0x%p hardware_slot=dr0 access=write length=4 fail_closed=1 message_mutation=0",
+                watchState,
+                GetCurrentThreadId(),
+                commandReplicateEntities,
+                reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(
+                    commandReplicateEntities) + 0x2C));
+        }
+        DumpEntityReplicationCountWriteRecords(flushSequence);
         uint64_t const* entries{};
         int32_t count{};
         auto const setAddress = reinterpret_cast<uintptr_t>(commandReplicateEntities);
