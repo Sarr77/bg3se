@@ -65,6 +65,9 @@ public:
     void* OnEntityHandleSetInsert(
         void* (*wrapped)(void*, void*, uint64_t const*),
         void* set, void* result, uint64_t const* entityHandle);
+    void OnEntityReplicationCommandBufferFlush(
+        void (*wrapped)(void*, void*, void*),
+        void* commandBuffer, void* host, void* replicationAuthority);
     uint8_t OnLobbyMembershipCheck(uint8_t (*wrapped)(void*, int8_t), void* lobby, int8_t backend);
     uint8_t OnLobbyIsReady(uint8_t (*wrapped)(void*), void* lobby);
 
@@ -113,6 +116,9 @@ public:
     enum class EntityHandleSetInsertTag{};
     WrappableFunction<EntityHandleSetInsertTag,
         void*(void*, void*, uint64_t const*)> ecs__EntityHandleSet__Insert;
+    enum class EntityReplicationCommandBufferFlushTag{};
+    WrappableFunction<EntityReplicationCommandBufferFlushTag,
+        void(void*, void*, void*)> ecs__EntityReplicationCommandBuffer__Flush;
     enum class LobbyMembershipCheckTag{};
     WrappableFunction<LobbyMembershipCheckTag, uint8_t(void*, int8_t)> eocnet__Lobby__CheckMembership;
     enum class LobbyIsReadyTag{};
@@ -153,6 +159,7 @@ private:
     bool IsMarkedSyntheticPeer(TPeerId peerId) const;
     uintptr_t FindGameReturnAddressRva() const;
     uintptr_t FindEntityReplicationEnqueueCallerRva(uint64_t entityHandle);
+    uintptr_t FindEntityReplicationAuthorityInsertCallerRva(uint64_t entityHandle);
 
     struct PendingPartyWinReceive
     {
@@ -181,7 +188,9 @@ private:
     std::mutex pendingPartyWinReceivesMutex_;
     std::unordered_map<void*, PendingPartyWinReceive> pendingPartyWinReceives_;
     std::mutex entityReplicationTraceMutex_;
-    std::unordered_map<uint64_t, uintptr_t> entityReplicationEnqueueCallerRvas_;
+    std::atomic<uintptr_t> entityReplicationCommandBuffer_{ 0 };
+    std::unordered_map<uint64_t, uintptr_t> entityReplicationCommandEnqueueCallerRvas_;
+    std::unordered_map<uint64_t, uintptr_t> entityReplicationAuthorityInsertCallerRvas_;
 };
 
 END_SE()
