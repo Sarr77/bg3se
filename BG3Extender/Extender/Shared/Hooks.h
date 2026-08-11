@@ -203,6 +203,7 @@ private:
     std::unordered_map<void*, PendingPartyWinReceive> pendingPartyWinReceives_;
     std::mutex entityReplicationTraceMutex_;
     std::atomic<bool> entityReplicationPreBindCaptureEnabled_{ false };
+    std::atomic<uintptr_t> entityReplicationServerCommandReplicateSet_{ 0 };
     std::atomic<uint32_t> entityReplicationCommandBufferMismatchCount_{ 0 };
     std::array<EntityReplicationPendingInsert, 8192> entityReplicationPendingInserts_{};
     size_t entityReplicationPendingInsertNext_{ 0 };

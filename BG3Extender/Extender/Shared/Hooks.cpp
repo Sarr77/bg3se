@@ -1425,6 +1425,7 @@ void Hooks::Startup()
                         entityReplicationPendingInsertTotal_ = 0;
                     }
                     entityReplicationCommandBufferMismatchCount_.store(0, std::memory_order_release);
+                    entityReplicationServerCommandReplicateSet_.store(0, std::memory_order_release);
                     EntityReplicationTraceForCurrentThread = {};
                     entityReplicationPreBindCaptureEnabled_.store(true, std::memory_order_release);
                     INFO("[MP_REPLICATION_TRACE] event=prebind_capture_started phase=hook_install capture_scope=process capacity=%llu capture_enabled=1 message_mutation=0",
@@ -2246,8 +2247,11 @@ void* Hooks::OnEntityHandleSetInsert(
     auto const commandReplicateEntities = commandBuffer != 0
         ? reinterpret_cast<void*>(commandBuffer + 0x48)
         : nullptr;
+    auto const serverCommandReplicateEntities = reinterpret_cast<void*>(
+        entityReplicationServerCommandReplicateSet_.load(std::memory_order_acquire));
     auto const traceAuthority = set == replicateEntities && entityHandle != nullptr;
-    auto const traceCommand = set == commandReplicateEntities && entityHandle != nullptr;
+    auto const traceCommand = (set == commandReplicateEntities
+        || set == serverCommandReplicateEntities) && entityHandle != nullptr;
     auto const trace = traceAuthority || traceCommand;
     auto const tracePreBind = entityReplicationPreBindCaptureEnabled_.load(std::memory_order_acquire)
         && !trace && entityHandle != nullptr;
@@ -2350,9 +2354,21 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
         }
     }
 
-    if (isServerCommandBuffer
-        && entityReplicationPreBindCaptureEnabled_.load(std::memory_order_acquire)) {
-        auto const commandReplicateEntities = reinterpret_cast<void*>(address + 0x48);
+    auto const commandReplicateEntities = reinterpret_cast<void*>(address + 0x48);
+    if (isServerCommandBuffer) {
+        auto const previousReplicateSet = entityReplicationServerCommandReplicateSet_.exchange(
+            reinterpret_cast<uintptr_t>(commandReplicateEntities), std::memory_order_acq_rel);
+        if (previousReplicateSet != reinterpret_cast<uintptr_t>(commandReplicateEntities)) {
+            INFO("[MP_REPLICATION_TRACE] event=server_command_replicate_set_learned thread=%lu command_buffer=0x%p replicate_set=0x%p previous_replicate_set=0x%p capture_scope=process direct_set_tracking=1 message_mutation=0",
+                GetCurrentThreadId(),
+                commandBuffer,
+                commandReplicateEntities,
+                reinterpret_cast<void*>(previousReplicateSet));
+        }
+    }
+
+    if (isServerCommandBuffer && entityReplicationPreBindCaptureEnabled_.exchange(
+            false, std::memory_order_acq_rel)) {
         size_t scanned{};
         uint64_t total{};
         bool overwritten{};
@@ -2397,7 +2413,7 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
         }
 
         if (total != 0 && BeginLoadProtocolWireTraceEvent(eventIndex)) {
-            INFO("[MP_REPLICATION_TRACE] event=pending_inserts_promoted index=%u thread=%lu command_buffer=0x%p replicate_set=0x%p scanned=%llu total=%llu overwritten=%u matched=%llu promoted=%llu producer_thread=%lu sample_set=0x%p sample_handle=0x%016llX sample_caller_rva=0x%llX sample_thread=%lu authority_scope=server capture_scope=process capture_continues=1 message_mutation=0",
+            INFO("[MP_REPLICATION_TRACE] event=pending_inserts_promoted index=%u thread=%lu command_buffer=0x%p replicate_set=0x%p scanned=%llu total=%llu overwritten=%u matched=%llu promoted=%llu producer_thread=%lu sample_set=0x%p sample_handle=0x%016llX sample_caller_rva=0x%llX sample_thread=%lu authority_scope=server capture_scope=process capture_continues=0 direct_set_tracking=1 message_mutation=0",
                 eventIndex,
                 GetCurrentThreadId(),
                 commandBuffer,
