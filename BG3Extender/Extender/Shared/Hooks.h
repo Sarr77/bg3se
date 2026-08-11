@@ -176,6 +176,14 @@ private:
         int* FromLength;
     };
 
+    struct EntityReplicationPendingInsert
+    {
+        void* Set{ nullptr };
+        uint64_t EntityHandle{ 0 };
+        uintptr_t CallerRva{ 0 };
+        uint32_t ThreadId{ 0 };
+    };
+
     bool loaded_{ false };
     bool networkingInitialized_{ false };
     bool nativePeerLimitUnexpectedValueLogged_{ false };
@@ -196,6 +204,10 @@ private:
     std::mutex entityReplicationTraceMutex_;
     std::atomic<bool> entityReplicationPreBindCaptureEnabled_{ false };
     std::atomic<uint32_t> entityReplicationCommandBufferMismatchCount_{ 0 };
+    std::array<EntityReplicationPendingInsert, 8192> entityReplicationPendingInserts_{};
+    size_t entityReplicationPendingInsertNext_{ 0 };
+    size_t entityReplicationPendingInsertCount_{ 0 };
+    uint64_t entityReplicationPendingInsertTotal_{ 0 };
     std::unordered_map<uint64_t, uintptr_t> entityReplicationCommandEnqueueCallerRvas_;
     std::unordered_map<uint64_t, uintptr_t> entityReplicationAuthorityInsertCallerRvas_;
 };
