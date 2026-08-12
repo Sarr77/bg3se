@@ -3043,7 +3043,7 @@ uint64_t Hooks::OnCharacterAssignmentEntityRoute(
     }
 
     auto const result = wrapped(peerContext, entityContext);
-    if ((peerId == 1 || peerId == 2)
+    if (peerId >= 1 && peerId <= 9
         && accessCount <= 64
         && (accessCount != 0 || result != 0)) {
         auto const index = characterAssignmentEntityRouteTraceEventCount_.fetch_add(
