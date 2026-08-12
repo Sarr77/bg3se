@@ -268,6 +268,248 @@ static void DumpEntityReplicationCountWriteRecords(uint64_t flushSequence)
     EntityReplicationCountWriteRecordDumped.store(dumped, std::memory_order_release);
 }
 
+// Exact-build ServerLobby layout used by the read-only process inspector:
+//   [module + 0x5FF23D0] -> global root
+//   [global root + 0x2C0] -> LobbyManager
+//   [LobbyManager + 0xA0] -> PlayerRecord[0]
+//   PlayerRecord size 0x20; ReadyByte + StateByte are the aligned uint16 at +0x1A.
+// DR0 is already reserved for the entity-replication count experiment, so this
+// observational watch uses DR1 and DR2 for the first two active lobby records.
+static constexpr uintptr_t ServerLobbyGlobalRootRva7398727 = 0x5FF23D0;
+static constexpr uintptr_t ServerLobbyManagerOffset7398727 = 0x2C0;
+static constexpr uintptr_t ServerLobbyPlayerRecordsOffset7398727 = 0xA0;
+static constexpr uintptr_t ServerLobbyPlayerRecordCountOffset7398727 = 0xAC;
+static constexpr uintptr_t ServerLobbyPlayerRecordSize7398727 = 0x20;
+static constexpr uintptr_t ServerLobbyReadyStateOffset7398727 = 0x1A;
+
+struct LobbyReadyStateWriteRecord
+{
+    uintptr_t NextInstruction{ 0 };
+    uintptr_t WatchAddress{ 0 };
+    uint16_t ValueBefore{ 0 };
+    uint16_t ValueAfter{ 0 };
+    uint32_t ThreadId{ 0 };
+    uint8_t PlayerRecordIndex{ 0 };
+    uint8_t HardwareSlot{ 0 };
+};
+
+static constexpr size_t LobbyReadyStateWriteRecordCapacity = 1024;
+static std::array<LobbyReadyStateWriteRecord,
+    LobbyReadyStateWriteRecordCapacity> LobbyReadyStateWriteRecords;
+static std::atomic<uint32_t> LobbyReadyStateWriteRecordNext{ 0 };
+static std::atomic<uint32_t> LobbyReadyStateWriteRecordPublished{ 0 };
+static std::atomic<uint32_t> LobbyReadyStateWriteRecordDumped{ 0 };
+static std::atomic<uint32_t> LobbyReadyStateWatchState{ 0 };
+static std::array<std::atomic<uintptr_t>, 2> LobbyReadyStateWatchAddresses{};
+static std::array<std::atomic<uint16_t>, 2> LobbyReadyStateWatchValues{};
+static std::atomic<uint32_t> LobbyReadyStateWatchThreadId{ 0 };
+static void* LobbyReadyStateWatchHandler{ nullptr };
+static HANDLE LobbyReadyStateWatchArmEvent{ nullptr };
+
+static LONG WINAPI LobbyReadyStateWatchExceptionHandler(
+    EXCEPTION_POINTERS* exceptionPointers)
+{
+    if (exceptionPointers == nullptr
+        || exceptionPointers->ExceptionRecord == nullptr
+        || exceptionPointers->ContextRecord == nullptr
+        || exceptionPointers->ExceptionRecord->ExceptionCode != EXCEPTION_SINGLE_STEP
+        || GetCurrentThreadId()
+            != LobbyReadyStateWatchThreadId.load(std::memory_order_relaxed)) {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    auto* context = exceptionPointers->ContextRecord;
+    auto const triggered = static_cast<uintptr_t>(context->Dr6);
+    bool handled{};
+    for (size_t index = 0; index < LobbyReadyStateWatchAddresses.size(); index++) {
+        auto const hardwareSlot = static_cast<uint8_t>(index + 1);
+        auto const statusBit = uintptr_t(1) << hardwareSlot;
+        if ((triggered & statusBit) == 0) {
+            continue;
+        }
+
+        handled = true;
+        context->Dr6 &= ~statusBit;
+        auto const watchAddress = LobbyReadyStateWatchAddresses[index].load(
+            std::memory_order_relaxed);
+        if (watchAddress == 0) {
+            continue;
+        }
+
+        auto const valueAfter = *reinterpret_cast<volatile uint16_t const*>(
+            watchAddress);
+        auto const valueBefore = LobbyReadyStateWatchValues[index].exchange(
+            valueAfter, std::memory_order_relaxed);
+        auto const recordIndex = LobbyReadyStateWriteRecordNext.fetch_add(
+            1, std::memory_order_relaxed);
+        if (recordIndex < LobbyReadyStateWriteRecords.size()) {
+            LobbyReadyStateWriteRecords[recordIndex] = {
+                static_cast<uintptr_t>(context->Rip),
+                watchAddress,
+                valueBefore,
+                valueAfter,
+                GetCurrentThreadId(),
+                static_cast<uint8_t>(index),
+                hardwareSlot
+            };
+            std::atomic_thread_fence(std::memory_order_release);
+            LobbyReadyStateWriteRecordPublished.store(
+                recordIndex + 1, std::memory_order_release);
+        }
+    }
+
+    return handled ? EXCEPTION_CONTINUE_EXECUTION : EXCEPTION_CONTINUE_SEARCH;
+}
+
+static DWORD WINAPI ArmLobbyReadyStateWatchpoints(void*)
+{
+    auto const threadId = LobbyReadyStateWatchThreadId.load(
+        std::memory_order_acquire);
+    auto thread = OpenThread(
+        THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT
+            | THREAD_QUERY_INFORMATION,
+        FALSE,
+        threadId);
+    bool armed{};
+    bool suspended{};
+    if (thread != nullptr) {
+        suspended = SuspendThread(thread) != static_cast<DWORD>(-1);
+        if (suspended) {
+            CONTEXT context{};
+            context.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+            if (GetThreadContext(thread, &context)
+                && (context.Dr7 & (uintptr_t(1) << 2)) == 0
+                && (context.Dr7 & (uintptr_t(1) << 4)) == 0
+                && context.Dr1 == 0
+                && context.Dr2 == 0) {
+                context.Dr1 = LobbyReadyStateWatchAddresses[0].load(
+                    std::memory_order_acquire);
+                context.Dr2 = LobbyReadyStateWatchAddresses[1].load(
+                    std::memory_order_acquire);
+                context.Dr6 = 0;
+                // Local enable + write + 2-byte length for DR1 and DR2.
+                context.Dr7 &= ~(
+                    (uintptr_t(3) << 2) | (uintptr_t(0xF) << 20)
+                    | (uintptr_t(3) << 4) | (uintptr_t(0xF) << 24));
+                context.Dr7 |=
+                    (uintptr_t(1) << 2) | (uintptr_t(1) << 20)
+                    | (uintptr_t(1) << 22)
+                    | (uintptr_t(1) << 4) | (uintptr_t(1) << 24)
+                    | (uintptr_t(1) << 26);
+                armed = SetThreadContext(thread, &context) != FALSE;
+            }
+            ResumeThread(thread);
+        }
+        CloseHandle(thread);
+    }
+
+    LobbyReadyStateWatchState.store(
+        armed ? 2u : 3u, std::memory_order_release);
+    if (LobbyReadyStateWatchArmEvent != nullptr) {
+        SetEvent(LobbyReadyStateWatchArmEvent);
+    }
+    return 0;
+}
+
+static uint32_t EnsureLobbyReadyStateWatchpoints(uint32_t threadId)
+{
+    uint32_t expected{};
+    if (!LobbyReadyStateWatchState.compare_exchange_strong(
+            expected, 1u, std::memory_order_acq_rel)) {
+        return LobbyReadyStateWatchState.load(std::memory_order_acquire);
+    }
+
+    auto const moduleBase = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
+    auto const globalRoot = *reinterpret_cast<uintptr_t const*>(
+        moduleBase + ServerLobbyGlobalRootRva7398727);
+    auto const lobbyManager = globalRoot != 0
+        ? *reinterpret_cast<uintptr_t const*>(
+            globalRoot + ServerLobbyManagerOffset7398727)
+        : 0;
+    auto const playerRecords = lobbyManager != 0
+        ? *reinterpret_cast<uintptr_t const*>(
+            lobbyManager + ServerLobbyPlayerRecordsOffset7398727)
+        : 0;
+    auto const playerRecordCount = lobbyManager != 0
+        ? *reinterpret_cast<uint32_t const*>(
+            lobbyManager + ServerLobbyPlayerRecordCountOffset7398727)
+        : 0;
+    if (playerRecords == 0 || playerRecordCount < 2 || playerRecordCount > 64) {
+        // The lobby records may not exist at the first replication tick. Keep
+        // this retryable; only a debugger/VEH setup failure is terminal.
+        LobbyReadyStateWatchState.store(0u, std::memory_order_release);
+        return 0u;
+    }
+
+    LobbyReadyStateWriteRecordNext.store(0, std::memory_order_release);
+    LobbyReadyStateWriteRecordPublished.store(0, std::memory_order_release);
+    LobbyReadyStateWriteRecordDumped.store(0, std::memory_order_release);
+    for (size_t index = 0; index < LobbyReadyStateWatchAddresses.size(); index++) {
+        auto const address = playerRecords
+            + index * ServerLobbyPlayerRecordSize7398727
+            + ServerLobbyReadyStateOffset7398727;
+        LobbyReadyStateWatchAddresses[index].store(address, std::memory_order_release);
+        LobbyReadyStateWatchValues[index].store(
+            *reinterpret_cast<uint16_t const*>(address),
+            std::memory_order_release);
+    }
+    LobbyReadyStateWatchThreadId.store(threadId, std::memory_order_release);
+
+    LobbyReadyStateWatchHandler = AddVectoredExceptionHandler(
+        1, LobbyReadyStateWatchExceptionHandler);
+    LobbyReadyStateWatchArmEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+    if (LobbyReadyStateWatchHandler == nullptr
+        || LobbyReadyStateWatchArmEvent == nullptr) {
+        LobbyReadyStateWatchState.store(3u, std::memory_order_release);
+        return 3u;
+    }
+
+    auto worker = CreateThread(
+        nullptr, 0, ArmLobbyReadyStateWatchpoints, nullptr, 0, nullptr);
+    if (worker == nullptr) {
+        LobbyReadyStateWatchState.store(3u, std::memory_order_release);
+        return 3u;
+    }
+    WaitForSingleObject(LobbyReadyStateWatchArmEvent, 1000);
+    CloseHandle(worker);
+    auto const state = LobbyReadyStateWatchState.load(std::memory_order_acquire);
+    INFO("[MP_LOBBY_READY_TRACE] event=watchpoint state=%u thread=%lu player_records=0,1 hardware_slots=dr1,dr2 access=write length=2 layout=ready_1a_state_1b fail_closed=1 message_mutation=0",
+        state,
+        threadId);
+    return state;
+}
+
+static void DumpLobbyReadyStateWriteRecords(char const* phase)
+{
+    auto const published = std::min<uint32_t>(
+        LobbyReadyStateWriteRecordPublished.load(std::memory_order_acquire),
+        static_cast<uint32_t>(LobbyReadyStateWriteRecords.size()));
+    auto dumped = LobbyReadyStateWriteRecordDumped.load(
+        std::memory_order_acquire);
+    auto const moduleBase = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
+    while (dumped < published) {
+        auto const& record = LobbyReadyStateWriteRecords[dumped];
+        auto const nextInstructionRva = record.NextInstruction >= moduleBase
+            ? record.NextInstruction - moduleBase
+            : 0;
+        INFO("[MP_LOBBY_READY_TRACE] event=ready_state_write index=%u phase=%s thread=%u player_record=%u hardware_slot=dr%u ready_before=%u state_before=%u ready_after=%u state_after=%u next_instruction=0x%p next_instruction_rva=0x%llX watch_address=0x%p access=write length=2 fail_closed=1 message_mutation=0",
+            dumped,
+            phase,
+            record.ThreadId,
+            static_cast<unsigned>(record.PlayerRecordIndex),
+            static_cast<unsigned>(record.HardwareSlot),
+            static_cast<unsigned>(record.ValueBefore & 0xFF),
+            static_cast<unsigned>(record.ValueBefore >> 8),
+            static_cast<unsigned>(record.ValueAfter & 0xFF),
+            static_cast<unsigned>(record.ValueAfter >> 8),
+            reinterpret_cast<void*>(record.NextInstruction),
+            static_cast<unsigned long long>(nextInstructionRva),
+            reinterpret_cast<void*>(record.WatchAddress));
+        dumped++;
+    }
+    LobbyReadyStateWriteRecordDumped.store(dumped, std::memory_order_release);
+}
+
 template <size_t N>
 static bool MarkEntityReplicationCommandBufferSeen(
     std::array<uintptr_t, N>& seen,
@@ -2888,6 +3130,14 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
     if (isServerCommandBuffer) {
         auto const flushSequence = entityReplicationServerFlushSequence_.fetch_add(
             1, std::memory_order_acq_rel) + 1;
+        auto const lobbyWatchState = EnsureLobbyReadyStateWatchpoints(
+            GetCurrentThreadId());
+        if (flushSequence == 1) {
+            INFO("[MP_LOBBY_READY_TRACE] event=watchpoint state=%u thread=%lu player_records=0,1 hardware_slots=dr1,dr2 access=write length=2 layout=ready_1a_state_1b fail_closed=1 message_mutation=0",
+                lobbyWatchState,
+                GetCurrentThreadId());
+        }
+        DumpLobbyReadyStateWriteRecords("replication_flush");
         auto const watchState = EnsureEntityReplicationCountWatchpoint(
             reinterpret_cast<uintptr_t>(commandReplicateEntities),
             GetCurrentThreadId());
@@ -3030,6 +3280,9 @@ void Hooks::OnEntityReplicationCommandBufferFlush(
         }
     }
     wrapped(commandBuffer, host, replicationAuthority);
+    if (isServerCommandBuffer) {
+        DumpLobbyReadyStateWriteRecords("replication_flush_post");
+    }
 }
 
 uint64_t Hooks::OnCharacterAssignmentEntityRoute(
