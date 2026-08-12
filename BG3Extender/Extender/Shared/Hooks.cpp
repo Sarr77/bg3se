@@ -930,6 +930,22 @@ static_assert(offsetof(SerializedByteBufferView, Length) == 0x0C);
 static_assert(sizeof(SerializedByteBufferView) == 0x10);
 static_assert(offsetof(net::Message, Reliability) == 0x0C);
 
+static bool IsLoadOrCharacterCreationTraceMessage(uint32_t messageId)
+{
+    return messageId == 166
+        || messageId == 167
+        || messageId == 168
+        || messageId == 169
+        || messageId == 170
+        || messageId == 171
+        || messageId == 172
+        || messageId == 174
+        || messageId == 194
+        || messageId == 200
+        || messageId == 239
+        || messageId == 240;
+}
+
 static bool WriteNetworkTracePayload(
     uint32_t eventIndex,
     TPeerId peerId,
@@ -3903,10 +3919,11 @@ void Hooks::OnAbstractPeerSendGeneralMessage(
     net::Message* message)
 {
     uint32_t traceIndex;
-    auto const trace = BeginLoadProtocolWireTraceEvent(traceIndex);
     auto const messageId = message != nullptr
         ? static_cast<uint32_t>(message->MsgId)
         : UINT32_MAX;
+    auto const trace = IsLoadOrCharacterCreationTraceMessage(messageId)
+        && BeginLoadProtocolWireTraceEvent(traceIndex);
     if (trace) {
         if (message != nullptr && messageId > 14 && input != nullptr) {
             auto const& body = *static_cast<SerializedByteBufferView const*>(input);
@@ -3986,18 +4003,7 @@ bool Hooks::OnAbstractPeerReceiveGeneralMessage(
     auto const messageId = message != nullptr
         ? static_cast<uint32_t>(message->MsgId)
         : UINT32_MAX;
-    auto const traceMessage = messageId == 166
-        || messageId == 167
-        || messageId == 168
-        || messageId == 169
-        || messageId == 170
-        || messageId == 171
-        || messageId == 172
-        || messageId == 174
-        || messageId == 194
-        || messageId == 200
-        || messageId == 239
-        || messageId == 240;
+    auto const traceMessage = IsLoadOrCharacterCreationTraceMessage(messageId);
     auto const bitstream = input != nullptr ? input->Bitstream : nullptr;
     auto const bitsBefore = bitstream != nullptr ? bitstream->NumBits : 0u;
     auto const allocatedBits = bitstream != nullptr ? bitstream->AllocatedBits : 0u;
