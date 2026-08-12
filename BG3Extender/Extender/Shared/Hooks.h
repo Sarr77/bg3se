@@ -86,6 +86,9 @@ public:
     uint64_t OnCharacterAssignmentEntityRoute(
         uint64_t (*wrapped)(void*, void*),
         void* peerContext, void* entityContext);
+    void OnPeersInRangeAdd(
+        void (*wrapped)(void*, int32_t const*),
+        void* entityContext, int32_t const* peerId);
     uint8_t OnLobbyMembershipCheck(uint8_t (*wrapped)(void*, int8_t), void* lobby, int8_t backend);
     uint8_t OnLobbyIsReady(uint8_t (*wrapped)(void*), void* lobby);
 
@@ -155,6 +158,9 @@ public:
     enum class CharacterAssignmentEntityRouteTag{};
     WrappableFunction<CharacterAssignmentEntityRouteTag,
         uint64_t(void*, void*)> eocnet__CharacterAssignment__RouteEntity;
+    enum class PeersInRangeAddTag{};
+    WrappableFunction<PeersInRangeAddTag,
+        void(void*, int32_t const*)> esv__PeersInRange__Add;
     enum class LobbyMembershipCheckTag{};
     WrappableFunction<LobbyMembershipCheckTag, uint8_t(void*, int8_t)> eocnet__Lobby__CheckMembership;
     enum class LobbyIsReadyTag{};
@@ -241,6 +247,7 @@ private:
     std::atomic<uint32_t> localPeerTransportPrototypeEventCount_{ 0 };
     std::atomic<uint32_t> loadProtocolWireTraceEventCount_{ 0 };
     std::atomic<uint32_t> characterAssignmentEntityRouteTraceEventCount_{ 0 };
+    std::atomic<uint32_t> peersInRangeAddTraceEventCount_{ 0 };
     std::atomic<uint32_t> markedSyntheticPeerMask_{ 0 };
     std::mutex localPeerTransportMappingMutex_;
     void* localPeerTransportMappedOverride_{ nullptr };

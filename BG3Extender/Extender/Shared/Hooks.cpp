@@ -31,6 +31,7 @@ decltype(Hooks::ecs__EntityReplicationCommandBuffer__Replicate)* decltype(Hooks:
 decltype(Hooks::ecs__EntityReplicationSystem__Update)* decltype(Hooks::ecs__EntityReplicationSystem__Update)::gHook;
 decltype(Hooks::ecs__EntityReplicationCommandBuffer__Flush)* decltype(Hooks::ecs__EntityReplicationCommandBuffer__Flush)::gHook;
 decltype(Hooks::eocnet__CharacterAssignment__RouteEntity)* decltype(Hooks::eocnet__CharacterAssignment__RouteEntity)::gHook;
+decltype(Hooks::esv__PeersInRange__Add)* decltype(Hooks::esv__PeersInRange__Add)::gHook;
 decltype(Hooks::eocnet__Lobby__CheckMembership)* decltype(Hooks::eocnet__Lobby__CheckMembership)::gHook;
 decltype(Hooks::eocnet__Lobby__IsReady)* decltype(Hooks::eocnet__Lobby__IsReady)::gHook;
 decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)* decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)::gHook;
@@ -63,6 +64,7 @@ static constexpr uintptr_t EntityReplicationCommandBufferReplicateRva7398727 = 0
 static constexpr uintptr_t EntityReplicationSystemUpdateRva7398727 = 0x3158380;
 static constexpr uintptr_t EntityReplicationCommandBufferFlushRva7398727 = 0x4287190;
 static constexpr uintptr_t CharacterAssignmentEntityRouteRva7398727 = 0x30735A0;
+static constexpr uintptr_t PeersInRangeAddRva7398727 = 0x30BEBC0;
 static constexpr uintptr_t NativePlayerSlotPatchRvas7398727[] = {
     0x14AF947,
     0x14B1020,
@@ -498,6 +500,13 @@ static constexpr uint8_t CharacterAssignmentEntityRoutePreamble7398727[] = {
     0x56, 0x57, 0x41, 0x54, 0x41, 0x55, 0x41, 0x56,
     0x41, 0x57, 0x48, 0x8D, 0x68, 0xB8, 0x48, 0x81,
     0xEC, 0x10, 0x01, 0x00, 0x00
+};
+
+static constexpr uint8_t PeersInRangeAddPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x08, 0x57, 0x48, 0x83,
+    0xEC, 0x20, 0x4C, 0x8B, 0x49, 0x38, 0x48, 0x8B,
+    0xF9, 0x48, 0x83, 0xC1, 0x38, 0x48, 0x8B, 0xDA,
+    0x4D, 0x85, 0xC9, 0x74, 0x35, 0x48, 0x63, 0x41
 };
 
 static constexpr uint8_t NativePlayerSlotPatchExpected7398727[][8] = {
@@ -1151,6 +1160,13 @@ static uint64_t (*ResolveCharacterAssignmentEntityRoute())(void*, void*)
         CharacterAssignmentEntityRoutePreamble7398727);
 }
 
+static void (*ResolvePeersInRangeAdd())(void*, int32_t const*)
+{
+    return ResolveExactGameFunction<void (*)(void*, int32_t const*)>(
+        PeersInRangeAddRva7398727,
+        PeersInRangeAddPreamble7398727);
+}
+
 static int (*ResolveWinSockRecvFrom())(uintptr_t, char*, int, int, void*, int*)
 {
     auto const module = GetModuleHandleW(L"Ws2_32.dll");
@@ -1649,6 +1665,9 @@ void Hooks::Startup()
         auto const characterAssignmentEntityRouteTarget = enableLoadProtocolWireTrace
             ? ResolveCharacterAssignmentEntityRoute()
             : nullptr;
+        auto const peersInRangeAddTarget = enableLoadProtocolWireTrace
+            ? ResolvePeersInRangeAdd()
+            : nullptr;
         auto const receiveTarget = ResolveAbstractPeerReceiveGeneralMessage();
         if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
             auto const& version = gExtender->GetGameVersion();
@@ -1668,8 +1687,9 @@ void Hooks::Startup()
                     || entityReplicationCommandBufferReplicateTarget == nullptr
                     || entityReplicationSystemUpdateTarget == nullptr
                     || entityReplicationCommandBufferFlushTarget == nullptr
-                    || characterAssignmentEntityRouteTarget == nullptr))) {
-            ERR("[MP_LOAD_TRACE] event=disabled reason=receive_or_process_guard_failed receive=%u client=%u server=%u character_creation_server=%u entity_handle_set_insert=%u alternate_entity_handle_set_insert=%u entity_handle_array_append=%u replication_command_set_insert=%u replication_command_buffer_replicate=%u replication_system_update=%u replication_command_buffer_flush=%u character_assignment_entity_route=%u",
+                    || characterAssignmentEntityRouteTarget == nullptr
+                    || peersInRangeAddTarget == nullptr))) {
+            ERR("[MP_LOAD_TRACE] event=disabled reason=receive_or_process_guard_failed receive=%u client=%u server=%u character_creation_server=%u entity_handle_set_insert=%u alternate_entity_handle_set_insert=%u entity_handle_array_append=%u replication_command_set_insert=%u replication_command_buffer_replicate=%u replication_system_update=%u replication_command_buffer_flush=%u character_assignment_entity_route=%u peers_in_range_add=%u",
                 receiveTarget != nullptr ? 1u : 0u,
                 clientTarget != nullptr ? 1u : 0u,
                 serverTarget != nullptr ? 1u : 0u,
@@ -1681,7 +1701,8 @@ void Hooks::Startup()
                 entityReplicationCommandBufferReplicateTarget != nullptr ? 1u : 0u,
                 entityReplicationSystemUpdateTarget != nullptr ? 1u : 0u,
                 entityReplicationCommandBufferFlushTarget != nullptr ? 1u : 0u,
-                characterAssignmentEntityRouteTarget != nullptr ? 1u : 0u);
+                characterAssignmentEntityRouteTarget != nullptr ? 1u : 0u,
+                peersInRangeAddTarget != nullptr ? 1u : 0u);
         } else if (!IsValidLoadProtocolWireTraceMaxEvents(
                 gExtender->GetConfig().LoadProtocolWireTraceMaxEvents)
             || !IsValidLoadProtocolWireTraceMaxPayloadBytes(
@@ -1705,6 +1726,7 @@ void Hooks::Startup()
                 ecs__EntityReplicationSystem__Update.Wrap(entityReplicationSystemUpdateTarget);
                 ecs__EntityReplicationCommandBuffer__Flush.Wrap(entityReplicationCommandBufferFlushTarget);
                 eocnet__CharacterAssignment__RouteEntity.Wrap(characterAssignmentEntityRouteTarget);
+                esv__PeersInRange__Add.Wrap(peersInRangeAddTarget);
             }
             auto const status = DetourTransactionCommit();
             if (status == NO_ERROR) {
@@ -1733,7 +1755,10 @@ void Hooks::Startup()
                         &Hooks::OnEntityReplicationCommandBufferFlush, this);
                     eocnet__CharacterAssignment__RouteEntity.SetWrapper(
                         &Hooks::OnCharacterAssignmentEntityRoute, this);
+                    esv__PeersInRange__Add.SetWrapper(
+                        &Hooks::OnPeersInRangeAdd, this);
                     characterAssignmentEntityRouteTraceEventCount_.store(0, std::memory_order_release);
+                    peersInRangeAddTraceEventCount_.store(0, std::memory_order_release);
                     {
                         std::lock_guard<std::mutex> lock(entityReplicationTraceMutex_);
                         entityReplicationCommandEnqueueCallerRvas_.clear();
@@ -1754,7 +1779,7 @@ void Hooks::Startup()
                     entityReplicationPreBindCaptureEnabled_.store(true, std::memory_order_release);
                     INFO("[MP_REPLICATION_TRACE] event=prebind_capture_started phase=hook_install capture_scope=process capacity=%llu capture_enabled=1 message_mutation=0",
                         static_cast<unsigned long long>(entityReplicationPendingInserts_.size()));
-                    INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 character_creation_server_process_rva=0x373C020 entity_handle_set_insert_rva=0x1135EB0 alternate_entity_handle_set_insert_rva=0x3148D00 entity_handle_array_append_rva=0x7554F0 replication_command_set_insert_rva=0x7200C0 replication_command_buffer_replicate_rva=0x428FF80 replication_system_update_rva=0x3158380 replication_command_buffer_flush_rva=0x4287190 character_assignment_entity_route_rva=0x30735A0 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled character_creation_logging=net_id_resolved_entity character_assignment_logging=peer_entity_access replication_enqueue_correlation=command_buffer_flush_history_insert_sources_count_watchpoint_array_append_command_set_insert_and_replicate_callback message_mutation=0",
+                    INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 character_creation_server_process_rva=0x373C020 entity_handle_set_insert_rva=0x1135EB0 alternate_entity_handle_set_insert_rva=0x3148D00 entity_handle_array_append_rva=0x7554F0 replication_command_set_insert_rva=0x7200C0 replication_command_buffer_replicate_rva=0x428FF80 replication_system_update_rva=0x3158380 replication_command_buffer_flush_rva=0x4287190 character_assignment_entity_route_rva=0x30735A0 peers_in_range_add_rva=0x30BEBC0 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled character_creation_logging=net_id_resolved_entity character_assignment_logging=peer_entity_access peers_in_range_logging=add_before_after replication_enqueue_correlation=command_buffer_flush_history_insert_sources_count_watchpoint_array_append_command_set_insert_and_replicate_callback message_mutation=0",
                         gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
                         gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
                 }
@@ -3062,6 +3087,79 @@ uint64_t Hooks::OnCharacterAssignmentEntityRoute(
         }
     }
     return result;
+}
+
+void Hooks::OnPeersInRangeAdd(
+    void (*wrapped)(void*, int32_t const*),
+    void* entityContext,
+    int32_t const* peerIdAddress)
+{
+    struct PeerListSnapshot
+    {
+        uint64_t EntityHandle{};
+        uint32_t Count{ UINT32_MAX };
+        uint32_t Peers[8]{};
+        bool Valid{};
+        bool ContainsPeer{};
+    };
+
+    auto const peerId = peerIdAddress != nullptr ? *peerIdAddress : -1;
+    auto capture = [peerId](void* context) {
+        PeerListSnapshot snapshot;
+        if (context == nullptr) {
+            return snapshot;
+        }
+
+        auto const bytes = reinterpret_cast<uint8_t const*>(context);
+        snapshot.EntityHandle = *reinterpret_cast<uint64_t const*>(bytes + 0x10);
+        auto const peers = *reinterpret_cast<uint32_t const* const*>(bytes + 0x38);
+        snapshot.Count = *reinterpret_cast<uint32_t const*>(bytes + 0x44);
+        snapshot.Valid = snapshot.Count <= 64 && (snapshot.Count == 0 || peers != nullptr);
+        if (!snapshot.Valid) {
+            return snapshot;
+        }
+
+        auto const copied = static_cast<uint32_t>(
+            std::min<size_t>(snapshot.Count, std::size(snapshot.Peers)));
+        for (uint32_t i = 0; i < copied; i++) {
+            snapshot.Peers[i] = peers[i];
+        }
+        for (uint32_t i = 0; i < snapshot.Count; i++) {
+            snapshot.ContainsPeer = snapshot.ContainsPeer
+                || peers[i] == static_cast<uint32_t>(peerId);
+        }
+        return snapshot;
+    };
+
+    auto const before = capture(entityContext);
+    auto const callerRva = FindGameReturnAddressRva();
+    wrapped(entityContext, peerIdAddress);
+    auto const after = capture(entityContext);
+
+    if (peerId >= 1 && peerId <= 9 && (before.Valid || after.Valid)) {
+        auto const index = peersInRangeAddTraceEventCount_.fetch_add(
+            1, std::memory_order_acq_rel);
+        if (index < 4096) {
+            INFO("[MP_PEERS_IN_RANGE] event=add index=%u thread=%lu peer=%d entity_handle=0x%016llX before_valid=%u before_count=%u before_contains_peer=%u after_valid=%u after_count=%u after_contains_peer=%u added=%u duplicate=%u after_0=%u after_1=%u after_2=%u after_3=%u after_4=%u after_5=%u after_6=%u after_7=%u caller_rva=0x%llX writer_rva=0x30BEBC0 message_mutation=0",
+                index,
+                GetCurrentThreadId(),
+                peerId,
+                static_cast<unsigned long long>(after.Valid
+                    ? after.EntityHandle
+                    : before.EntityHandle),
+                before.Valid ? 1u : 0u,
+                before.Count,
+                before.ContainsPeer ? 1u : 0u,
+                after.Valid ? 1u : 0u,
+                after.Count,
+                after.ContainsPeer ? 1u : 0u,
+                !before.ContainsPeer && after.ContainsPeer ? 1u : 0u,
+                before.ContainsPeer && after.ContainsPeer ? 1u : 0u,
+                after.Peers[0], after.Peers[1], after.Peers[2], after.Peers[3],
+                after.Peers[4], after.Peers[5], after.Peers[6], after.Peers[7],
+                static_cast<unsigned long long>(callerRva));
+        }
+    }
 }
 
 size_t Hooks::CaptureGameReturnAddressRvas(uintptr_t* rvas, size_t capacity) const
