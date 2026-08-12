@@ -303,6 +303,7 @@ static std::atomic<uint32_t> LobbyReadyStateWatchState{ 0 };
 static std::array<std::atomic<uintptr_t>, 2> LobbyReadyStateWatchAddresses{};
 static std::array<std::atomic<uint16_t>, 2> LobbyReadyStateWatchValues{};
 static std::atomic<uint32_t> LobbyReadyStateWatchThreadId{ 0 };
+static std::atomic<uintptr_t> LobbyReadyStateWatchRecordsBuffer{ 0 };
 static void* LobbyReadyStateWatchHandler{ nullptr };
 static HANDLE LobbyReadyStateWatchArmEvent{ nullptr };
 
@@ -441,6 +442,22 @@ static uint32_t EnsureLobbyReadyStateWatchpoints(uint32_t threadId)
         return 0u;
     }
 
+    // A two-element allocation exists during bootstrap before it contains the
+    // actual host and remote-player records. Arming against that transient
+    // buffer leaves stale DR1/DR2 addresses after the vector moves. Ready may
+    // still be zero, but both records must already be populated and joined.
+    for (size_t index = 0; index < LobbyReadyStateWatchAddresses.size(); index++) {
+        auto const record = playerRecords
+            + index * ServerLobbyPlayerRecordSize7398727;
+        auto const keyToken = *reinterpret_cast<uintptr_t const*>(record);
+        auto const joined = *reinterpret_cast<uint16_t const*>(record + 0x18);
+        auto const state = *reinterpret_cast<uint8_t const*>(record + 0x1b);
+        if (keyToken == 0 || joined == 0 || state == 0) {
+            LobbyReadyStateWatchState.store(0u, std::memory_order_release);
+            return 0u;
+        }
+    }
+
     LobbyReadyStateWriteRecordNext.store(0, std::memory_order_release);
     LobbyReadyStateWriteRecordPublished.store(0, std::memory_order_release);
     LobbyReadyStateWriteRecordDumped.store(0, std::memory_order_release);
@@ -454,6 +471,7 @@ static uint32_t EnsureLobbyReadyStateWatchpoints(uint32_t threadId)
             std::memory_order_release);
     }
     LobbyReadyStateWatchThreadId.store(threadId, std::memory_order_release);
+    LobbyReadyStateWatchRecordsBuffer.store(playerRecords, std::memory_order_release);
 
     LobbyReadyStateWatchHandler = AddVectoredExceptionHandler(
         1, LobbyReadyStateWatchExceptionHandler);
@@ -473,9 +491,10 @@ static uint32_t EnsureLobbyReadyStateWatchpoints(uint32_t threadId)
     WaitForSingleObject(LobbyReadyStateWatchArmEvent, 1000);
     CloseHandle(worker);
     auto const state = LobbyReadyStateWatchState.load(std::memory_order_acquire);
-    INFO("[MP_LOBBY_READY_TRACE] event=watchpoint state=%u thread=%lu player_records=0,1 hardware_slots=dr1,dr2 access=write length=2 layout=ready_1a_state_1b fail_closed=1 message_mutation=0",
+    INFO("[MP_LOBBY_READY_TRACE] event=watchpoint state=%u thread=%lu player_records=0,1 player_records_buffer=0x%p arm_gate=two_populated_joined_records hardware_slots=dr1,dr2 access=write length=2 layout=ready_1a_state_1b fail_closed=1 message_mutation=0",
         state,
-        threadId);
+        threadId,
+        reinterpret_cast<void*>(playerRecords));
     return state;
 }
 
@@ -489,10 +508,16 @@ static void DumpLobbyReadyStateWriteRecords(char const* phase)
     auto const moduleBase = reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
     while (dumped < published) {
         auto const& record = LobbyReadyStateWriteRecords[dumped];
-        auto const nextInstructionRva = record.NextInstruction >= moduleBase
+        auto const dosHeader = reinterpret_cast<IMAGE_DOS_HEADER const*>(moduleBase);
+        auto const ntHeader = reinterpret_cast<IMAGE_NT_HEADERS64 const*>(
+            moduleBase + dosHeader->e_lfanew);
+        auto const moduleEnd = moduleBase + ntHeader->OptionalHeader.SizeOfImage;
+        auto const nextInstructionInMainModule = record.NextInstruction >= moduleBase
+            && record.NextInstruction < moduleEnd;
+        auto const nextInstructionRva = nextInstructionInMainModule
             ? record.NextInstruction - moduleBase
             : 0;
-        INFO("[MP_LOBBY_READY_TRACE] event=ready_state_write index=%u phase=%s thread=%u player_record=%u hardware_slot=dr%u ready_before=%u state_before=%u ready_after=%u state_after=%u next_instruction=0x%p next_instruction_rva=0x%llX watch_address=0x%p access=write length=2 fail_closed=1 message_mutation=0",
+        INFO("[MP_LOBBY_READY_TRACE] event=ready_state_write index=%u phase=%s thread=%u player_record=%u hardware_slot=dr%u ready_before=%u state_before=%u ready_after=%u state_after=%u next_instruction=0x%p next_instruction_module=%s next_instruction_rva=0x%llX watch_address=0x%p player_records_buffer=0x%p access=write length=2 fail_closed=1 message_mutation=0",
             dumped,
             phase,
             record.ThreadId,
@@ -503,8 +528,11 @@ static void DumpLobbyReadyStateWriteRecords(char const* phase)
             static_cast<unsigned>(record.ValueAfter & 0xFF),
             static_cast<unsigned>(record.ValueAfter >> 8),
             reinterpret_cast<void*>(record.NextInstruction),
+            nextInstructionInMainModule ? "main" : "external_or_stale",
             static_cast<unsigned long long>(nextInstructionRva),
-            reinterpret_cast<void*>(record.WatchAddress));
+            reinterpret_cast<void*>(record.WatchAddress),
+            reinterpret_cast<void*>(LobbyReadyStateWatchRecordsBuffer.load(
+                std::memory_order_acquire)));
         dumped++;
     }
     LobbyReadyStateWriteRecordDumped.store(dumped, std::memory_order_release);
@@ -908,6 +936,7 @@ static bool WriteNetworkTracePayload(
     uint32_t messageId,
     SerializedByteBufferView const& body,
     uint32_t maxPayloadBytes,
+    wchar_t const* direction,
     DWORD& error)
 {
     error = ERROR_SUCCESS;
@@ -940,8 +969,9 @@ static bool WriteNetworkTracePayload(
     }
 
     wchar_t filename[192];
-    swprintf_s(filename, L"\\trace-pid%lu-event%u-send-id%u-peer%u.bin",
-        GetCurrentProcessId(), eventIndex, messageId, static_cast<uint32_t>(peerId));
+    swprintf_s(filename, L"\\trace-pid%lu-event%u-%ls-id%u-peer%u.bin",
+        GetCurrentProcessId(), eventIndex, direction, messageId,
+        static_cast<uint32_t>(peerId));
     auto const path = traceDirectory + filename;
     auto const file = CreateFileW(
         path.c_str(),
@@ -1010,9 +1040,10 @@ static void TraceSerializerSnapshot(
             eventIndex,
             UINT32_MAX,
             messageId,
-            snapshot,
-            maxPayloadBytes,
-            payloadError);
+             snapshot,
+             maxPayloadBytes,
+             L"send",
+             payloadError);
     INFO("[MP_LOAD_TRACE] event=serializer_snapshot index=%u thread=%lu direction=%s msg_id=%u bits_before=%u bits_after=%u offset_before=%u offset_after=%u snapshot_bytes=%u payload_written=%u payload_error=%lu payload_name=trace-pid%lu-event%u-send-id%u-peer%u.bin",
         eventIndex,
         GetCurrentThreadId(),
@@ -3888,6 +3919,7 @@ void Hooks::OnAbstractPeerSendGeneralMessage(
                     messageId,
                     body,
                     gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes,
+                    L"send",
                     payloadError);
             INFO("[MP_LOAD_TRACE] event=send_serialized index=%u thread=%lu msg_id=%u peer=%u flags=%u compressed=%u body_bytes=%u body_capacity=%u payload_written=%u payload_error=%lu payload_name=trace-pid%lu-event%u-send-id%u-peer%u.bin",
                 traceIndex,
@@ -3963,7 +3995,9 @@ bool Hooks::OnAbstractPeerReceiveGeneralMessage(
         || messageId == 172
         || messageId == 174
         || messageId == 194
-        || messageId == 200;
+        || messageId == 200
+        || messageId == 239
+        || messageId == 240;
     auto const bitstream = input != nullptr ? input->Bitstream : nullptr;
     auto const bitsBefore = bitstream != nullptr ? bitstream->NumBits : 0u;
     auto const allocatedBits = bitstream != nullptr ? bitstream->AllocatedBits : 0u;
@@ -3980,6 +4014,23 @@ bool Hooks::OnAbstractPeerReceiveGeneralMessage(
     uint32_t enterIndex{ 0 };
     auto const trace = traceMessage && BeginLoadProtocolWireTraceEvent(enterIndex);
     if (trace) {
+        auto const capacityBytes = (allocatedBits + 7u) / 8u;
+        auto const lengthBytes = (bitsBefore + 7u) / 8u;
+        SerializedByteBufferView snapshot{
+            bitstream != nullptr ? bitstream->Buf : nullptr,
+            capacityBytes,
+            lengthBytes
+        };
+        DWORD payloadError{ ERROR_SUCCESS };
+        auto const payloadWritten = lengthBytes <= capacityBytes
+            && WriteNetworkTracePayload(
+                enterIndex,
+                peerId,
+                messageId,
+                snapshot,
+                gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes,
+                L"receive",
+                payloadError);
         INFO("[MP_LOAD_TRACE] event=receive_wrapper_enter index=%u thread=%lu msg_id=%u peer=%u marked_synthetic=%u serializer=%s bits=%u allocated_bits=%u offset=%u offset_mod8=%u next_byte_valid=%u next_byte=%u message_mutation=0",
             enterIndex,
             GetCurrentThreadId(),
@@ -3993,6 +4044,21 @@ bool Hooks::OnAbstractPeerReceiveGeneralMessage(
             offsetBefore % 8u,
             nextByteValid ? 1u : 0u,
             (unsigned)nextByte);
+        INFO("[MP_LOAD_TRACE] event=receive_serialized_snapshot index=%u thread=%lu msg_id=%u peer=%u bits=%u allocated_bits=%u offset=%u snapshot_bytes=%u payload_written=%u payload_error=%lu payload_name=trace-pid%lu-event%u-receive-id%u-peer%u.bin message_mutation=0",
+            enterIndex,
+            GetCurrentThreadId(),
+            messageId,
+            (unsigned)peerId,
+            bitsBefore,
+            allocatedBits,
+            offsetBefore,
+            lengthBytes,
+            payloadWritten ? 1u : 0u,
+            payloadError,
+            GetCurrentProcessId(),
+            enterIndex,
+            messageId,
+            (unsigned)peerId);
     }
 
     auto const bypassUncompressedCompressionUpdate =
