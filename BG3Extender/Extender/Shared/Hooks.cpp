@@ -1835,8 +1835,9 @@ void Hooks::Startup()
             ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=invalid_marker marker_must_be_nonzero=true");
         } else if (!localPeerTransportHookInstalled) {
             ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=local_transport_not_ready");
-        } else if (!IsValidExperimentalNativeMultiplayerPeerLimit(peerLimit)) {
-            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=invalid_peer_limit actual=%u required=9-64", peerLimit);
+        } else if (peerLimit != 0
+            && !IsValidExperimentalNativeMultiplayerPeerLimit(peerLimit)) {
+            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=invalid_peer_limit actual=%u allowed=0_or_9-64", peerLimit);
         } else if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
             auto const& version = gExtender->GetGameVersion();
             ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.73.98.727",
@@ -1868,7 +1869,8 @@ void Hooks::Startup()
                     &Hooks::OnLobbyMembershipCheck, this);
                 eocnet__Lobby__IsReady.SetWrapper(
                     &Hooks::OnLobbyIsReady, this);
-                INFO("[MP_SYNTHETIC_LOBBY] event=hook_enabled scope=marked_local_client_connect peer_range=2-9 ready_bypass=1 identity_logging=disabled marker_logging=disabled");
+                INFO("[MP_SYNTHETIC_LOBBY] event=hook_enabled scope=marked_local_client_connect peer_range=2-9 capacity_mode=%s ready_bypass=1 identity_logging=disabled marker_logging=disabled",
+                    peerLimit == 0 ? "native" : "expanded");
             } else {
                 ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=detour_failed status=%ld", status);
             }
