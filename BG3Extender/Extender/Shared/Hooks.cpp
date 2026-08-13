@@ -1353,14 +1353,20 @@ static JoinTraceCharacterOwnerSnapshot CaptureJoinTraceCharacterOwners(
     return snapshot;
 }
 
-static bool IsJoinLifecycleTraceMessage(uint32_t messageId)
+static bool IsJoiningProtocolTraceMessage(uint32_t messageId)
 {
     return messageId == 2
         || messageId == 3
         || messageId == 6
         || messageId == 7
         || messageId == 8
-        || messageId == 166
+        || messageId == 324
+        || messageId == 325;
+}
+
+static bool IsLoadProtocolTraceMessage(uint32_t messageId)
+{
+    return messageId == 166
         || messageId == 167
         || messageId == 168
         || messageId == 169
@@ -1368,14 +1374,23 @@ static bool IsJoinLifecycleTraceMessage(uint32_t messageId)
         || messageId == 171
         || messageId == 172
         || messageId == 174
-        || messageId == 194
-        || messageId == 199
+        || messageId == 194;
+}
+
+static bool IsLobbyProtocolTraceMessage(uint32_t messageId)
+{
+    return messageId == 199
         || messageId == 200
-        || messageId == 201
+        || messageId == 201;
+}
+
+static bool IsJoinLifecycleTraceMessage(uint32_t messageId)
+{
+    return IsJoiningProtocolTraceMessage(messageId)
+        || IsLoadProtocolTraceMessage(messageId)
+        || IsLobbyProtocolTraceMessage(messageId)
         || messageId == 239
-        || messageId == 240
-        || messageId == 324
-        || messageId == 325;
+        || messageId == 240;
 }
 
 static bool IsLoadOrCharacterCreationTraceMessage(uint32_t messageId)
@@ -2730,7 +2745,7 @@ void Hooks::Startup()
                 }
                 joiningProtocolHookInstalled = true;
                 if (enableJoinLifecycleTrace) {
-                    INFO("[MP_JOIN_TRACE] event=hook_enabled server_rva=0x%llx client_rva=0x%llx mod_reconciliation_rva=0x%llx mod_gate_rva=0x%llx semantic_hook_count=26 max_events=%u synthetic_bypass_active=0 argument_mutation=0 payload_mutation=0 result_mutation=0",
+                    INFO("[MP_JOIN_TRACE] event=hook_enabled server_rva=0x%llx client_rva=0x%llx mod_reconciliation_rva=0x%llx mod_gate_rva=0x%llx semantic_hook_count=26 max_events=%u protocol_filter=joining_2_3_6_7_8_324_325-load_166_167_168_169_170_171_172_174_194-lobby_199_200_201 dc_lobby_state_change_only=1 synthetic_bypass_active=0 argument_mutation=0 payload_mutation=0 result_mutation=0",
                         (unsigned long long)JoiningProtocolProcessMessageRva7398727,
                         (unsigned long long)ClientJoiningProtocolProcessMessageRva7398727,
                         (unsigned long long)ModReconciliationClassifyRva7398727,
@@ -4072,8 +4087,13 @@ net::ProtocolResult Hooks::OnJoiningProtocolProcessMessageImpl(
     net::MessageContext* context,
     net::Message* message)
 {
+    auto const messageId = message != nullptr
+        ? static_cast<uint32_t>(message->MsgId)
+        : UINT32_MAX;
+    auto const traceMessage = IsJoiningProtocolTraceMessage(messageId);
     uint32_t traceEnterIndex;
-    auto const traceJoining = BeginJoinLifecycleTraceEvent(traceEnterIndex);
+    auto const traceJoining = traceMessage
+        && BeginJoinLifecycleTraceEvent(traceEnterIndex);
     auto const syntheticLobbyBypassActive =
         allowSyntheticAdmission
         && syntheticLobbyBypassActive_.load(std::memory_order_acquire);
@@ -4082,21 +4102,23 @@ net::ProtocolResult Hooks::OnJoiningProtocolProcessMessageImpl(
             traceEnterIndex,
             side,
             GetCurrentThreadId(),
-            message != nullptr ? (unsigned)message->MsgId : UINT32_MAX,
+            messageId,
             context != nullptr ? context->UserID.Id : UserId::Unassigned,
             context != nullptr ? (unsigned)context->UserID.GetPeerId() : UINT32_MAX,
             context != nullptr ? context->PeerIDClassNames.size() : 0,
             context != nullptr ? context->UserIDs.size() : 0,
             syntheticLobbyBypassActive ? 1u : 0u);
     }
-    TraceJoinMessageSemantics(
-        side,
-        "receive",
-        context != nullptr
-            ? static_cast<TPeerId>(context->UserID.GetPeerId())
-            : static_cast<TPeerId>(-1),
-        message,
-        traceJoining ? traceEnterIndex : UINT32_MAX);
+    if (traceMessage) {
+        TraceJoinMessageSemantics(
+            side,
+            "receive",
+            context != nullptr
+                ? static_cast<TPeerId>(context->UserID.GetPeerId())
+                : static_cast<TPeerId>(-1),
+            message,
+            traceJoining ? traceEnterIndex : UINT32_MAX);
+    }
 
     auto matchesSyntheticAdmission = false;
     if (syntheticLobbyBypassActive && context != nullptr && message != nullptr
@@ -4150,7 +4172,7 @@ net::ProtocolResult Hooks::OnJoiningProtocolProcessMessageImpl(
             traceEnterIndex,
             side,
             GetCurrentThreadId(),
-            message != nullptr ? (unsigned)message->MsgId : UINT32_MAX,
+            messageId,
             (int)result,
             syntheticLobbyBypassActive ? 1u : 0u);
     }
@@ -4640,11 +4662,12 @@ net::ProtocolResult Hooks::OnClientLobbyProtocolProcessMessage(
     net::MessageContext* context,
     net::Message* message)
 {
-    uint32_t enterIndex;
-    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
     auto const messageId = message != nullptr
         ? static_cast<uint32_t>(message->MsgId)
         : UINT32_MAX;
+    auto const traceMessage = IsLobbyProtocolTraceMessage(messageId);
+    uint32_t enterIndex;
+    auto const trace = traceMessage && BeginJoinLifecycleTraceEvent(enterIndex);
     if (trace) {
         INFO("[MP_JOIN_TRACE] event=lobby_process_enter index=%u side=client direction=receive protocol=lobby handler_rva=0x1FF8500 thread=%lu msg_id=%u user_id=%u peer=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
             enterIndex,
@@ -4653,14 +4676,16 @@ net::ProtocolResult Hooks::OnClientLobbyProtocolProcessMessage(
             context != nullptr ? context->UserID.Id : UserId::Unassigned,
             context != nullptr ? (unsigned)context->UserID.GetPeerId() : UINT32_MAX);
     }
-    TraceJoinMessageSemantics(
-        "client",
-        "receive",
-        context != nullptr
-            ? static_cast<TPeerId>(context->UserID.GetPeerId())
-            : static_cast<TPeerId>(-1),
-        message,
-        trace ? enterIndex : UINT32_MAX);
+    if (traceMessage) {
+        TraceJoinMessageSemantics(
+            "client",
+            "receive",
+            context != nullptr
+                ? static_cast<TPeerId>(context->UserID.GetPeerId())
+                : static_cast<TPeerId>(-1),
+            message,
+            trace ? enterIndex : UINT32_MAX);
+    }
 
     auto const result = wrapped(protocol, unused, context, message);
     uint32_t exitIndex;
@@ -4682,11 +4707,12 @@ net::ProtocolResult Hooks::OnServerLobbyProtocolProcessMessage(
     net::MessageContext* context,
     net::Message* message)
 {
-    uint32_t enterIndex;
-    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
     auto const messageId = message != nullptr
         ? static_cast<uint32_t>(message->MsgId)
         : UINT32_MAX;
+    auto const traceMessage = IsLobbyProtocolTraceMessage(messageId);
+    uint32_t enterIndex;
+    auto const trace = traceMessage && BeginJoinLifecycleTraceEvent(enterIndex);
     if (trace) {
         INFO("[MP_JOIN_TRACE] event=lobby_process_enter index=%u side=server direction=receive protocol=lobby handler_rva=0x2FF79A0 thread=%lu msg_id=%u user_id=%u peer=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
             enterIndex,
@@ -4695,14 +4721,16 @@ net::ProtocolResult Hooks::OnServerLobbyProtocolProcessMessage(
             context != nullptr ? context->UserID.Id : UserId::Unassigned,
             context != nullptr ? (unsigned)context->UserID.GetPeerId() : UINT32_MAX);
     }
-    TraceJoinMessageSemantics(
-        "server",
-        "receive",
-        context != nullptr
-            ? static_cast<TPeerId>(context->UserID.GetPeerId())
-            : static_cast<TPeerId>(-1),
-        message,
-        trace ? enterIndex : UINT32_MAX);
+    if (traceMessage) {
+        TraceJoinMessageSemantics(
+            "server",
+            "receive",
+            context != nullptr
+                ? static_cast<TPeerId>(context->UserID.GetPeerId())
+                : static_cast<TPeerId>(-1),
+            message,
+            trace ? enterIndex : UINT32_MAX);
+    }
 
     auto const result = wrapped(protocol, unused, context, message);
     uint32_t exitIndex;
@@ -4736,7 +4764,7 @@ void Hooks::OnDCLobbyUpdate(void (*wrapped)(void*), void* lobby)
         dirtyAfter = *(bytes + 0x9A4);
         canStartAfter = *(bytes + 0x838);
     }
-    if ((dirtyBefore & 2u) == 0 && canStartBefore == canStartAfter) return;
+    if (dirtyBefore == dirtyAfter && canStartBefore == canStartAfter) return;
 
     uint32_t eventIndex;
     if (BeginJoinLifecycleTraceEvent(eventIndex)) {
@@ -6320,13 +6348,15 @@ net::ProtocolResult Hooks::OnLoadProtocolProcessMessage(
     net::MessageContext* context,
     net::Message* message)
 {
-    uint32_t enterIndex;
-    auto const trace = BeginLoadProtocolWireTraceEvent(enterIndex);
-    uint32_t joinEnterIndex;
-    auto const joinTrace = BeginJoinLifecycleTraceEvent(joinEnterIndex);
     auto const messageId = message != nullptr
         ? static_cast<uint32_t>(message->MsgId)
         : UINT32_MAX;
+    auto const traceMessage = IsLoadProtocolTraceMessage(messageId);
+    uint32_t enterIndex;
+    auto const trace = traceMessage && BeginLoadProtocolWireTraceEvent(enterIndex);
+    uint32_t joinEnterIndex;
+    auto const joinTrace = traceMessage
+        && BeginJoinLifecycleTraceEvent(joinEnterIndex);
     if (trace) {
         INFO("[MP_LOAD_TRACE] event=process_enter index=%u side=%s protocol=load thread=%lu msg_id=%u user_id=%u peer=%u peer_class_count=%u user_count=%u",
             enterIndex,
@@ -6349,14 +6379,16 @@ net::ProtocolResult Hooks::OnLoadProtocolProcessMessage(
             context != nullptr ? context->PeerIDClassNames.size() : 0,
             context != nullptr ? context->UserIDs.size() : 0);
     }
-    TraceJoinMessageSemantics(
-        side,
-        "receive",
-        context != nullptr
-            ? static_cast<TPeerId>(context->UserID.GetPeerId())
-            : static_cast<TPeerId>(-1),
-        message,
-        joinTrace ? joinEnterIndex : UINT32_MAX);
+    if (traceMessage) {
+        TraceJoinMessageSemantics(
+            side,
+            "receive",
+            context != nullptr
+                ? static_cast<TPeerId>(context->UserID.GetPeerId())
+                : static_cast<TPeerId>(-1),
+            message,
+            joinTrace ? joinEnterIndex : UINT32_MAX);
+    }
 
     auto const result = wrapped(protocol, unused, context, message);
 
