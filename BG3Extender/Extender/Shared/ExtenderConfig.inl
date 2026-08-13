@@ -52,6 +52,8 @@ void ApplyConfig(ExtenderConfig& config, Document& root)
     ConfigGet(root, "SyntheticLobbyBypassMarker", config.SyntheticLobbyBypassMarker);
     ConfigGet(root, "EnableSyntheticPeerSessionLoadBypassPrototype", config.EnableSyntheticPeerSessionLoadBypassPrototype);
     ConfigGet(root, "EnableSyntheticPeerUncompressedLoadReceiveBypassPrototype", config.EnableSyntheticPeerUncompressedLoadReceiveBypassPrototype);
+    ConfigGet(root, "EnableJoinLifecycleTrace", config.EnableJoinLifecycleTrace);
+    ConfigGet(root, "JoinLifecycleTraceMaxEvents", config.JoinLifecycleTraceMaxEvents);
     ConfigGet(root, "EnableLoadProtocolWireTrace", config.EnableLoadProtocolWireTrace);
     ConfigGet(root, "LoadProtocolWireTraceMaxEvents", config.LoadProtocolWireTraceMaxEvents);
     ConfigGet(root, "LoadProtocolWireTraceMaxPayloadBytes", config.LoadProtocolWireTraceMaxPayloadBytes);

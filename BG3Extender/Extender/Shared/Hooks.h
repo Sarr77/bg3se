@@ -50,9 +50,80 @@ public:
         bool (*wrapped)(void*, net::BitstreamSerializer*, TPeerId, net::Message*),
         void* compressor, net::BitstreamSerializer* input, TPeerId peerId,
         net::Message* message);
+    net::ProtocolResult OnClientJoiningProtocolProcessMessage(
+        net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+        net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
     net::ProtocolResult OnJoiningProtocolProcessMessage(
         net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
         net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
+    void OnModReconciliationClassify(
+        void (*wrapped)(void*, void*, void*, void*, void*, void*, void*, void*),
+        void* manager, void* hostManifest, void* asyncState,
+        void* mismatch0, void* mismatch1, void* mismatch2, void* mismatch3, void* mismatch4);
+    void OnModReconciliationGate(
+        void (*wrapped)(void*, void*),
+        void* coordinator, void* hostManifest);
+    uint32_t OnModManifestCompare(
+        uint32_t (*wrapped)(void*, void*, void*),
+        void* firstManifest, void* secondManifest, void* mismatchOutput);
+    net::ProtocolResult OnClientLobbyProtocolProcessMessage(
+        net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+        net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
+    net::ProtocolResult OnServerLobbyProtocolProcessMessage(
+        net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+        net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
+    void OnDCLobbyUpdate(void (*wrapped)(void*), void* lobby);
+    void OnPlatformIdentityMapWrite(
+        void (*wrapped)(void*, int32_t, void const*),
+        void* identityMap, int32_t peerId, void const* identity);
+    void OnConnectedPeerRegistered(
+        void (*wrapped)(void*, int32_t const*),
+        void* gameServer, int32_t const* peerId);
+    uint8_t OnSessionMemberAdded(
+        uint8_t (*wrapped)(void*, int32_t const*),
+        void* listener, int32_t const* membershipEvent);
+    void OnCharacterOwnerWrite(
+        void (*wrapped)(void*, void const*, uint32_t, uint8_t),
+        void* gameServer, void const* entityObject, uint32_t proposedUserId, uint8_t assignImmediately);
+    uint8_t OnLobbyParticipantAdded(
+        uint8_t (*wrapped)(void*, uint32_t const*),
+        void* callback, uint32_t const* compositeId);
+    void OnServerLobbyRecordWrite(
+        void (*wrapped)(void*, void const*, uint8_t),
+        void* lobbyManager, void const* record, uint8_t slot);
+    void OnServerLobbyStateReconcile(
+        void (*wrapped)(void*, void*, uint8_t, uint8_t),
+        void* lobbyManager, void* body, uint8_t notify, uint8_t reserved);
+    void OnLobbyStartGame(void (*wrapped)(void*), void* lobbyManager);
+    void OnLobbyReadyRecompute(void (*wrapped)(void*), void* lobbyManager);
+    void OnConnectionParticipantRemove(
+        void (*wrapped)(void*, int32_t const*, void const*, uint32_t),
+        void* gameServer, int32_t const* peerId, void const* displayName, uint32_t reason);
+    void OnConnectionStateEvent(
+        void (*wrapped)(void*, void const*),
+        void* gameServer, void const* event);
+    uint8_t OnSteamLobbyVisibility(
+        uint8_t (*wrapped)(void*, uint8_t, uint8_t*, uint8_t*),
+        void* manager, uint8_t requestedVisibility,
+        uint8_t* previousVisibility, uint8_t* effectiveVisibility);
+    void OnSteamLobbyCreated(
+        void (*wrapped)(void*, void const*, uint8_t),
+        void* manager, void const* callback, uint8_t ioFailure);
+    uint8_t OnSteamLobbyJoinRequest(
+        uint8_t (*wrapped)(void*, void const*),
+        void* manager, void const* lobbyRecord);
+    void OnSteamLobbyEntered(
+        void (*wrapped)(void*, void const*, uint8_t),
+        void* manager, void const* callback, uint8_t ioFailure);
+    void OnSteamLobbyMatchList(
+        void (*wrapped)(void*, uint32_t const*, uint8_t, void*),
+        void* manager, uint32_t const* matchCount, uint8_t ioFailure, void* context);
+    void* OnPlatformMemberResolve(
+        void* (*wrapped)(void*, void const*),
+        void* participantManager, void const* identity);
+    void OnPlatformMembershipEvent(
+        void (*wrapped)(void*, uint32_t, uint8_t),
+        void* participantManager, uint32_t internalMemberId, uint8_t eventFlag);
     net::ProtocolResult OnClientLoadProtocolProcessMessage(
         net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
         net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
@@ -125,6 +196,78 @@ public:
     enum class JoiningProtocolProcessMessageTag{};
     WrappableFunction<JoiningProtocolProcessMessageTag,
         net::ProtocolResult(net::Protocol*, void*, net::MessageContext*, net::Message*)> eocnet__JoiningProtocol__ProcessMessage;
+    enum class ClientJoiningProtocolProcessMessageTag{};
+    WrappableFunction<ClientJoiningProtocolProcessMessageTag,
+        net::ProtocolResult(net::Protocol*, void*, net::MessageContext*, net::Message*)> eocnet__ClientJoiningProtocol__ProcessMessage;
+    enum class ModReconciliationClassifyTag{};
+    WrappableFunction<ModReconciliationClassifyTag,
+        void(void*, void*, void*, void*, void*, void*, void*, void*)> eocnet__ModReconciliation__Classify;
+    enum class ModReconciliationGateTag{};
+    WrappableFunction<ModReconciliationGateTag,
+        void(void*, void*)> eocnet__ModReconciliation__RunGate;
+    enum class ModManifestCompareTag{};
+    WrappableFunction<ModManifestCompareTag,
+        uint32_t(void*, void*, void*)> eocnet__ModManifest__Compare;
+    enum class ClientLobbyProtocolProcessMessageTag{};
+    WrappableFunction<ClientLobbyProtocolProcessMessageTag,
+        net::ProtocolResult(net::Protocol*, void*, net::MessageContext*, net::Message*)> eocnet__ClientLobbyProtocol__ProcessMessage;
+    enum class ServerLobbyProtocolProcessMessageTag{};
+    WrappableFunction<ServerLobbyProtocolProcessMessageTag,
+        net::ProtocolResult(net::Protocol*, void*, net::MessageContext*, net::Message*)> eocnet__ServerLobbyProtocol__ProcessMessage;
+    enum class DCLobbyUpdateTag{};
+    WrappableFunction<DCLobbyUpdateTag, void(void*)> ecl__DCLobby__Update;
+    enum class PlatformIdentityMapWriteTag{};
+    WrappableFunction<PlatformIdentityMapWriteTag,
+        void(void*, int32_t, void const*)> net__PlatformIdentityMap__Write;
+    enum class ConnectedPeerRegisteredTag{};
+    WrappableFunction<ConnectedPeerRegisteredTag,
+        void(void*, int32_t const*)> esv__GameServer__RegisterConnectedPeer;
+    enum class SessionMemberAddedTag{};
+    WrappableFunction<SessionMemberAddedTag,
+        uint8_t(void*, int32_t const*)> esv__GameServer__SessionMemberAdded;
+    enum class CharacterOwnerWriteTag{};
+    WrappableFunction<CharacterOwnerWriteTag,
+        void(void*, void const*, uint32_t, uint8_t)> esv__GameServer__WriteCharacterOwner;
+    enum class LobbyParticipantAddedTag{};
+    WrappableFunction<LobbyParticipantAddedTag,
+        uint8_t(void*, uint32_t const*)> esv__LobbyManager__ParticipantAdded;
+    enum class ServerLobbyRecordWriteTag{};
+    WrappableFunction<ServerLobbyRecordWriteTag,
+        void(void*, void const*, uint8_t)> esv__LobbyManager__WriteRecord;
+    enum class ServerLobbyStateReconcileTag{};
+    WrappableFunction<ServerLobbyStateReconcileTag,
+        void(void*, void*, uint8_t, uint8_t)> esv__LobbyManager__ReconcileState;
+    enum class LobbyStartGameTag{};
+    WrappableFunction<LobbyStartGameTag, void(void*)> esv__LobbyManager__StartGame;
+    enum class LobbyReadyRecomputeTag{};
+    WrappableFunction<LobbyReadyRecomputeTag, void(void*)> esv__LobbyManager__RecomputeReady;
+    enum class ConnectionParticipantRemoveTag{};
+    WrappableFunction<ConnectionParticipantRemoveTag,
+        void(void*, int32_t const*, void const*, uint32_t)> esv__GameServer__RemoveParticipant;
+    enum class ConnectionStateEventTag{};
+    WrappableFunction<ConnectionStateEventTag,
+        void(void*, void const*)> esv__GameServer__OnConnectionStateEvent;
+    enum class SteamLobbyVisibilityTag{};
+    WrappableFunction<SteamLobbyVisibilityTag,
+        uint8_t(void*, uint8_t, uint8_t*, uint8_t*)> stm__SteamMatchMakingManager__SetLobbyVisibility;
+    enum class SteamLobbyCreatedTag{};
+    WrappableFunction<SteamLobbyCreatedTag,
+        void(void*, void const*, uint8_t)> stm__SteamMatchMakingManager__OnLobbyCreated;
+    enum class SteamLobbyJoinRequestTag{};
+    WrappableFunction<SteamLobbyJoinRequestTag,
+        uint8_t(void*, void const*)> stm__SteamMatchMakingManager__JoinLobby;
+    enum class SteamLobbyEnteredTag{};
+    WrappableFunction<SteamLobbyEnteredTag,
+        void(void*, void const*, uint8_t)> stm__SteamMatchMakingManager__OnLobbyEntered;
+    enum class SteamLobbyMatchListTag{};
+    WrappableFunction<SteamLobbyMatchListTag,
+        void(void*, uint32_t const*, uint8_t, void*)> stm__SteamMatchMakingManager__OnLobbyMatchList;
+    enum class PlatformMemberResolveTag{};
+    WrappableFunction<PlatformMemberResolveTag,
+        void*(void*, void const*)> net__PlatformParticipantManager__ResolveMember;
+    enum class PlatformMembershipEventTag{};
+    WrappableFunction<PlatformMembershipEventTag,
+        void(void*, uint32_t, uint8_t)> net__PlatformParticipantManager__PublishMembershipEvent;
     enum class ClientLoadProtocolProcessMessageTag{};
     WrappableFunction<ClientLoadProtocolProcessMessageTag,
         net::ProtocolResult(net::Protocol*, void*, net::MessageContext*, net::Message*)> eocnet__ClientLoadProtocol__ProcessMessage;
@@ -193,7 +336,22 @@ private:
     bool BeginRakNetSendTelemetryEvent(uint32_t& eventIndex);
     bool BeginPartyWinSocketTelemetryEvent(uint32_t& eventIndex);
     bool BeginLocalPeerTransportPrototypeEvent(uint32_t& eventIndex);
+    bool BeginJoinLifecycleTraceEvent(uint32_t& eventIndex);
     bool BeginLoadProtocolWireTraceEvent(uint32_t& eventIndex);
+    void TraceJoinMessageSemantics(
+        char const* side, char const* direction, TPeerId peerId,
+        net::Message* message, uint32_t callIndex);
+    void TraceServerLobbySnapshot(
+        char const* event, uint32_t callIndex, void const* lobbyManager);
+    void TraceGameServerSessionSnapshot(
+        char const* event, uint32_t callIndex, void const* gameServer);
+    void TraceCreatorStateSnapshot(
+        char const* event, uint32_t callIndex, void const* gameServer,
+        uint64_t netId, uint64_t expectedEntityHandle, uint32_t targetUserId);
+    net::ProtocolResult OnJoiningProtocolProcessMessageImpl(
+        char const* side, bool allowSyntheticAdmission,
+        net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+        net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
     net::ProtocolResult OnLoadProtocolProcessMessage(
         char const* side,
         net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
@@ -245,10 +403,12 @@ private:
     std::atomic<uint32_t> rakNetSendTelemetryEventCount_{ 0 };
     std::atomic<uint32_t> partyWinSocketTelemetryEventCount_{ 0 };
     std::atomic<uint32_t> localPeerTransportPrototypeEventCount_{ 0 };
+    std::atomic<uint32_t> joinLifecycleTraceEventCount_{ 0 };
     std::atomic<uint32_t> loadProtocolWireTraceEventCount_{ 0 };
     std::atomic<uint32_t> characterAssignmentEntityRouteTraceEventCount_{ 0 };
     std::atomic<uint32_t> peersInRangeAddTraceEventCount_{ 0 };
     std::atomic<uint32_t> markedSyntheticPeerMask_{ 0 };
+    std::atomic<bool> syntheticLobbyBypassActive_{ false };
     std::mutex localPeerTransportMappingMutex_;
     void* localPeerTransportMappedOverride_{ nullptr };
     std::mutex pendingPartyWinReceivesMutex_;

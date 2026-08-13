@@ -49,6 +49,11 @@ inline constexpr bool IsValidLoadProtocolWireTraceMaxEvents(uint32_t maxEvents)
     return maxEvents >= 1 && maxEvents <= 4096;
 }
 
+inline constexpr bool IsValidJoinLifecycleTraceMaxEvents(uint32_t maxEvents)
+{
+    return maxEvents >= 1 && maxEvents <= 4096;
+}
+
 inline constexpr bool IsValidLoadProtocolWireTraceMaxPayloadBytes(uint32_t maxBytes)
 {
     return maxBytes >= 64 && maxBytes <= 16 * 1024 * 1024;
@@ -89,6 +94,11 @@ static_assert(IsValidLoadProtocolWireTraceMaxEvents(1));
 static_assert(IsValidLoadProtocolWireTraceMaxEvents(512));
 static_assert(IsValidLoadProtocolWireTraceMaxEvents(4096));
 static_assert(!IsValidLoadProtocolWireTraceMaxEvents(4097));
+static_assert(!IsValidJoinLifecycleTraceMaxEvents(0));
+static_assert(IsValidJoinLifecycleTraceMaxEvents(1));
+static_assert(IsValidJoinLifecycleTraceMaxEvents(512));
+static_assert(IsValidJoinLifecycleTraceMaxEvents(4096));
+static_assert(!IsValidJoinLifecycleTraceMaxEvents(4097));
 static_assert(!IsValidLoadProtocolWireTraceMaxPayloadBytes(63));
 static_assert(IsValidLoadProtocolWireTraceMaxPayloadBytes(64));
 static_assert(IsValidLoadProtocolWireTraceMaxPayloadBytes(1024 * 1024));
@@ -160,6 +170,10 @@ struct ExtenderConfig
     // uncompressed load response is parsed; the body and message serializer are
     // otherwise left unchanged.
     bool EnableSyntheticPeerUncompressedLoadReceiveBypassPrototype{ false };
+    // Exact-build, observation-only trace of JoiningProtocol traffic. This is
+    // deliberately independent from every synthetic admission/bypass switch.
+    bool EnableJoinLifecycleTrace{ false };
+    uint32_t JoinLifecycleTraceMaxEvents{ 4096 };
     // Exact-build, observation-only trace of the real join/load message path.
     // Raw serialized buffers are written to a local trace directory. The
     // research repository decides which bounded samples are worth preserving.

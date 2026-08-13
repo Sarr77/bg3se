@@ -20,6 +20,31 @@ decltype(Hooks::net__AbstractPeer__SendMessageMultiPeerMoveIds)* decltype(Hooks:
 decltype(Hooks::net__AbstractPeer__SendGeneralMessage)* decltype(Hooks::net__AbstractPeer__SendGeneralMessage)::gHook;
 decltype(Hooks::net__AbstractPeer__ReceiveGeneralMessage)* decltype(Hooks::net__AbstractPeer__ReceiveGeneralMessage)::gHook;
 decltype(Hooks::eocnet__JoiningProtocol__ProcessMessage)* decltype(Hooks::eocnet__JoiningProtocol__ProcessMessage)::gHook;
+decltype(Hooks::eocnet__ClientJoiningProtocol__ProcessMessage)* decltype(Hooks::eocnet__ClientJoiningProtocol__ProcessMessage)::gHook;
+decltype(Hooks::eocnet__ModReconciliation__Classify)* decltype(Hooks::eocnet__ModReconciliation__Classify)::gHook;
+decltype(Hooks::eocnet__ModReconciliation__RunGate)* decltype(Hooks::eocnet__ModReconciliation__RunGate)::gHook;
+decltype(Hooks::eocnet__ModManifest__Compare)* decltype(Hooks::eocnet__ModManifest__Compare)::gHook;
+decltype(Hooks::eocnet__ClientLobbyProtocol__ProcessMessage)* decltype(Hooks::eocnet__ClientLobbyProtocol__ProcessMessage)::gHook;
+decltype(Hooks::eocnet__ServerLobbyProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerLobbyProtocol__ProcessMessage)::gHook;
+decltype(Hooks::ecl__DCLobby__Update)* decltype(Hooks::ecl__DCLobby__Update)::gHook;
+decltype(Hooks::net__PlatformIdentityMap__Write)* decltype(Hooks::net__PlatformIdentityMap__Write)::gHook;
+decltype(Hooks::esv__GameServer__RegisterConnectedPeer)* decltype(Hooks::esv__GameServer__RegisterConnectedPeer)::gHook;
+decltype(Hooks::esv__GameServer__SessionMemberAdded)* decltype(Hooks::esv__GameServer__SessionMemberAdded)::gHook;
+decltype(Hooks::esv__GameServer__WriteCharacterOwner)* decltype(Hooks::esv__GameServer__WriteCharacterOwner)::gHook;
+decltype(Hooks::esv__LobbyManager__ParticipantAdded)* decltype(Hooks::esv__LobbyManager__ParticipantAdded)::gHook;
+decltype(Hooks::esv__LobbyManager__WriteRecord)* decltype(Hooks::esv__LobbyManager__WriteRecord)::gHook;
+decltype(Hooks::esv__LobbyManager__ReconcileState)* decltype(Hooks::esv__LobbyManager__ReconcileState)::gHook;
+decltype(Hooks::esv__LobbyManager__StartGame)* decltype(Hooks::esv__LobbyManager__StartGame)::gHook;
+decltype(Hooks::esv__LobbyManager__RecomputeReady)* decltype(Hooks::esv__LobbyManager__RecomputeReady)::gHook;
+decltype(Hooks::esv__GameServer__RemoveParticipant)* decltype(Hooks::esv__GameServer__RemoveParticipant)::gHook;
+decltype(Hooks::esv__GameServer__OnConnectionStateEvent)* decltype(Hooks::esv__GameServer__OnConnectionStateEvent)::gHook;
+decltype(Hooks::stm__SteamMatchMakingManager__SetLobbyVisibility)* decltype(Hooks::stm__SteamMatchMakingManager__SetLobbyVisibility)::gHook;
+decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyCreated)* decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyCreated)::gHook;
+decltype(Hooks::stm__SteamMatchMakingManager__JoinLobby)* decltype(Hooks::stm__SteamMatchMakingManager__JoinLobby)::gHook;
+decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyEntered)* decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyEntered)::gHook;
+decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyMatchList)* decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyMatchList)::gHook;
+decltype(Hooks::net__PlatformParticipantManager__ResolveMember)* decltype(Hooks::net__PlatformParticipantManager__ResolveMember)::gHook;
+decltype(Hooks::net__PlatformParticipantManager__PublishMembershipEvent)* decltype(Hooks::net__PlatformParticipantManager__PublishMembershipEvent)::gHook;
 decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__ServerCharacterCreationProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerCharacterCreationProtocol__ProcessMessage)::gHook;
@@ -49,6 +74,31 @@ static constexpr uintptr_t SocketOverrideHelperSendRva7398727 = 0x405B2D0;
 static constexpr uintptr_t SocketOverrideMapSystemAddressRva7398727 = 0x405C340;
 static constexpr uintptr_t SocketOverrideMapTransportAddressRva7398727 = 0x405C420;
 static constexpr uintptr_t JoiningProtocolProcessMessageRva7398727 = 0x426A9A0;
+static constexpr uintptr_t ClientJoiningProtocolProcessMessageRva7398727 = 0x1C52410;
+static constexpr uintptr_t ModReconciliationClassifyRva7398727 = 0x181BBF0;
+static constexpr uintptr_t ModReconciliationGateRva7398727 = 0x18077D0;
+static constexpr uintptr_t ModManifestCompareRva7398727 = 0x3BC7AF0;
+static constexpr uintptr_t ClientLobbyProtocolProcessMessageRva7398727 = 0x1FF8500;
+static constexpr uintptr_t ServerLobbyProtocolProcessMessageRva7398727 = 0x2FF79A0;
+static constexpr uintptr_t DCLobbyUpdateRva7398727 = 0x15C4A40;
+static constexpr uintptr_t PlatformIdentityMapWriteRva7398727 = 0x405E710;
+static constexpr uintptr_t ConnectedPeerRegisteredRva7398727 = 0x30A7320;
+static constexpr uintptr_t SessionMemberAddedRva7398727 = 0x30A85F0;
+static constexpr uintptr_t CharacterOwnerWriteRva7398727 = 0x30A5000;
+static constexpr uintptr_t LobbyParticipantAddedRva7398727 = 0x2A95080;
+static constexpr uintptr_t ServerLobbyRecordWriteRva7398727 = 0x2A96290;
+static constexpr uintptr_t ServerLobbyStateReconcileRva7398727 = 0x2A95C00;
+static constexpr uintptr_t LobbyStartGameRva7398727 = 0x2A96420;
+static constexpr uintptr_t LobbyReadyRecomputeRva7398727 = 0x2A96D30;
+static constexpr uintptr_t ConnectionParticipantRemoveRva7398727 = 0x30A4180;
+static constexpr uintptr_t ConnectionStateEventRva7398727 = 0x30A3F80;
+static constexpr uintptr_t SteamLobbyVisibilityRva7398727 = 0x21AEB90;
+static constexpr uintptr_t SteamLobbyCreatedRva7398727 = 0x21ADCB0;
+static constexpr uintptr_t SteamLobbyJoinRequestRva7398727 = 0x21AD5F0;
+static constexpr uintptr_t SteamLobbyEnteredRva7398727 = 0x21ADEF0;
+static constexpr uintptr_t SteamLobbyMatchListRva7398727 = 0x21ADA40;
+static constexpr uintptr_t PlatformMemberResolveRva7398727 = 0x403F6A0;
+static constexpr uintptr_t PlatformMembershipEventRva7398727 = 0x403FFC0;
 static constexpr uintptr_t LobbyMembershipCheckRva7398727 = 0x404E570;
 static constexpr uintptr_t LobbyIsReadyRva7398727 = 0x404DA40;
 static constexpr uintptr_t AbstractPeerSendGeneralMessageRva7398727 = 0x4061F20;
@@ -85,6 +135,21 @@ struct EntityReplicationThreadTraceState
 };
 
 static thread_local EntityReplicationThreadTraceState EntityReplicationTraceForCurrentThread;
+
+struct JoinModReconciliationGateTraceState
+{
+    bool Active{ false };
+    bool ClassifierObserved{ false };
+    bool OutputsValid{ false };
+    uint32_t HostCount{ 0 };
+    std::array<uint32_t, 5> MismatchCounts{};
+    uintptr_t AsyncData{ 0 };
+    uint32_t AsyncWord8{ 0 };
+    uint32_t AsyncWordC{ 0 };
+};
+
+static thread_local JoinModReconciliationGateTraceState
+    JoinModReconciliationGateTraceForCurrentThread;
 
 struct EntityReplicationCountWriteRecord
 {
@@ -606,6 +671,181 @@ static constexpr uint8_t JoiningProtocolProcessMessagePreamble7398727[] = {
     0x48, 0x81, 0xEC, 0xA0, 0x02, 0x00, 0x00, 0x48
 };
 
+static constexpr uint8_t ClientJoiningProtocolProcessMessagePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x55, 0x56, 0x57,
+    0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+    0x48, 0x8D, 0xAC, 0x24, 0x50, 0xFF, 0xFF, 0xFF,
+    0x48, 0x81, 0xEC, 0xB0, 0x01, 0x00, 0x00, 0x48
+};
+
+static constexpr uint8_t ModReconciliationClassifyPreamble7398727[] = {
+    0x40, 0x55, 0x53, 0x56, 0x57, 0x41, 0x54, 0x41,
+    0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8D, 0x6C,
+    0x24, 0xC8, 0x48, 0x81, 0xEC, 0x38, 0x01, 0x00,
+    0x00, 0x48, 0x8B, 0x05, 0x50, 0xA1, 0x6A, 0x04
+};
+
+static constexpr uint8_t ModReconciliationGatePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x08, 0x55, 0x56, 0x57,
+    0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+    0x48, 0x8D, 0x6C, 0x24, 0xD9, 0x48, 0x81, 0xEC,
+    0xC0, 0x00, 0x00, 0x00, 0x4C, 0x8B, 0xE2, 0x4C
+};
+
+static constexpr uint8_t ModManifestComparePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x18, 0x55, 0x56, 0x57,
+    0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+    0x48, 0x83, 0xEC, 0x20, 0x44, 0x8B, 0x79, 0x14,
+    0x4D, 0x8B, 0xF0, 0x8B, 0x42, 0x14, 0x4C, 0x8B
+};
+
+static constexpr uint8_t ClientLobbyProtocolProcessMessagePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x18, 0x57, 0x48, 0x83,
+    0xEC, 0x20, 0x41, 0x8B, 0x49, 0x08, 0x81, 0xE9,
+    0xC7, 0x00, 0x00, 0x00, 0x0F, 0x84, 0xD4, 0x00,
+    0x00, 0x00, 0x83, 0xF9, 0x01, 0x74, 0x0D, 0x33
+};
+
+static constexpr uint8_t ServerLobbyProtocolProcessMessagePreamble7398727[] = {
+    0x48, 0x83, 0xEC, 0x28, 0x41, 0x8B, 0x49, 0x08,
+    0x81, 0xE9, 0xC7, 0x00, 0x00, 0x00, 0x74, 0x5E,
+    0x83, 0xE9, 0x01, 0x74, 0x2E, 0x83, 0xF9, 0x01,
+    0x74, 0x07, 0x33, 0xC0, 0x48, 0x83, 0xC4, 0x28
+};
+
+static constexpr uint8_t DCLobbyUpdatePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x48, 0x89, 0x74,
+    0x24, 0x18, 0x48, 0x89, 0x7C, 0x24, 0x20, 0x55,
+    0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+    0x48, 0x8D, 0xAC, 0x24, 0x20, 0xFF, 0xFF, 0xFF
+};
+
+static constexpr uint8_t PlatformIdentityMapWritePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x55, 0x56, 0x57,
+    0x48, 0x81, 0xEC, 0x90, 0x00, 0x00, 0x00, 0x48,
+    0x8B, 0x05, 0x3A, 0x76, 0xE6, 0x01, 0x48, 0x33,
+    0xC4, 0x48, 0x89, 0x84, 0x24, 0x80, 0x00, 0x00
+};
+
+static constexpr uint8_t ConnectedPeerRegisteredPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x48, 0x89, 0x74,
+    0x24, 0x18, 0x57, 0x48, 0x83, 0xEC, 0x20, 0x48,
+    0x8D, 0xB9, 0x80, 0x06, 0x00, 0x00, 0x48, 0x8B,
+    0xD9, 0x8B, 0x4F, 0x08, 0x48, 0x8B, 0xF2, 0x8B
+};
+
+static constexpr uint8_t SessionMemberAddedPreamble7398727[] = {
+    0x40, 0x53, 0x48, 0x83, 0xEC, 0x20, 0x48, 0x8B,
+    0x05, 0xB3, 0x4C, 0xF9, 0x02, 0x48, 0x8B, 0xDA,
+    0x48, 0x8B, 0x80, 0x90, 0x00, 0x00, 0x00, 0x48,
+    0x85, 0xC0, 0x74, 0x7A, 0x48, 0x8B, 0x40, 0x18
+};
+
+static constexpr uint8_t CharacterOwnerWritePreamble7398727[] = {
+    0x40, 0x55, 0x56, 0x57, 0x41, 0x55, 0x41, 0x56,
+    0x48, 0x83, 0xEC, 0x50, 0x8B, 0x81, 0x2C, 0x07,
+    0x00, 0x00, 0x45, 0x0F, 0xB6, 0xE9, 0x48, 0x8B,
+    0x7A, 0x10, 0x41, 0x8B, 0xF0, 0x48, 0x89, 0xBC
+};
+
+static constexpr uint8_t LobbyParticipantAddedPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x48, 0x89, 0x74,
+    0x24, 0x18, 0x48, 0x89, 0x7C, 0x24, 0x20, 0x55,
+    0x41, 0x56, 0x41, 0x57, 0x48, 0x8B, 0xEC, 0x48,
+    0x81, 0xEC, 0x80, 0x00, 0x00, 0x00, 0x48, 0x8B
+};
+
+static constexpr uint8_t ServerLobbyRecordWritePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x20, 0x55, 0x56, 0x57,
+    0x48, 0x81, 0xEC, 0xA0, 0x00, 0x00, 0x00, 0x48,
+    0x8B, 0x05, 0xBA, 0xFA, 0x42, 0x03, 0x48, 0x33,
+    0xC4, 0x48, 0x89, 0x84, 0x24, 0x90, 0x00, 0x00
+};
+
+static constexpr uint8_t ServerLobbyStateReconcilePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x18, 0x55, 0x56, 0x57,
+    0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+    0x48, 0x8D, 0x6C, 0x24, 0xC0, 0x48, 0x81, 0xEC,
+    0x40, 0x01, 0x00, 0x00, 0x48, 0x8B, 0x05, 0x3D
+};
+
+static constexpr uint8_t LobbyStartGamePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x48, 0x89, 0x74,
+    0x24, 0x18, 0x48, 0x89, 0x7C, 0x24, 0x20, 0x55,
+    0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+    0x48, 0x8D, 0xAC, 0x24, 0x70, 0xFF, 0xFF, 0xFF
+};
+
+static constexpr uint8_t LobbyReadyRecomputePreamble7398727[] = {
+    0x4C, 0x8B, 0xDC, 0x55, 0x56, 0x41, 0x57, 0x48,
+    0x81, 0xEC, 0xB0, 0x00, 0x00, 0x00, 0x48, 0x8B,
+    0x05, 0x1B, 0xF0, 0x42, 0x03, 0x48, 0x33, 0xC4,
+    0x48, 0x89, 0x84, 0x24, 0x90, 0x00, 0x00, 0x00
+};
+
+static constexpr uint8_t ConnectionParticipantRemovePreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x08, 0x48, 0x89, 0x6C,
+    0x24, 0x10, 0x48, 0x89, 0x74, 0x24, 0x18, 0x57,
+    0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+    0x48, 0x83, 0xEC, 0x40, 0x45, 0x8B, 0xE9, 0x4D
+};
+
+static constexpr uint8_t ConnectionStateEventPreamble7398727[] = {
+    0x4C, 0x8B, 0xDC, 0x49, 0x89, 0x5B, 0x08, 0x49,
+    0x89, 0x6B, 0x10, 0x49, 0x89, 0x73, 0x18, 0x57,
+    0x41, 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+    0x48, 0x83, 0xEC, 0x60, 0x48, 0x8B, 0xFA, 0x48
+};
+
+static constexpr uint8_t SteamLobbyVisibilityPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x48, 0x89, 0x6C,
+    0x24, 0x18, 0x48, 0x89, 0x74, 0x24, 0x20, 0x57,
+    0x41, 0x56, 0x41, 0x57, 0x48, 0x83, 0xEC, 0x40,
+    0x4D, 0x8B, 0xF9, 0x44, 0x0F, 0xBE, 0xF2, 0x48
+};
+
+static constexpr uint8_t SteamLobbyCreatedPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x48, 0x89, 0x6C,
+    0x24, 0x18, 0x56, 0x57, 0x41, 0x56, 0x48, 0x83,
+    0xEC, 0x50, 0x48, 0x8B, 0x99, 0x10, 0x01, 0x00,
+    0x00, 0x45, 0x33, 0xF6, 0x48, 0x8B, 0xF2, 0x48
+};
+
+static constexpr uint8_t SteamLobbyJoinRequestPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x57, 0x48, 0x83,
+    0xEC, 0x40, 0x8B, 0x82, 0x7C, 0x02, 0x00, 0x00,
+    0x48, 0x8B, 0xDA, 0x48, 0x8B, 0xF9, 0x85, 0xC0,
+    0x75, 0x0D, 0xB0, 0x0A, 0x48, 0x8B, 0x5C, 0x24
+};
+
+static constexpr uint8_t SteamLobbyEnteredPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x48, 0x89, 0x74,
+    0x24, 0x18, 0x55, 0x57, 0x41, 0x54, 0x41, 0x56,
+    0x41, 0x57, 0x48, 0x8D, 0x6C, 0x24, 0xC9, 0x48,
+    0x81, 0xEC, 0x90, 0x00, 0x00, 0x00, 0x48, 0x8B
+};
+
+static constexpr uint8_t SteamLobbyMatchListPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x48, 0x89, 0x6C,
+    0x24, 0x18, 0x56, 0x57, 0x41, 0x54, 0x41, 0x56,
+    0x41, 0x57, 0x48, 0x81, 0xEC, 0x90, 0x00, 0x00,
+    0x00, 0x4C, 0x8B, 0xF9, 0xC6, 0x81, 0x2A, 0x01
+};
+
+static constexpr uint8_t PlatformMemberResolvePreamble7398727[] = {
+    0x40, 0x55, 0x56, 0x48, 0x83, 0xEC, 0x28, 0x48,
+    0x8B, 0xEA, 0x48, 0x8B, 0xF1, 0xE8, 0x4E, 0xF7,
+    0xFF, 0xFF, 0x48, 0x85, 0xC0, 0x0F, 0x85, 0xF3,
+    0x00, 0x00, 0x00, 0x48, 0x89, 0x5C, 0x24, 0x40
+};
+
+static constexpr uint8_t PlatformMembershipEventPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x57, 0x48, 0x83,
+    0xEC, 0x30, 0x48, 0x8B, 0xF9, 0x48, 0x8D, 0x05,
+    0x6C, 0xC4, 0x8A, 0x01, 0x48, 0x89, 0x44, 0x24,
+    0x20, 0x89, 0x54, 0x24, 0x28, 0x44, 0x88, 0x44
+};
+
 static constexpr uint8_t LobbyMembershipCheckPreamble7398727[] = {
     0x48, 0x89, 0x5C, 0x24, 0x08, 0x48, 0x89, 0x74,
     0x24, 0x10, 0x57, 0x48, 0x83, 0xEC, 0x20, 0x48,
@@ -930,6 +1170,214 @@ static_assert(offsetof(SerializedByteBufferView, Length) == 0x0C);
 static_assert(sizeof(SerializedByteBufferView) == 0x10);
 static_assert(offsetof(net::Message, Reliability) == 0x0C);
 
+struct JoinTraceArrayView
+{
+    uint8_t const* Data;
+    uint32_t Capacity;
+    uint32_t Count;
+};
+
+struct JoinTraceStringView
+{
+    uint8_t Storage[0x10];
+    uint32_t Length;
+    uint32_t Capacity;
+};
+
+struct JoinTraceLobbyRecord
+{
+    JoinTraceStringView Key;
+    uint16_t PlayerId;
+    uint8_t Ready;
+    uint8_t Active;
+    uint32_t Reserved;
+};
+
+struct JoinTracePlatformIdentity
+{
+    uint32_t Kind;
+    uint8_t Subtype;
+    uint8_t Reserved[3];
+    uint64_t KeyWord0;
+    uint64_t KeyWord1;
+};
+
+struct JoinTraceManifestView
+{
+    uint64_t Reserved;
+    uint8_t const* Data;
+    uint32_t Capacity;
+    uint32_t Count;
+};
+
+struct JoinTraceGuidWords
+{
+    uint64_t Word0;
+    uint64_t Word1;
+};
+
+struct JoinTraceCharacterOwnerNode
+{
+    JoinTraceCharacterOwnerNode const* Next;
+    uint64_t EntityHandle;
+    uint32_t UserId;
+    uint32_t Reserved;
+};
+
+struct JoinTraceCharacterOwnerMapView
+{
+    uint32_t ItemCount;
+    uint32_t HashSize;
+    JoinTraceCharacterOwnerNode const* const* HashTable;
+};
+
+struct JoinTraceCharacterOwnerEntry
+{
+    uint32_t Bucket;
+    uint64_t EntityHandle;
+    uint32_t UserId;
+};
+
+struct JoinTraceCharacterOwnerSnapshot
+{
+    bool GameServerValid;
+    bool LayoutValid;
+    bool TraversalComplete;
+    bool TargetOwnerFound;
+    uint32_t ItemCount;
+    uint32_t HashSize;
+    uint32_t ObservedCount;
+    uint32_t TargetOwnerUserId{ UserId::Unassigned };
+    JoinTraceCharacterOwnerEntry Entries[64]{};
+};
+
+static_assert(sizeof(JoinTraceArrayView) == 0x10);
+static_assert(offsetof(JoinTraceArrayView, Count) == 0x0C);
+static_assert(sizeof(JoinTraceStringView) == 0x18);
+static_assert(offsetof(JoinTraceStringView, Length) == 0x10);
+static_assert(offsetof(JoinTraceStringView, Capacity) == 0x14);
+static_assert(sizeof(JoinTraceLobbyRecord) == 0x20);
+static_assert(offsetof(JoinTraceLobbyRecord, PlayerId) == 0x18);
+static_assert(offsetof(JoinTraceLobbyRecord, Ready) == 0x1A);
+static_assert(offsetof(JoinTraceLobbyRecord, Active) == 0x1B);
+static_assert(sizeof(JoinTracePlatformIdentity) == 0x18);
+static_assert(offsetof(JoinTracePlatformIdentity, KeyWord0) == 0x08);
+static_assert(sizeof(JoinTraceManifestView) == 0x18);
+static_assert(offsetof(JoinTraceManifestView, Data) == 0x08);
+static_assert(offsetof(JoinTraceManifestView, Count) == 0x14);
+static_assert(sizeof(JoinTraceGuidWords) == 0x10);
+static_assert(sizeof(JoinTraceCharacterOwnerNode) == 0x18);
+static_assert(offsetof(JoinTraceCharacterOwnerNode, EntityHandle) == 0x08);
+static_assert(offsetof(JoinTraceCharacterOwnerNode, UserId) == 0x10);
+static_assert(sizeof(JoinTraceCharacterOwnerMapView) == 0x10);
+static_assert(offsetof(JoinTraceCharacterOwnerMapView, HashTable) == 0x08);
+
+static bool TryGetJoinTraceString(
+    JoinTraceStringView const& value, char const*& data, uint32_t& length)
+{
+    data = nullptr;
+    length = 0;
+    if (value.Length > value.Capacity || value.Length > 4096) {
+        return false;
+    }
+
+    if (value.Capacity < 0x10) {
+        data = reinterpret_cast<char const*>(value.Storage);
+    } else {
+        memcpy(&data, value.Storage, sizeof(data));
+    }
+
+    if (value.Length != 0 && data == nullptr) {
+        return false;
+    }
+
+    length = value.Length;
+    return true;
+}
+
+static JoinTraceCharacterOwnerSnapshot CaptureJoinTraceCharacterOwners(
+    void const* gameServer, uint64_t targetEntityHandle)
+{
+    JoinTraceCharacterOwnerSnapshot snapshot{};
+    snapshot.GameServerValid = gameServer != nullptr;
+    if (gameServer == nullptr) {
+        return snapshot;
+    }
+
+    JoinTraceCharacterOwnerMapView map{};
+    memcpy(&map, static_cast<uint8_t const*>(gameServer) + 0x728, sizeof(map));
+    snapshot.ItemCount = map.ItemCount;
+    snapshot.HashSize = map.HashSize;
+    snapshot.LayoutValid = map.ItemCount <= std::size(snapshot.Entries)
+        && map.HashSize <= 4096
+        && ((map.HashSize == 0 && map.ItemCount == 0)
+            || (map.HashSize != 0 && map.HashTable != nullptr));
+    if (!snapshot.LayoutValid) {
+        return snapshot;
+    }
+
+    if (map.HashSize == 0) {
+        snapshot.TraversalComplete = true;
+        return snapshot;
+    }
+
+    bool truncated{};
+    for (uint32_t bucket = 0; bucket < map.HashSize; bucket++) {
+        auto node = map.HashTable[bucket];
+        while (node != nullptr) {
+            if (snapshot.ObservedCount >= std::size(snapshot.Entries)) {
+                truncated = true;
+                break;
+            }
+
+            auto& entry = snapshot.Entries[snapshot.ObservedCount++];
+            entry.Bucket = bucket;
+            entry.EntityHandle = node->EntityHandle;
+            entry.UserId = node->UserId;
+            if (!snapshot.TargetOwnerFound
+                && targetEntityHandle != 0
+                && entry.EntityHandle == targetEntityHandle) {
+                snapshot.TargetOwnerFound = true;
+                snapshot.TargetOwnerUserId = entry.UserId;
+            }
+            node = node->Next;
+        }
+
+        if (truncated) {
+            break;
+        }
+    }
+
+    snapshot.TraversalComplete = !truncated
+        && snapshot.ObservedCount == snapshot.ItemCount;
+    return snapshot;
+}
+
+static bool IsJoinLifecycleTraceMessage(uint32_t messageId)
+{
+    return messageId == 2
+        || messageId == 3
+        || messageId == 6
+        || messageId == 7
+        || messageId == 8
+        || messageId == 166
+        || messageId == 167
+        || messageId == 168
+        || messageId == 169
+        || messageId == 170
+        || messageId == 171
+        || messageId == 172
+        || messageId == 174
+        || messageId == 194
+        || messageId == 199
+        || messageId == 200
+        || messageId == 201
+        || messageId == 239
+        || messageId == 240
+        || messageId == 324
+        || messageId == 325;
+}
+
 static bool IsLoadOrCharacterCreationTraceMessage(uint32_t messageId)
 {
     return messageId == 166
@@ -941,9 +1389,13 @@ static bool IsLoadOrCharacterCreationTraceMessage(uint32_t messageId)
         || messageId == 172
         || messageId == 174
         || messageId == 194
+        || messageId == 199
         || messageId == 200
+        || messageId == 201
         || messageId == 239
-        || messageId == 240;
+        || messageId == 240
+        || messageId == 324
+        || messageId == 325;
 }
 
 static bool WriteNetworkTracePayload(
@@ -1332,6 +1784,195 @@ static net::ProtocolResult (*ResolveJoiningProtocolProcessMessage())(
         net::Protocol*, void*, net::MessageContext*, net::Message*)>(
         JoiningProtocolProcessMessageRva7398727,
         JoiningProtocolProcessMessagePreamble7398727);
+}
+
+static net::ProtocolResult (*ResolveClientJoiningProtocolProcessMessage())(
+    net::Protocol*, void*, net::MessageContext*, net::Message*)
+{
+    return ResolveExactGameFunction<net::ProtocolResult (*)(
+        net::Protocol*, void*, net::MessageContext*, net::Message*)>(
+        ClientJoiningProtocolProcessMessageRva7398727,
+        ClientJoiningProtocolProcessMessagePreamble7398727);
+}
+
+static void (*ResolveModReconciliationClassify())(
+    void*, void*, void*, void*, void*, void*, void*, void*)
+{
+    return ResolveExactGameFunction<void (*)(
+        void*, void*, void*, void*, void*, void*, void*, void*)>(
+        ModReconciliationClassifyRva7398727,
+        ModReconciliationClassifyPreamble7398727);
+}
+
+static void (*ResolveModReconciliationGate())(void*, void*)
+{
+    return ResolveExactGameFunction<void (*)(void*, void*)>(
+        ModReconciliationGateRva7398727,
+        ModReconciliationGatePreamble7398727);
+}
+
+static uint32_t (*ResolveModManifestCompare())(void*, void*, void*)
+{
+    return ResolveExactGameFunction<uint32_t (*)(void*, void*, void*)>(
+        ModManifestCompareRva7398727,
+        ModManifestComparePreamble7398727);
+}
+
+static net::ProtocolResult (*ResolveClientLobbyProtocolProcessMessage())(
+    net::Protocol*, void*, net::MessageContext*, net::Message*)
+{
+    return ResolveExactGameFunction<net::ProtocolResult (*)(
+        net::Protocol*, void*, net::MessageContext*, net::Message*)>(
+        ClientLobbyProtocolProcessMessageRva7398727,
+        ClientLobbyProtocolProcessMessagePreamble7398727);
+}
+
+static net::ProtocolResult (*ResolveServerLobbyProtocolProcessMessage())(
+    net::Protocol*, void*, net::MessageContext*, net::Message*)
+{
+    return ResolveExactGameFunction<net::ProtocolResult (*)(
+        net::Protocol*, void*, net::MessageContext*, net::Message*)>(
+        ServerLobbyProtocolProcessMessageRva7398727,
+        ServerLobbyProtocolProcessMessagePreamble7398727);
+}
+
+static void (*ResolveDCLobbyUpdate())(void*)
+{
+    return ResolveExactGameFunction<void (*)(void*)>(
+        DCLobbyUpdateRva7398727,
+        DCLobbyUpdatePreamble7398727);
+}
+
+static void (*ResolvePlatformIdentityMapWrite())(void*, int32_t, void const*)
+{
+    return ResolveExactGameFunction<void (*)(void*, int32_t, void const*)>(
+        PlatformIdentityMapWriteRva7398727,
+        PlatformIdentityMapWritePreamble7398727);
+}
+
+static void (*ResolveConnectedPeerRegistered())(void*, int32_t const*)
+{
+    return ResolveExactGameFunction<void (*)(void*, int32_t const*)>(
+        ConnectedPeerRegisteredRva7398727,
+        ConnectedPeerRegisteredPreamble7398727);
+}
+
+static uint8_t (*ResolveSessionMemberAdded())(void*, int32_t const*)
+{
+    return ResolveExactGameFunction<uint8_t (*)(void*, int32_t const*)>(
+        SessionMemberAddedRva7398727,
+        SessionMemberAddedPreamble7398727);
+}
+
+static void (*ResolveCharacterOwnerWrite())(void*, void const*, uint32_t, uint8_t)
+{
+    return ResolveExactGameFunction<void (*)(void*, void const*, uint32_t, uint8_t)>(
+        CharacterOwnerWriteRva7398727,
+        CharacterOwnerWritePreamble7398727);
+}
+
+static uint8_t (*ResolveLobbyParticipantAdded())(void*, uint32_t const*)
+{
+    return ResolveExactGameFunction<uint8_t (*)(void*, uint32_t const*)>(
+        LobbyParticipantAddedRva7398727,
+        LobbyParticipantAddedPreamble7398727);
+}
+
+static void (*ResolveServerLobbyRecordWrite())(void*, void const*, uint8_t)
+{
+    return ResolveExactGameFunction<void (*)(void*, void const*, uint8_t)>(
+        ServerLobbyRecordWriteRva7398727,
+        ServerLobbyRecordWritePreamble7398727);
+}
+
+static void (*ResolveServerLobbyStateReconcile())(void*, void*, uint8_t, uint8_t)
+{
+    return ResolveExactGameFunction<void (*)(void*, void*, uint8_t, uint8_t)>(
+        ServerLobbyStateReconcileRva7398727,
+        ServerLobbyStateReconcilePreamble7398727);
+}
+
+static void (*ResolveLobbyStartGame())(void*)
+{
+    return ResolveExactGameFunction<void (*)(void*)>(
+        LobbyStartGameRva7398727,
+        LobbyStartGamePreamble7398727);
+}
+
+static void (*ResolveLobbyReadyRecompute())(void*)
+{
+    return ResolveExactGameFunction<void (*)(void*)>(
+        LobbyReadyRecomputeRva7398727,
+        LobbyReadyRecomputePreamble7398727);
+}
+
+static void (*ResolveConnectionParticipantRemove())(
+    void*, int32_t const*, void const*, uint32_t)
+{
+    return ResolveExactGameFunction<void (*)(
+        void*, int32_t const*, void const*, uint32_t)>(
+        ConnectionParticipantRemoveRva7398727,
+        ConnectionParticipantRemovePreamble7398727);
+}
+
+static void (*ResolveConnectionStateEvent())(void*, void const*)
+{
+    return ResolveExactGameFunction<void (*)(void*, void const*)>(
+        ConnectionStateEventRva7398727,
+        ConnectionStateEventPreamble7398727);
+}
+
+static uint8_t (*ResolveSteamLobbyVisibility())(
+    void*, uint8_t, uint8_t*, uint8_t*)
+{
+    return ResolveExactGameFunction<uint8_t (*)(
+        void*, uint8_t, uint8_t*, uint8_t*)>(
+        SteamLobbyVisibilityRva7398727,
+        SteamLobbyVisibilityPreamble7398727);
+}
+
+static void (*ResolveSteamLobbyCreated())(void*, void const*, uint8_t)
+{
+    return ResolveExactGameFunction<void (*)(void*, void const*, uint8_t)>(
+        SteamLobbyCreatedRva7398727,
+        SteamLobbyCreatedPreamble7398727);
+}
+
+static uint8_t (*ResolveSteamLobbyJoinRequest())(void*, void const*)
+{
+    return ResolveExactGameFunction<uint8_t (*)(void*, void const*)>(
+        SteamLobbyJoinRequestRva7398727,
+        SteamLobbyJoinRequestPreamble7398727);
+}
+
+static void (*ResolveSteamLobbyEntered())(void*, void const*, uint8_t)
+{
+    return ResolveExactGameFunction<void (*)(void*, void const*, uint8_t)>(
+        SteamLobbyEnteredRva7398727,
+        SteamLobbyEnteredPreamble7398727);
+}
+
+static void (*ResolveSteamLobbyMatchList())(
+    void*, uint32_t const*, uint8_t, void*)
+{
+    return ResolveExactGameFunction<void (*)(
+        void*, uint32_t const*, uint8_t, void*)>(
+        SteamLobbyMatchListRva7398727,
+        SteamLobbyMatchListPreamble7398727);
+}
+
+static void* (*ResolvePlatformMemberResolve())(void*, void const*)
+{
+    return ResolveExactGameFunction<void* (*)(void*, void const*)>(
+        PlatformMemberResolveRva7398727,
+        PlatformMemberResolvePreamble7398727);
+}
+
+static void (*ResolvePlatformMembershipEvent())(void*, uint32_t, uint8_t)
+{
+    return ResolveExactGameFunction<void (*)(void*, uint32_t, uint8_t)>(
+        PlatformMembershipEventRva7398727,
+        PlatformMembershipEventPreamble7398727);
 }
 
 static uint8_t (*ResolveLobbyMembershipCheck())(void*, int8_t)
@@ -1825,10 +2466,286 @@ void Hooks::Startup()
         }
     }
 
-    if (gExtender->GetConfig().EnableSyntheticLobbyBypassPrototype) {
+    auto const enableJoinLifecycleTrace =
+        gExtender->GetConfig().EnableJoinLifecycleTrace;
+    auto const enableSyntheticLobbyBypass =
+        gExtender->GetConfig().EnableSyntheticLobbyBypassPrototype;
+    bool joiningProtocolHookInstalled{ false };
+    if (enableJoinLifecycleTrace || enableSyntheticLobbyBypass) {
+        auto const processMessageTarget = ResolveJoiningProtocolProcessMessage();
+        auto const clientProcessMessageTarget = enableJoinLifecycleTrace
+            ? ResolveClientJoiningProtocolProcessMessage()
+            : nullptr;
+        auto const modReconciliationClassifyTarget = enableJoinLifecycleTrace
+            ? ResolveModReconciliationClassify()
+            : nullptr;
+        auto const modReconciliationGateTarget = enableJoinLifecycleTrace
+            ? ResolveModReconciliationGate()
+            : nullptr;
+        auto const modManifestCompareTarget = enableJoinLifecycleTrace
+            ? ResolveModManifestCompare()
+            : nullptr;
+        auto const clientLobbyProcessMessageTarget = enableJoinLifecycleTrace
+            ? ResolveClientLobbyProtocolProcessMessage()
+            : nullptr;
+        auto const serverLobbyProcessMessageTarget = enableJoinLifecycleTrace
+            ? ResolveServerLobbyProtocolProcessMessage()
+            : nullptr;
+        auto const dcLobbyUpdateTarget = enableJoinLifecycleTrace
+            ? ResolveDCLobbyUpdate()
+            : nullptr;
+        auto const platformIdentityMapWriteTarget = enableJoinLifecycleTrace
+            ? ResolvePlatformIdentityMapWrite()
+            : nullptr;
+        auto const connectedPeerRegisteredTarget = enableJoinLifecycleTrace
+            ? ResolveConnectedPeerRegistered()
+            : nullptr;
+        auto const sessionMemberAddedTarget = enableJoinLifecycleTrace
+            ? ResolveSessionMemberAdded()
+            : nullptr;
+        auto const characterOwnerWriteTarget = enableJoinLifecycleTrace
+            ? ResolveCharacterOwnerWrite()
+            : nullptr;
+        auto const lobbyParticipantAddedTarget = enableJoinLifecycleTrace
+            ? ResolveLobbyParticipantAdded()
+            : nullptr;
+        auto const serverLobbyRecordWriteTarget = enableJoinLifecycleTrace
+            ? ResolveServerLobbyRecordWrite()
+            : nullptr;
+        auto const serverLobbyStateReconcileTarget = enableJoinLifecycleTrace
+            ? ResolveServerLobbyStateReconcile()
+            : nullptr;
+        auto const lobbyStartGameTarget = enableJoinLifecycleTrace
+            ? ResolveLobbyStartGame()
+            : nullptr;
+        auto const lobbyReadyRecomputeTarget = enableJoinLifecycleTrace
+            ? ResolveLobbyReadyRecompute()
+            : nullptr;
+        auto const connectionParticipantRemoveTarget = enableJoinLifecycleTrace
+            ? ResolveConnectionParticipantRemove()
+            : nullptr;
+        auto const connectionStateEventTarget = enableJoinLifecycleTrace
+            ? ResolveConnectionStateEvent()
+            : nullptr;
+        auto const steamLobbyVisibilityTarget = enableJoinLifecycleTrace
+            ? ResolveSteamLobbyVisibility()
+            : nullptr;
+        auto const steamLobbyCreatedTarget = enableJoinLifecycleTrace
+            ? ResolveSteamLobbyCreated()
+            : nullptr;
+        auto const steamLobbyJoinRequestTarget = enableJoinLifecycleTrace
+            ? ResolveSteamLobbyJoinRequest()
+            : nullptr;
+        auto const steamLobbyEnteredTarget = enableJoinLifecycleTrace
+            ? ResolveSteamLobbyEntered()
+            : nullptr;
+        auto const steamLobbyMatchListTarget = enableJoinLifecycleTrace
+            ? ResolveSteamLobbyMatchList()
+            : nullptr;
+        auto const platformMemberResolveTarget = enableJoinLifecycleTrace
+            ? ResolvePlatformMemberResolve()
+            : nullptr;
+        auto const platformMembershipEventTarget = enableJoinLifecycleTrace
+            ? ResolvePlatformMembershipEvent()
+            : nullptr;
+        if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
+            auto const& version = gExtender->GetGameVersion();
+            ERR("[MP_JOIN_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.73.98.727",
+                (unsigned)version.Major,
+                (unsigned)version.Minor,
+                (unsigned)version.Revision,
+                (unsigned)version.Build);
+        } else if (enableJoinLifecycleTrace
+            && !IsValidJoinLifecycleTraceMaxEvents(
+                gExtender->GetConfig().JoinLifecycleTraceMaxEvents)) {
+            ERR("[MP_JOIN_TRACE] event=disabled reason=invalid_max_events actual=%u allowed=1-4096",
+                gExtender->GetConfig().JoinLifecycleTraceMaxEvents);
+        } else if (processMessageTarget == nullptr
+            || (enableJoinLifecycleTrace && (clientProcessMessageTarget == nullptr
+                || modReconciliationClassifyTarget == nullptr
+                || modReconciliationGateTarget == nullptr
+                || modManifestCompareTarget == nullptr
+                || clientLobbyProcessMessageTarget == nullptr
+                || serverLobbyProcessMessageTarget == nullptr
+                || dcLobbyUpdateTarget == nullptr
+                 || platformIdentityMapWriteTarget == nullptr
+                 || connectedPeerRegisteredTarget == nullptr
+                 || sessionMemberAddedTarget == nullptr
+                 || characterOwnerWriteTarget == nullptr
+                 || lobbyParticipantAddedTarget == nullptr
+                || serverLobbyRecordWriteTarget == nullptr
+                || serverLobbyStateReconcileTarget == nullptr
+                || lobbyStartGameTarget == nullptr
+                || lobbyReadyRecomputeTarget == nullptr
+                || connectionParticipantRemoveTarget == nullptr
+                || connectionStateEventTarget == nullptr
+                || steamLobbyVisibilityTarget == nullptr
+                || steamLobbyCreatedTarget == nullptr
+                || steamLobbyJoinRequestTarget == nullptr
+                || steamLobbyEnteredTarget == nullptr
+                || steamLobbyMatchListTarget == nullptr
+                || platformMemberResolveTarget == nullptr
+                || platformMembershipEventTarget == nullptr))) {
+            ERR("[MP_JOIN_TRACE] event=disabled reason=function_preamble_mismatch server_rva=0x%llx server=%u client_rva=0x%llx client=%u mod_reconciliation_rva=0x%llx mod_reconciliation=%u semantic_group_valid=%u",
+                (unsigned long long)JoiningProtocolProcessMessageRva7398727,
+                processMessageTarget != nullptr ? 1u : 0u,
+                (unsigned long long)ClientJoiningProtocolProcessMessageRva7398727,
+                clientProcessMessageTarget != nullptr ? 1u : 0u,
+                (unsigned long long)ModReconciliationClassifyRva7398727,
+                modReconciliationClassifyTarget != nullptr ? 1u : 0u,
+                modReconciliationGateTarget != nullptr
+                    && modManifestCompareTarget != nullptr
+                    && clientLobbyProcessMessageTarget != nullptr
+                    && serverLobbyProcessMessageTarget != nullptr
+                    && dcLobbyUpdateTarget != nullptr
+                     && platformIdentityMapWriteTarget != nullptr
+                     && connectedPeerRegisteredTarget != nullptr
+                     && sessionMemberAddedTarget != nullptr
+                     && characterOwnerWriteTarget != nullptr
+                     && lobbyParticipantAddedTarget != nullptr
+                    && serverLobbyRecordWriteTarget != nullptr
+                    && serverLobbyStateReconcileTarget != nullptr
+                    && lobbyStartGameTarget != nullptr
+                    && lobbyReadyRecomputeTarget != nullptr
+                    && connectionParticipantRemoveTarget != nullptr
+                    && connectionStateEventTarget != nullptr
+                    && steamLobbyVisibilityTarget != nullptr
+                    && steamLobbyCreatedTarget != nullptr
+                    && steamLobbyJoinRequestTarget != nullptr
+                    && steamLobbyEnteredTarget != nullptr
+                    && steamLobbyMatchListTarget != nullptr
+                    && platformMemberResolveTarget != nullptr
+                    && platformMembershipEventTarget != nullptr ? 1u : 0u);
+            if (enableJoinLifecycleTrace) {
+                ERR("[MP_JOIN_TRACE] event=semantic_guard_status mod_gate=%u mod_compare=%u client_lobby=%u server_lobby=%u dc_lobby_update=%u identity_map=%u connected_peer=%u session_member_added=%u character_owner_write=%u participant_added=%u record_write=%u reconcile=%u start_game=%u ready_recompute=%u participant_remove=%u connection_event=%u steam_visibility=%u steam_created=%u steam_join=%u steam_entered=%u steam_match_list=%u platform_member_resolve=%u platform_membership_event=%u",
+                    modReconciliationGateTarget != nullptr ? 1u : 0u,
+                    modManifestCompareTarget != nullptr ? 1u : 0u,
+                    clientLobbyProcessMessageTarget != nullptr ? 1u : 0u,
+                    serverLobbyProcessMessageTarget != nullptr ? 1u : 0u,
+                    dcLobbyUpdateTarget != nullptr ? 1u : 0u,
+                    platformIdentityMapWriteTarget != nullptr ? 1u : 0u,
+                    connectedPeerRegisteredTarget != nullptr ? 1u : 0u,
+                    sessionMemberAddedTarget != nullptr ? 1u : 0u,
+                    characterOwnerWriteTarget != nullptr ? 1u : 0u,
+                    lobbyParticipantAddedTarget != nullptr ? 1u : 0u,
+                    serverLobbyRecordWriteTarget != nullptr ? 1u : 0u,
+                    serverLobbyStateReconcileTarget != nullptr ? 1u : 0u,
+                    lobbyStartGameTarget != nullptr ? 1u : 0u,
+                    lobbyReadyRecomputeTarget != nullptr ? 1u : 0u,
+                    connectionParticipantRemoveTarget != nullptr ? 1u : 0u,
+                    connectionStateEventTarget != nullptr ? 1u : 0u,
+                    steamLobbyVisibilityTarget != nullptr ? 1u : 0u,
+                    steamLobbyCreatedTarget != nullptr ? 1u : 0u,
+                    steamLobbyJoinRequestTarget != nullptr ? 1u : 0u,
+                    steamLobbyEnteredTarget != nullptr ? 1u : 0u,
+                    steamLobbyMatchListTarget != nullptr ? 1u : 0u,
+                    platformMemberResolveTarget != nullptr ? 1u : 0u,
+                    platformMembershipEventTarget != nullptr ? 1u : 0u);
+            }
+        } else {
+            DetourTransactionBegin();
+            DetourUpdateThread(GetCurrentThread());
+            eocnet__JoiningProtocol__ProcessMessage.Wrap(processMessageTarget);
+            if (enableJoinLifecycleTrace) {
+                eocnet__ClientJoiningProtocol__ProcessMessage.Wrap(clientProcessMessageTarget);
+                eocnet__ModReconciliation__Classify.Wrap(modReconciliationClassifyTarget);
+                eocnet__ModReconciliation__RunGate.Wrap(modReconciliationGateTarget);
+                eocnet__ModManifest__Compare.Wrap(modManifestCompareTarget);
+                eocnet__ClientLobbyProtocol__ProcessMessage.Wrap(clientLobbyProcessMessageTarget);
+                eocnet__ServerLobbyProtocol__ProcessMessage.Wrap(serverLobbyProcessMessageTarget);
+                ecl__DCLobby__Update.Wrap(dcLobbyUpdateTarget);
+                net__PlatformIdentityMap__Write.Wrap(platformIdentityMapWriteTarget);
+                esv__GameServer__RegisterConnectedPeer.Wrap(connectedPeerRegisteredTarget);
+                esv__GameServer__SessionMemberAdded.Wrap(sessionMemberAddedTarget);
+                esv__GameServer__WriteCharacterOwner.Wrap(characterOwnerWriteTarget);
+                esv__LobbyManager__ParticipantAdded.Wrap(lobbyParticipantAddedTarget);
+                esv__LobbyManager__WriteRecord.Wrap(serverLobbyRecordWriteTarget);
+                esv__LobbyManager__ReconcileState.Wrap(serverLobbyStateReconcileTarget);
+                esv__LobbyManager__StartGame.Wrap(lobbyStartGameTarget);
+                esv__LobbyManager__RecomputeReady.Wrap(lobbyReadyRecomputeTarget);
+                esv__GameServer__RemoveParticipant.Wrap(connectionParticipantRemoveTarget);
+                esv__GameServer__OnConnectionStateEvent.Wrap(connectionStateEventTarget);
+                stm__SteamMatchMakingManager__SetLobbyVisibility.Wrap(steamLobbyVisibilityTarget);
+                stm__SteamMatchMakingManager__OnLobbyCreated.Wrap(steamLobbyCreatedTarget);
+                stm__SteamMatchMakingManager__JoinLobby.Wrap(steamLobbyJoinRequestTarget);
+                stm__SteamMatchMakingManager__OnLobbyEntered.Wrap(steamLobbyEnteredTarget);
+                stm__SteamMatchMakingManager__OnLobbyMatchList.Wrap(steamLobbyMatchListTarget);
+                net__PlatformParticipantManager__ResolveMember.Wrap(platformMemberResolveTarget);
+                net__PlatformParticipantManager__PublishMembershipEvent.Wrap(platformMembershipEventTarget);
+            }
+            auto const status = DetourTransactionCommit();
+            if (status == NO_ERROR) {
+                eocnet__JoiningProtocol__ProcessMessage.SetWrapper(
+                    &Hooks::OnJoiningProtocolProcessMessage, this);
+                if (enableJoinLifecycleTrace) {
+                    eocnet__ClientJoiningProtocol__ProcessMessage.SetWrapper(
+                        &Hooks::OnClientJoiningProtocolProcessMessage, this);
+                    eocnet__ModReconciliation__Classify.SetWrapper(
+                        &Hooks::OnModReconciliationClassify, this);
+                    eocnet__ModReconciliation__RunGate.SetWrapper(
+                        &Hooks::OnModReconciliationGate, this);
+                    eocnet__ModManifest__Compare.SetWrapper(
+                        &Hooks::OnModManifestCompare, this);
+                    eocnet__ClientLobbyProtocol__ProcessMessage.SetWrapper(
+                        &Hooks::OnClientLobbyProtocolProcessMessage, this);
+                    eocnet__ServerLobbyProtocol__ProcessMessage.SetWrapper(
+                        &Hooks::OnServerLobbyProtocolProcessMessage, this);
+                    ecl__DCLobby__Update.SetWrapper(&Hooks::OnDCLobbyUpdate, this);
+                    net__PlatformIdentityMap__Write.SetWrapper(
+                        &Hooks::OnPlatformIdentityMapWrite, this);
+                    esv__GameServer__RegisterConnectedPeer.SetWrapper(
+                        &Hooks::OnConnectedPeerRegistered, this);
+                    esv__GameServer__SessionMemberAdded.SetWrapper(
+                        &Hooks::OnSessionMemberAdded, this);
+                    esv__GameServer__WriteCharacterOwner.SetWrapper(
+                        &Hooks::OnCharacterOwnerWrite, this);
+                    esv__LobbyManager__ParticipantAdded.SetWrapper(
+                        &Hooks::OnLobbyParticipantAdded, this);
+                    esv__LobbyManager__WriteRecord.SetWrapper(
+                        &Hooks::OnServerLobbyRecordWrite, this);
+                    esv__LobbyManager__ReconcileState.SetWrapper(
+                        &Hooks::OnServerLobbyStateReconcile, this);
+                    esv__LobbyManager__StartGame.SetWrapper(
+                        &Hooks::OnLobbyStartGame, this);
+                    esv__LobbyManager__RecomputeReady.SetWrapper(
+                        &Hooks::OnLobbyReadyRecompute, this);
+                    esv__GameServer__RemoveParticipant.SetWrapper(
+                        &Hooks::OnConnectionParticipantRemove, this);
+                    esv__GameServer__OnConnectionStateEvent.SetWrapper(
+                        &Hooks::OnConnectionStateEvent, this);
+                    stm__SteamMatchMakingManager__SetLobbyVisibility.SetWrapper(
+                        &Hooks::OnSteamLobbyVisibility, this);
+                    stm__SteamMatchMakingManager__OnLobbyCreated.SetWrapper(
+                        &Hooks::OnSteamLobbyCreated, this);
+                    stm__SteamMatchMakingManager__JoinLobby.SetWrapper(
+                        &Hooks::OnSteamLobbyJoinRequest, this);
+                    stm__SteamMatchMakingManager__OnLobbyEntered.SetWrapper(
+                        &Hooks::OnSteamLobbyEntered, this);
+                    stm__SteamMatchMakingManager__OnLobbyMatchList.SetWrapper(
+                        &Hooks::OnSteamLobbyMatchList, this);
+                    net__PlatformParticipantManager__ResolveMember.SetWrapper(
+                        &Hooks::OnPlatformMemberResolve, this);
+                    net__PlatformParticipantManager__PublishMembershipEvent.SetWrapper(
+                        &Hooks::OnPlatformMembershipEvent, this);
+                }
+                joiningProtocolHookInstalled = true;
+                if (enableJoinLifecycleTrace) {
+                    INFO("[MP_JOIN_TRACE] event=hook_enabled server_rva=0x%llx client_rva=0x%llx mod_reconciliation_rva=0x%llx mod_gate_rva=0x%llx semantic_hook_count=26 max_events=%u synthetic_bypass_active=0 argument_mutation=0 payload_mutation=0 result_mutation=0",
+                        (unsigned long long)JoiningProtocolProcessMessageRva7398727,
+                        (unsigned long long)ClientJoiningProtocolProcessMessageRva7398727,
+                        (unsigned long long)ModReconciliationClassifyRva7398727,
+                        (unsigned long long)ModReconciliationGateRva7398727,
+                        gExtender->GetConfig().JoinLifecycleTraceMaxEvents);
+                }
+            } else {
+                ERR("[MP_JOIN_TRACE] event=disabled reason=detour_failed status=%ld", status);
+            }
+        }
+    }
+
+    if (enableSyntheticLobbyBypass) {
         auto const marker = gExtender->GetConfig().SyntheticLobbyBypassMarker;
         auto const peerLimit = gExtender->GetConfig().ExperimentalNativeMultiplayerPeerLimit;
-        auto const processMessageTarget = ResolveJoiningProtocolProcessMessage();
         auto const membershipCheckTarget = ResolveLobbyMembershipCheck();
         auto const lobbyIsReadyTarget = ResolveLobbyIsReady();
         if (marker == 0) {
@@ -1845,30 +2762,28 @@ void Hooks::Startup()
                 (unsigned)version.Minor,
                 (unsigned)version.Revision,
                 (unsigned)version.Build);
+        } else if (!joiningProtocolHookInstalled || membershipCheckTarget == nullptr
+            || lobbyIsReadyTarget == nullptr) {
+            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=function_guard_failed joining_protocol=%d membership_check=%d lobby_is_ready=%d",
+                joiningProtocolHookInstalled,
+                membershipCheckTarget != nullptr,
+                lobbyIsReadyTarget != nullptr);
         } else if (!ApplySyntheticLobbyCanStartBypass7398727()) {
             ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=can_start_bypass_failed");
         } else if (!ApplySyntheticLobbyStartMembershipBypass7398727()) {
             ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=start_membership_bypass_failed");
-        } else if (processMessageTarget == nullptr || membershipCheckTarget == nullptr
-            || lobbyIsReadyTarget == nullptr) {
-            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=function_guard_failed joining_protocol=%d membership_check=%d lobby_is_ready=%d",
-                processMessageTarget != nullptr,
-                membershipCheckTarget != nullptr,
-                lobbyIsReadyTarget != nullptr);
         } else {
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
-            eocnet__JoiningProtocol__ProcessMessage.Wrap(processMessageTarget);
             eocnet__Lobby__CheckMembership.Wrap(membershipCheckTarget);
             eocnet__Lobby__IsReady.Wrap(lobbyIsReadyTarget);
             auto const status = DetourTransactionCommit();
             if (status == NO_ERROR) {
-                eocnet__JoiningProtocol__ProcessMessage.SetWrapper(
-                    &Hooks::OnJoiningProtocolProcessMessage, this);
                 eocnet__Lobby__CheckMembership.SetWrapper(
                     &Hooks::OnLobbyMembershipCheck, this);
                 eocnet__Lobby__IsReady.SetWrapper(
                     &Hooks::OnLobbyIsReady, this);
+                syntheticLobbyBypassActive_.store(true, std::memory_order_release);
                 INFO("[MP_SYNTHETIC_LOBBY] event=hook_enabled scope=marked_local_client_connect peer_range=2-9 capacity_mode=%s ready_bypass=1 identity_logging=disabled marker_logging=disabled",
                     peerLimit == 0 ? "native" : "expanded");
             } else {
@@ -1883,7 +2798,8 @@ void Hooks::Startup()
         gExtender->GetConfig().EnableSyntheticPeerSessionLoadBypassPrototype;
     auto const enableSyntheticUncompressedLoadReceiveBypass =
         gExtender->GetConfig().EnableSyntheticPeerUncompressedLoadReceiveBypassPrototype;
-    if (enableSyntheticSessionLoadBypass || enableLoadProtocolWireTrace) {
+    if (enableSyntheticSessionLoadBypass || enableLoadProtocolWireTrace
+        || enableJoinLifecycleTrace) {
         auto const target = ResolveAbstractPeerSendGeneralMessage();
         if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
             auto const& version = gExtender->GetGameVersion();
@@ -1916,20 +2832,25 @@ void Hooks::Startup()
                 if (enableLoadProtocolWireTrace) {
                     INFO("[MP_LOAD_TRACE] event=send_hook_enabled rva=0x4061F20 payload_capture=1 message_mutation=0");
                 }
+                if (enableJoinLifecycleTrace) {
+                    INFO("[MP_JOIN_TRACE] event=send_hook_enabled rva=0x4061F20 semantic_fields=1 low_id_body_decode=handler_specific message_mutation=0");
+                }
             } else {
                 ERR("[MP_SYNTHETIC_SESSION_LOAD] event=disabled reason=detour_failed status=%ld", status);
             }
         }
     }
 
-    if (enableLoadProtocolWireTrace || enableSyntheticUncompressedLoadReceiveBypass) {
-        auto const clientTarget = enableLoadProtocolWireTrace
+    auto const enableSemanticLifecycleProtocols =
+        enableLoadProtocolWireTrace || enableJoinLifecycleTrace;
+    if (enableSemanticLifecycleProtocols || enableSyntheticUncompressedLoadReceiveBypass) {
+        auto const clientTarget = enableSemanticLifecycleProtocols
             ? ResolveClientLoadProtocolProcessMessage()
             : nullptr;
-        auto const serverTarget = enableLoadProtocolWireTrace
+        auto const serverTarget = enableSemanticLifecycleProtocols
             ? ResolveServerLoadProtocolProcessMessage()
             : nullptr;
-        auto const characterCreationServerTarget = enableLoadProtocolWireTrace
+        auto const characterCreationServerTarget = enableSemanticLifecycleProtocols
             ? ResolveServerCharacterCreationProtocolProcessMessage()
             : nullptr;
         auto const entityHandleSetInsertTarget = enableLoadProtocolWireTrace
@@ -1968,10 +2889,11 @@ void Hooks::Startup()
                 (unsigned)version.Revision,
                 (unsigned)version.Build);
         } else if (receiveTarget == nullptr
-            || (enableLoadProtocolWireTrace
+            || (enableSemanticLifecycleProtocols
                 && (clientTarget == nullptr || serverTarget == nullptr
-                    || characterCreationServerTarget == nullptr
-                    || entityHandleSetInsertTarget == nullptr
+                    || characterCreationServerTarget == nullptr))
+            || (enableLoadProtocolWireTrace
+                && (entityHandleSetInsertTarget == nullptr
                     || alternateEntityHandleSetInsertTarget == nullptr
                     || entityHandleArrayAppendTarget == nullptr
                     || entityReplicationCommandSetInsertTarget == nullptr
@@ -1994,10 +2916,11 @@ void Hooks::Startup()
                 entityReplicationCommandBufferFlushTarget != nullptr ? 1u : 0u,
                 characterAssignmentEntityRouteTarget != nullptr ? 1u : 0u,
                 peersInRangeAddTarget != nullptr ? 1u : 0u);
-        } else if (!IsValidLoadProtocolWireTraceMaxEvents(
-                gExtender->GetConfig().LoadProtocolWireTraceMaxEvents)
-            || !IsValidLoadProtocolWireTraceMaxPayloadBytes(
-                gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes)) {
+        } else if (enableLoadProtocolWireTrace
+            && (!IsValidLoadProtocolWireTraceMaxEvents(
+                    gExtender->GetConfig().LoadProtocolWireTraceMaxEvents)
+                || !IsValidLoadProtocolWireTraceMaxPayloadBytes(
+                    gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes))) {
             ERR("[MP_LOAD_TRACE] event=disabled reason=invalid_limits max_events=%u max_payload_bytes=%u",
                 gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
                 gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
@@ -2005,10 +2928,12 @@ void Hooks::Startup()
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             net__AbstractPeer__ReceiveGeneralMessage.Wrap(receiveTarget);
-            if (enableLoadProtocolWireTrace) {
+            if (enableSemanticLifecycleProtocols) {
                 eocnet__ClientLoadProtocol__ProcessMessage.Wrap(clientTarget);
                 eocnet__ServerLoadProtocol__ProcessMessage.Wrap(serverTarget);
                 eocnet__ServerCharacterCreationProtocol__ProcessMessage.Wrap(characterCreationServerTarget);
+            }
+            if (enableLoadProtocolWireTrace) {
                 ecs__EntityHandleSet__Insert.Wrap(entityHandleSetInsertTarget);
                 ecs__AlternateEntityHandleSet__Insert.Wrap(alternateEntityHandleSetInsertTarget);
                 ecs__EntityHandleArray__Append.Wrap(entityHandleArrayAppendTarget);
@@ -2023,13 +2948,15 @@ void Hooks::Startup()
             if (status == NO_ERROR) {
                 net__AbstractPeer__ReceiveGeneralMessage.SetWrapper(
                     &Hooks::OnAbstractPeerReceiveGeneralMessage, this);
-                if (enableLoadProtocolWireTrace) {
+                if (enableSemanticLifecycleProtocols) {
                     eocnet__ClientLoadProtocol__ProcessMessage.SetWrapper(
                         &Hooks::OnClientLoadProtocolProcessMessage, this);
                     eocnet__ServerLoadProtocol__ProcessMessage.SetWrapper(
                         &Hooks::OnServerLoadProtocolProcessMessage, this);
                     eocnet__ServerCharacterCreationProtocol__ProcessMessage.SetWrapper(
                         &Hooks::OnServerCharacterCreationProtocolProcessMessage, this);
+                }
+                if (enableLoadProtocolWireTrace) {
                     ecs__EntityHandleSet__Insert.SetWrapper(
                         &Hooks::OnEntityHandleSetInsert, this);
                     ecs__AlternateEntityHandleSet__Insert.SetWrapper(
@@ -2073,6 +3000,9 @@ void Hooks::Startup()
                     INFO("[MP_LOAD_TRACE] event=hook_enabled send_rva=0x4061F20 receive_rva=0x4062320 client_process_rva=0x1FEE910 server_process_rva=0x2F9F170 character_creation_server_process_rva=0x373C020 entity_handle_set_insert_rva=0x1135EB0 alternate_entity_handle_set_insert_rva=0x3148D00 entity_handle_array_append_rva=0x7554F0 replication_command_set_insert_rva=0x7200C0 replication_command_buffer_replicate_rva=0x428FF80 replication_system_update_rva=0x3158380 replication_command_buffer_flush_rva=0x4287190 character_assignment_entity_route_rva=0x30735A0 peers_in_range_add_rva=0x30BEBC0 max_events=%u max_payload_bytes=%u payload_directory=localappdata identity_logging=enabled session_logging=enabled character_creation_logging=net_id_resolved_entity character_assignment_logging=peer_entity_access peers_in_range_logging=add_before_after replication_enqueue_correlation=command_buffer_flush_history_insert_sources_count_watchpoint_array_append_command_set_insert_and_replicate_callback message_mutation=0",
                         gExtender->GetConfig().LoadProtocolWireTraceMaxEvents,
                         gExtender->GetConfig().LoadProtocolWireTraceMaxPayloadBytes);
+                }
+                if (enableJoinLifecycleTrace) {
+                    INFO("[MP_JOIN_TRACE] event=lifecycle_protocol_hooks_enabled receive_rva=0x4062320 client_load_process_rva=0x1FEE910 server_load_process_rva=0x2F9F170 character_creation_server_process_rva=0x373C020 argument_mutation=0 payload_mutation=0 result_mutation=0");
                 }
                 if (enableSyntheticUncompressedLoadReceiveBypass) {
                     INFO("[MP_SYNTHETIC_SESSION_LOAD] event=receive_bypass_hook_enabled receive_rva=0x4062320 peers=marked_synthetic ids=167,168,172 wrapper_flags=0 scope=message_reliability_guard");
@@ -2700,6 +3630,428 @@ bool Hooks::OnAbstractPeerBindSocket(
     return wrapped(peer, port, socketType);
 }
 
+void Hooks::TraceJoinMessageSemantics(
+    char const* side,
+    char const* direction,
+    TPeerId peerId,
+    net::Message* message,
+    uint32_t callIndex)
+{
+    if (message == nullptr
+        || !IsJoinLifecycleTraceMessage(static_cast<uint32_t>(message->MsgId))) {
+        return;
+    }
+
+    auto const bytes = reinterpret_cast<uint8_t const*>(message);
+    auto const messageId = static_cast<uint32_t>(message->MsgId);
+    uint32_t eventIndex;
+
+    switch (messageId) {
+    case 2: {
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        auto const attempt = *reinterpret_cast<uint32_t const*>(bytes + 0x28);
+        INFO("[MP_JOIN_TRACE] event=message_fields index=%u call_index=%u side=%s direction=%s msg_id=2 concrete=HostWelcomeMessage concrete_name_va=0x14554C728 constructor_rva=0x11D75E0 serializer_rva=0x11ABDB0 peer=%u attempt=%u special_vtable_path=1 message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId, attempt);
+        break;
+    }
+
+    case 3: {
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        auto const refusalReason = *reinterpret_cast<uint32_t const*>(bytes + 0x28);
+        INFO("[MP_JOIN_TRACE] event=message_fields index=%u call_index=%u side=%s direction=%s msg_id=3 concrete=HostRefuseMessage concrete_name_va=0x14554C6F0 constructor_rva=0x11B0C10 serializer_rva=0x11B0BA0 peer=%u reason=%u has_mod_mismatch=%u special_vtable_path=1 message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId,
+            refusalReason, refusalReason == 5 || refusalReason == 6 ? 1u : 0u);
+        break;
+    }
+
+    case 6: {
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        auto const connect = static_cast<net::ClientConnectMessage const*>(message);
+        uint64_t identityWord0{};
+        uint64_t identityWord1{};
+        memcpy(&identityWord0, &connect->field_60, sizeof(identityWord0));
+        memcpy(&identityWord1,
+            reinterpret_cast<uint8_t const*>(&connect->field_60) + sizeof(identityWord0),
+            sizeof(identityWord1));
+        INFO("[MP_JOIN_TRACE] event=message_fields index=%u call_index=%u side=%s direction=%s msg_id=6 concrete=ClientConnectMessage concrete_name_va=0x14554CAB0 constructor_rva=0x11CB790 serializer_rva=0x11CB900 peer=%u platform_kind=%d platform_subtype=%u platform_key_word0=0x%016llX platform_key_word1=0x%016llX compatibility_count=%u generation=%d identity_tail_kind=%u identity_tail_subtype=%u field_ac=%u special_vtable_path=1 message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId,
+            connect->field_58,
+            (unsigned)connect->field_5C,
+            (unsigned long long)identityWord0,
+            (unsigned long long)identityWord1,
+            connect->field_78.size(),
+            connect->field_A8,
+            (unsigned)connect->field_70,
+            (unsigned)connect->field_71,
+            (unsigned)connect->field_AC);
+        break;
+    }
+
+    case 7:
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=message_fields index=%u call_index=%u side=%s direction=%s msg_id=7 concrete=ClientAcceptMessage concrete_name_va=0x14554CA78 constructor_rva=0x11CB6E0 serializer_rva=0x579D90 body=empty peer=%u special_vtable_path=1 message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId);
+        break;
+
+    case 8: {
+        auto const& peers = *reinterpret_cast<JoinTraceArrayView const*>(bytes + 0x28);
+        auto const valid = peers.Count <= peers.Capacity
+            && peers.Count <= 64
+            && (peers.Count == 0 || peers.Data != nullptr);
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=connected_peer_list index=%u call_index=%u side=%s direction=%s msg_id=8 concrete=ClientJoinedMessage concrete_name_va=0x14554CB60 constructor_rva=0x11CBCB0 serializer_rva=0x11CBDB0 peer=%u count=%u capacity=%u layout_valid=%u record_stride=0x30 special_vtable_path=1 message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId,
+            peers.Count, peers.Capacity, valid ? 1u : 0u);
+        if (!valid) return;
+
+        for (uint32_t i = 0; i < peers.Count; i++) {
+            auto const record = peers.Data + static_cast<size_t>(i) * 0x30;
+            auto const& className = *reinterpret_cast<JoinTraceStringView const*>(record);
+            char const* classNameData{};
+            uint32_t classNameLength{};
+            auto const classNameValid = TryGetJoinTraceString(
+                className, classNameData, classNameLength);
+            auto const identityKind = *reinterpret_cast<uint32_t const*>(record + 0x18);
+            auto const identitySubtype = *reinterpret_cast<uint32_t const*>(record + 0x1C);
+            auto const identityValue = *reinterpret_cast<uint64_t const*>(record + 0x20);
+            if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+            INFO("[MP_JOIN_TRACE] event=connected_peer_record index=%u call_index=%u side=%s direction=%s msg_id=8 peer=%u ordinal=%u class_name_valid=%u class_name=%.*s platform_kind=%u platform_subtype=%u platform_value=0x%016llX message_mutation=0",
+                eventIndex, callIndex, side, direction, (unsigned)peerId, i,
+                classNameValid ? 1u : 0u,
+                classNameValid ? static_cast<int>(classNameLength) : 0,
+                classNameValid && classNameData != nullptr ? classNameData : "",
+                identityKind,
+                identitySubtype,
+                (unsigned long long)identityValue);
+        }
+        break;
+    }
+
+    case 199: {
+        auto const body = bytes + 0x28;
+        auto const fieldMask = *reinterpret_cast<uint32_t const*>(body + 0x94);
+        auto const slotCount = *reinterpret_cast<uint8_t const*>(body + 0x38);
+        auto const& records = *reinterpret_cast<JoinTraceArrayView const*>(body + 0x98);
+        auto const valid = records.Count <= records.Capacity
+            && records.Count <= 64
+            && (records.Count == 0 || records.Data != nullptr);
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=lobby_state_message index=%u call_index=%u side=%s direction=%s msg_id=199 concrete=LobbyDataUpdateMessage concrete_name_va=0x145550140 constructor_rva=0x11DC660 serializer_rva=0x11DC700 peer=%u field_mask=0x%08X slot_count=%u record_count=%u record_capacity=%u record_layout_valid=%u record_stride=0x20 message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId,
+            fieldMask, (unsigned)slotCount, records.Count, records.Capacity,
+            valid ? 1u : 0u);
+        if (!valid) return;
+
+        for (uint32_t i = 0; i < records.Count; i++) {
+            auto const& record = *reinterpret_cast<JoinTraceLobbyRecord const*>(
+                records.Data + static_cast<size_t>(i) * sizeof(JoinTraceLobbyRecord));
+            char const* keyData{};
+            uint32_t keyLength{};
+            auto const keyValid = TryGetJoinTraceString(record.Key, keyData, keyLength);
+            if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+            INFO("[MP_JOIN_TRACE] event=lobby_message_record index=%u call_index=%u side=%s direction=%s msg_id=199 peer=%u slot=%u key_valid=%u key=%.*s player_id=%u ready=%u active=%u message_mutation=0",
+                eventIndex, callIndex, side, direction, (unsigned)peerId, i,
+                keyValid ? 1u : 0u,
+                keyValid ? static_cast<int>(keyLength) : 0,
+                keyValid && keyData != nullptr ? keyData : "",
+                (unsigned)record.PlayerId,
+                (unsigned)record.Ready,
+                (unsigned)record.Active);
+        }
+        break;
+    }
+
+    case 200: {
+        auto const& record = *reinterpret_cast<JoinTraceLobbyRecord const*>(bytes + 0x28);
+        auto const slot = *reinterpret_cast<uint8_t const*>(bytes + 0x48);
+        char const* keyData{};
+        uint32_t keyLength{};
+        auto const keyValid = TryGetJoinTraceString(record.Key, keyData, keyLength);
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=lobby_message_record index=%u call_index=%u side=%s direction=%s msg_id=200 concrete=LobbyUserUpdateMessage concrete_name_va=0x145550100 constructor_rva=0x11DCFB0 serializer_rva=0x11DD030 peer=%u slot=%u key_valid=%u key=%.*s player_id=%u ready=%u active=%u message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId,
+            (unsigned)slot,
+            keyValid ? 1u : 0u,
+            keyValid ? static_cast<int>(keyLength) : 0,
+            keyValid && keyData != nullptr ? keyData : "",
+            (unsigned)record.PlayerId,
+            (unsigned)record.Ready,
+            (unsigned)record.Active);
+        break;
+    }
+
+    case 201: {
+        auto const field0 = *reinterpret_cast<uint8_t const*>(bytes + 0x28);
+        auto const field1 = *reinterpret_cast<uint8_t const*>(bytes + 0x29);
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=message_fields index=%u call_index=%u side=%s direction=%s msg_id=201 concrete=LobbyStartGameMessage concrete_name_va=0x1455500C0 constructor_rva=0x11DC320 serializer_rva=0x11DC360 peer=%u field28=%u field29=%u message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId,
+            (unsigned)field0, (unsigned)field1);
+        break;
+    }
+
+    case 239: {
+        auto const netId = *reinterpret_cast<uint64_t const*>(bytes + 0x28);
+        auto const field30 = *reinterpret_cast<uint16_t const*>(bytes + 0x30);
+        auto const field38 = *reinterpret_cast<uint32_t const*>(bytes + 0x38);
+        auto const field3C = *reinterpret_cast<uint8_t const*>(bytes + 0x3C);
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=creator_message_fields index=%u call_index=%u side=%s direction=%s msg_id=239 concrete=CharacterCreationReadyUpdateMessage concrete_name_va=0x1455507E8 constructor_rva=0x11C2890 serializer_rva=0x11C28F0 peer=%u net_id=0x%016llX player_index=%u ready_stage=%u ready_value=%u message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId,
+            (unsigned long long)netId,
+            (unsigned)field30,
+            field38,
+            (unsigned)field3C);
+        break;
+    }
+
+    case 240: {
+        auto const netId = *reinterpret_cast<uint64_t const*>(bytes + 0x28);
+        auto const playerIndex = *reinterpret_cast<uint16_t const*>(bytes + 0x30);
+        auto const payload = bytes + 0x38;
+        auto const discriminator = *reinterpret_cast<uint8_t const*>(bytes + 0x2C0);
+        auto const tailField2C8 = *reinterpret_cast<uint32_t const*>(bytes + 0x2C8);
+        auto const tailField2CC = *reinterpret_cast<uint32_t const*>(bytes + 0x2CC);
+        auto const tailField2D0 = *reinterpret_cast<uint8_t const*>(bytes + 0x2D0);
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=creator_update_message index=%u call_index=%u side=%s direction=%s msg_id=240 concrete=CharacterCreationUpdateMessage concrete_name_va=0x145550790 constructor_rva=0x11C2B50 serializer_rva=0x11C2C80 peer=%u net_id=0x%016llX player_index=%u discriminator=%u tail_field_2c8=%u tail_field_2cc=%u tail_field_2d0=%u message_size=0x2D8 message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId,
+            (unsigned long long)netId,
+            (unsigned)playerIndex,
+            (unsigned)discriminator,
+            tailField2C8,
+            tailField2CC,
+            (unsigned)tailField2D0);
+
+        if (discriminator == 0) {
+            auto const definitionField0 = *reinterpret_cast<uint32_t const*>(payload);
+            auto const& name = *reinterpret_cast<JoinTraceStringView const*>(payload + 0x08);
+            char const* nameData{};
+            uint32_t nameLength{};
+            auto const nameValid = TryGetJoinTraceString(name, nameData, nameLength);
+            auto const& origin = *reinterpret_cast<JoinTraceGuidWords const*>(payload + 0x20);
+            auto const& race = *reinterpret_cast<JoinTraceGuidWords const*>(payload + 0x30);
+            auto const& subrace = *reinterpret_cast<JoinTraceGuidWords const*>(payload + 0x40);
+            auto const bodyType = *(payload + 0x50);
+            auto const bodyShape = *(payload + 0x51);
+            auto const& rootTemplate = *reinterpret_cast<JoinTraceGuidWords const*>(payload + 0x58);
+            auto const& background = *reinterpret_cast<JoinTraceGuidWords const*>(payload + 0x68);
+            auto const& deity = *reinterpret_cast<JoinTraceGuidWords const*>(payload + 0x78);
+            auto const& voice = *reinterpret_cast<JoinTraceGuidWords const*>(payload + 0x88);
+            auto const definitionFieldA8 = *(payload + 0xA8);
+            auto const abilities = reinterpret_cast<int32_t const*>(payload + 0x18C);
+            if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+            INFO("[MP_JOIN_TRACE] event=creator_character_definition index=%u call_index=%u side=%s direction=%s msg_id=240 peer=%u net_id=0x%016llX player_index=%u discriminator=0 variant=CharacterDefinition variant_serializer_rva=0x11C1E10 semantic_role=player_character_definition definition_field0=%u name_valid=%u name=%.*s origin_word0=0x%016llX origin_word1=0x%016llX race_word0=0x%016llX race_word1=0x%016llX subrace_word0=0x%016llX subrace_word1=0x%016llX body_type=%u body_shape=%u root_template_word0=0x%016llX root_template_word1=0x%016llX background_word0=0x%016llX background_word1=0x%016llX deity_word0=0x%016llX deity_word1=0x%016llX voice_word0=0x%016llX voice_word1=0x%016llX definition_field_a8=%u ability_count_serialized=6 ability_0=%d ability_1=%d ability_2=%d ability_3=%d ability_4=%d ability_5=%d vo_lines_serialized=0 message_mutation=0",
+                eventIndex, callIndex, side, direction, (unsigned)peerId,
+                (unsigned long long)netId,
+                (unsigned)playerIndex,
+                definitionField0,
+                nameValid ? 1u : 0u,
+                nameValid ? static_cast<int>(nameLength) : 0,
+                nameValid && nameData != nullptr ? nameData : "",
+                (unsigned long long)origin.Word0,
+                (unsigned long long)origin.Word1,
+                (unsigned long long)race.Word0,
+                (unsigned long long)race.Word1,
+                (unsigned long long)subrace.Word0,
+                (unsigned long long)subrace.Word1,
+                (unsigned)bodyType,
+                (unsigned)bodyShape,
+                (unsigned long long)rootTemplate.Word0,
+                (unsigned long long)rootTemplate.Word1,
+                (unsigned long long)background.Word0,
+                (unsigned long long)background.Word1,
+                (unsigned long long)deity.Word0,
+                (unsigned long long)deity.Word1,
+                (unsigned long long)voice.Word0,
+                (unsigned long long)voice.Word1,
+                (unsigned)definitionFieldA8,
+                abilities[0], abilities[1], abilities[2],
+                abilities[3], abilities[4], abilities[5]);
+        } else if (discriminator == 1) {
+            auto const& race = *reinterpret_cast<JoinTraceGuidWords const*>(payload);
+            auto const& subrace = *reinterpret_cast<JoinTraceGuidWords const*>(payload + 0x10);
+            auto const bodyType = *(payload + 0x20);
+            auto const bodyShape = *(payload + 0x21);
+            auto const& rootTemplate = *reinterpret_cast<JoinTraceGuidWords const*>(payload + 0x28);
+            auto const& voice = *reinterpret_cast<JoinTraceGuidWords const*>(payload + 0x110);
+            auto const field130 = *(payload + 0x130);
+            if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+            INFO("[MP_JOIN_TRACE] event=creator_companion_definition index=%u call_index=%u side=%s direction=%s msg_id=240 peer=%u net_id=0x%016llX player_index=%u discriminator=1 variant=CompanionDefinition variant_serializer_rva=0x11C6350 semantic_role=guardian_companion_definition runtime_role_confidence=medium race_word0=0x%016llX race_word1=0x%016llX subrace_word0=0x%016llX subrace_word1=0x%016llX body_type=%u body_shape=%u root_template_word0=0x%016llX root_template_word1=0x%016llX voice_word0=0x%016llX voice_word1=0x%016llX field_130=%u vo_lines_serialized=0 message_mutation=0",
+                eventIndex, callIndex, side, direction, (unsigned)peerId,
+                (unsigned long long)netId,
+                (unsigned)playerIndex,
+                (unsigned long long)race.Word0,
+                (unsigned long long)race.Word1,
+                (unsigned long long)subrace.Word0,
+                (unsigned long long)subrace.Word1,
+                (unsigned)bodyType,
+                (unsigned)bodyShape,
+                (unsigned long long)rootTemplate.Word0,
+                (unsigned long long)rootTemplate.Word1,
+                (unsigned long long)voice.Word0,
+                (unsigned long long)voice.Word1,
+                (unsigned)field130);
+        } else {
+            if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+            INFO("[MP_JOIN_TRACE] event=creator_update_unknown_variant index=%u call_index=%u side=%s direction=%s msg_id=240 peer=%u net_id=0x%016llX player_index=%u discriminator=%u known_discriminators=0,1 semantic_decode=refused_unknown_discriminator message_mutation=0",
+                eventIndex, callIndex, side, direction, (unsigned)peerId,
+                (unsigned long long)netId,
+                (unsigned)playerIndex,
+                (unsigned)discriminator);
+        }
+        break;
+    }
+
+    case 166: {
+        auto const& field28 = *reinterpret_cast<JoinTraceStringView const*>(bytes + 0x28);
+        auto const& field40 = *reinterpret_cast<JoinTraceStringView const*>(bytes + 0x40);
+        char const* field28Data{};
+        char const* field40Data{};
+        uint32_t field28Length{};
+        uint32_t field40Length{};
+        auto const field28Valid = TryGetJoinTraceString(
+            field28, field28Data, field28Length);
+        auto const field40Valid = TryGetJoinTraceString(
+            field40, field40Data, field40Length);
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=load_axis_message_seen index=%u call_index=%u side=%s direction=%s msg_id=166 phase=level_load concrete=LevelLoadMessage concrete_name_va=0x14554CC40 constructor_rva=0x1199F30 serializer_rva=0x1199F90 peer=%u field28_valid=%u field28=%.*s field40_valid=%u field40=%.*s body_semantic=two_strings message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId,
+            field28Valid ? 1u : 0u,
+            field28Valid ? static_cast<int>(field28Length) : 0,
+            field28Valid && field28Data != nullptr ? field28Data : "",
+            field40Valid ? 1u : 0u,
+            field40Valid ? static_cast<int>(field40Length) : 0,
+            field40Valid && field40Data != nullptr ? field40Data : "");
+        break;
+    }
+
+    case 167:
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=load_axis_message_seen index=%u call_index=%u side=%s direction=%s msg_id=167 phase=level_created concrete=LevelCreatedMessage concrete_name_va=0x14554CC00 constructor_rva=0x11AFEE0 serializer_rva=0x11AFA10 peer=%u descriptor_offset=0x28 descriptor_semantic=opaque_exact_serializer message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId);
+        break;
+
+    case 168:
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=load_axis_message_seen index=%u call_index=%u side=%s direction=%s msg_id=168 phase=level_loaded concrete=LevelLoadedMessage concrete_name_va=0x14554CBC0 constructor_rva=0x11AFE20 serializer_rva=0x11AFA10 peer=%u descriptor_offset=0x28 descriptor_semantic=opaque_exact_serializer message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId);
+        break;
+
+    case 169: {
+        auto const tailWordD8 = *reinterpret_cast<uint16_t const*>(bytes + 0xD8);
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=load_axis_message_seen index=%u call_index=%u side=%s direction=%s msg_id=169 phase=load_start concrete=LoadStartMessage concrete_name_va=0x14554CB80 constructor_rva=0x11AFD30 serializer_rva=0x11AFCE0 peer=%u descriptor_offset=0x28 tail_word_d8=%u message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId,
+            (unsigned)tailWordD8);
+        break;
+    }
+
+    case 170:
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=load_axis_message_seen index=%u call_index=%u side=%s direction=%s msg_id=170 phase=load_started concrete=LoadStartedMessage concrete_name_va=0x14554D3B8 constructor_rva=0x11AFBC0 serializer_rva=0x579D90 peer=%u body=empty message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId);
+        break;
+
+    case 171:
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=load_axis_message_seen index=%u call_index=%u side=%s direction=%s msg_id=171 phase=level_instantiate_swap concrete=LevelInstantiateSwapMessage concrete_name_va=0x14554D368 constructor_rva=0x11AFAE0 serializer_rva=0x11AFA10 peer=%u descriptor_offset=0x28 descriptor_semantic=opaque_exact_serializer message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId);
+        break;
+
+    case 172:
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=load_axis_message_seen index=%u call_index=%u side=%s direction=%s msg_id=172 phase=level_swap_ready concrete=LevelSwapReadyMessage concrete_name_va=0x14554D328 constructor_rva=0x11AFA20 serializer_rva=0x11AFA10 peer=%u descriptor_offset=0x28 descriptor_semantic=opaque_exact_serializer message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId);
+        break;
+
+    case 174: {
+        auto const startValue = *(bytes + 0x28);
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=load_axis_message_seen index=%u call_index=%u side=%s direction=%s msg_id=174 phase=level_start concrete=LevelStartMessage concrete_name_va=0x14554D298 constructor_rva=0x11AF810 serializer_rva=0x11AF7C0 peer=%u start_value=%u message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId,
+            (unsigned)startValue);
+        break;
+    }
+
+    case 194:
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=load_axis_message_seen index=%u call_index=%u side=%s direction=%s msg_id=194 phase=session_load_runtime peer=%u semantic_decode=protocol_context_only message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId);
+        break;
+
+    case 324:
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=message_fields index=%u call_index=%u side=%s direction=%s msg_id=324 concrete=ClientRequestModList concrete_name_va=0x145551F88 constructor_rva=0x11A2160 serializer_rva=0x579D90 body=empty peer=%u message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId);
+        break;
+
+    case 325: {
+        auto const& manifest = *reinterpret_cast<JoinTraceArrayView const*>(bytes + 0x28);
+        auto const valid = manifest.Count <= manifest.Capacity
+            && manifest.Count <= 4096
+            && (manifest.Count == 0 || manifest.Data != nullptr);
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=mod_manifest index=%u call_index=%u side=%s direction=%s msg_id=325 concrete=HostModListMessage concrete_name_va=0x145551F48 constructor_rva=0x11D73E0 serializer_rva=0x11D74C0 record_serializer_rva=0x3BF38F0 peer=%u count=%u capacity=%u layout_valid=%u record_stride=0x78 ordered=1 message_mutation=0",
+            eventIndex, callIndex, side, direction, (unsigned)peerId,
+            manifest.Count, manifest.Capacity, valid ? 1u : 0u);
+        if (!valid) return;
+
+        for (uint32_t i = 0; i < manifest.Count; i++) {
+            auto const record = manifest.Data + static_cast<size_t>(i) * 0x78;
+            auto const uuidWord0 = *reinterpret_cast<uint64_t const*>(record + 0x08);
+            auto const uuidWord1 = *reinterpret_cast<uint64_t const*>(record + 0x10);
+            auto const version = *reinterpret_cast<uint64_t const*>(record + 0x30);
+            auto const flags = *reinterpret_cast<uint64_t const*>(record + 0x70);
+            auto const& name = *reinterpret_cast<JoinTraceStringView const*>(record + 0x18);
+            auto const& hash = *reinterpret_cast<JoinTraceStringView const*>(record + 0x40);
+            auto const& field58 = *reinterpret_cast<JoinTraceStringView const*>(record + 0x58);
+            char const* nameData{};
+            char const* hashData{};
+            char const* field58Data{};
+            uint32_t nameLength{};
+            uint32_t hashLength{};
+            uint32_t field58Length{};
+            auto const nameValid = TryGetJoinTraceString(name, nameData, nameLength);
+            auto const hashValid = TryGetJoinTraceString(hash, hashData, hashLength);
+            auto const field58Valid = TryGetJoinTraceString(
+                field58, field58Data, field58Length);
+            if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+            INFO("[MP_JOIN_TRACE] event=mod_manifest_record index=%u call_index=%u side=%s direction=%s msg_id=325 peer=%u ordinal=%u uuid_word0=0x%016llX uuid_word1=0x%016llX name_valid=%u name=%.*s version=%llu hash_valid=%u hash=%.*s field58_valid=%u field58=%.*s flags=0x%016llX message_mutation=0",
+                eventIndex, callIndex, side, direction, (unsigned)peerId, i,
+                (unsigned long long)uuidWord0,
+                (unsigned long long)uuidWord1,
+                nameValid ? 1u : 0u,
+                nameValid ? static_cast<int>(nameLength) : 0,
+                nameValid && nameData != nullptr ? nameData : "",
+                (unsigned long long)version,
+                hashValid ? 1u : 0u,
+                hashValid ? static_cast<int>(hashLength) : 0,
+                hashValid && hashData != nullptr ? hashData : "",
+                field58Valid ? 1u : 0u,
+                field58Valid ? static_cast<int>(field58Length) : 0,
+                field58Valid && field58Data != nullptr ? field58Data : "",
+                (unsigned long long)flags);
+        }
+        break;
+    }
+
+    default:
+        break;
+    }
+}
+
+net::ProtocolResult Hooks::OnClientJoiningProtocolProcessMessage(
+    net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+    net::Protocol* protocol,
+    void* unused,
+    net::MessageContext* context,
+    net::Message* message)
+{
+    return OnJoiningProtocolProcessMessageImpl(
+        "client", false, wrapped, protocol, unused, context, message);
+}
+
 net::ProtocolResult Hooks::OnJoiningProtocolProcessMessage(
     net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
     net::Protocol* protocol,
@@ -2707,21 +4059,47 @@ net::ProtocolResult Hooks::OnJoiningProtocolProcessMessage(
     net::MessageContext* context,
     net::Message* message)
 {
+    return OnJoiningProtocolProcessMessageImpl(
+        "server", true, wrapped, protocol, unused, context, message);
+}
+
+net::ProtocolResult Hooks::OnJoiningProtocolProcessMessageImpl(
+    char const* side,
+    bool allowSyntheticAdmission,
+    net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+    net::Protocol* protocol,
+    void* unused,
+    net::MessageContext* context,
+    net::Message* message)
+{
     uint32_t traceEnterIndex;
-    auto const traceJoining = BeginLoadProtocolWireTraceEvent(traceEnterIndex);
+    auto const traceJoining = BeginJoinLifecycleTraceEvent(traceEnterIndex);
+    auto const syntheticLobbyBypassActive =
+        allowSyntheticAdmission
+        && syntheticLobbyBypassActive_.load(std::memory_order_acquire);
     if (traceJoining) {
-        INFO("[MP_LOAD_TRACE] event=process_enter index=%u side=server protocol=joining thread=%lu msg_id=%u user_id=%u peer=%u peer_class_count=%u user_count=%u",
+        INFO("[MP_JOIN_TRACE] event=process_enter index=%u side=%s direction=receive protocol=joining thread=%lu msg_id=%u user_id=%u peer=%u peer_class_count=%u user_count=%u synthetic_bypass_active=%u",
             traceEnterIndex,
+            side,
             GetCurrentThreadId(),
             message != nullptr ? (unsigned)message->MsgId : UINT32_MAX,
             context != nullptr ? context->UserID.Id : UserId::Unassigned,
             context != nullptr ? (unsigned)context->UserID.GetPeerId() : UINT32_MAX,
             context != nullptr ? context->PeerIDClassNames.size() : 0,
-            context != nullptr ? context->UserIDs.size() : 0);
+            context != nullptr ? context->UserIDs.size() : 0,
+            syntheticLobbyBypassActive ? 1u : 0u);
     }
+    TraceJoinMessageSemantics(
+        side,
+        "receive",
+        context != nullptr
+            ? static_cast<TPeerId>(context->UserID.GetPeerId())
+            : static_cast<TPeerId>(-1),
+        message,
+        traceJoining ? traceEnterIndex : UINT32_MAX);
 
     auto matchesSyntheticAdmission = false;
-    if (context != nullptr && message != nullptr
+    if (syntheticLobbyBypassActive && context != nullptr && message != nullptr
         && message->MsgId == NetMessage::NETMSG_CLIENT_CONNECT) {
         auto const connect = static_cast<net::ClientConnectMessage*>(message);
         uint64_t identity{};
@@ -2756,20 +4134,1340 @@ net::ProtocolResult Hooks::OnJoiningProtocolProcessMessage(
         }
     }
 
-    auto const previousAdmission = SyntheticLobbyAdmissionActive;
-    SyntheticLobbyAdmissionActive = matchesSyntheticAdmission;
-    auto const result = wrapped(protocol, unused, context, message);
-    SyntheticLobbyAdmissionActive = previousAdmission;
+    net::ProtocolResult result;
+    if (syntheticLobbyBypassActive) {
+        auto const previousAdmission = SyntheticLobbyAdmissionActive;
+        SyntheticLobbyAdmissionActive = matchesSyntheticAdmission;
+        result = wrapped(protocol, unused, context, message);
+        SyntheticLobbyAdmissionActive = previousAdmission;
+    } else {
+        result = wrapped(protocol, unused, context, message);
+    }
     uint32_t traceExitIndex;
-    if (traceJoining && BeginLoadProtocolWireTraceEvent(traceExitIndex)) {
-        INFO("[MP_LOAD_TRACE] event=process_exit index=%u call_index=%u side=server protocol=joining thread=%lu msg_id=%u result=%d",
+    if (traceJoining && BeginJoinLifecycleTraceEvent(traceExitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=process_exit index=%u call_index=%u side=%s direction=receive protocol=joining thread=%lu msg_id=%u result=%d synthetic_bypass_active=%u",
             traceExitIndex,
             traceEnterIndex,
+            side,
             GetCurrentThreadId(),
             message != nullptr ? (unsigned)message->MsgId : UINT32_MAX,
+            (int)result,
+            syntheticLobbyBypassActive ? 1u : 0u);
+    }
+    return result;
+}
+
+void Hooks::OnModReconciliationClassify(
+    void (*wrapped)(void*, void*, void*, void*, void*, void*, void*, void*),
+    void* manager,
+    void* hostManifest,
+    void* asyncState,
+    void* mismatch0,
+    void* mismatch1,
+    void* mismatch2,
+    void* mismatch3,
+    void* mismatch4)
+{
+    auto readCount = [](void const* array, uint32_t& capacity, uint32_t& count) {
+        capacity = 0;
+        count = 0;
+        if (array == nullptr) return false;
+        auto const& view = *static_cast<JoinTraceArrayView const*>(array);
+        capacity = view.Capacity;
+        count = view.Count;
+        return count <= capacity && count <= 4096
+            && (count == 0 || view.Data != nullptr);
+    };
+
+    auto readAsyncState = [](void const* state, uintptr_t& data,
+        uint32_t& word8, uint32_t& wordC) {
+        data = 0;
+        word8 = 0;
+        wordC = 0;
+        if (state == nullptr) return false;
+        memcpy(&data, state, sizeof(data));
+        memcpy(&word8, static_cast<uint8_t const*>(state) + 0x08, sizeof(word8));
+        memcpy(&wordC, static_cast<uint8_t const*>(state) + 0x0C, sizeof(wordC));
+        return true;
+    };
+
+    uint32_t hostCapacity{};
+    uint32_t hostCount{};
+    auto const hostValid = readCount(hostManifest, hostCapacity, hostCount);
+    uint32_t capacitiesBefore[5]{};
+    uint32_t countsBefore[5]{};
+    void* mismatchCollections[5]{ mismatch0, mismatch1, mismatch2, mismatch3, mismatch4 };
+    bool outputsValidBefore{ true };
+    for (size_t i = 0; i < std::size(mismatchCollections); i++) {
+        outputsValidBefore = readCount(
+            mismatchCollections[i], capacitiesBefore[i], countsBefore[i])
+            && outputsValidBefore;
+    }
+    uintptr_t asyncDataBefore{};
+    uint32_t asyncWord8Before{};
+    uint32_t asyncWordCBefore{};
+    auto const asyncValidBefore = readAsyncState(
+        asyncState, asyncDataBefore, asyncWord8Before, asyncWordCBefore);
+
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=mod_reconciliation_enter index=%u side=client direction=local classifier_rva=0x181BBF0 host_count=%u host_capacity=%u host_layout_valid=%u mismatch0_before=%u mismatch1_before=%u mismatch2_before=%u mismatch3_before=%u mismatch4_before=%u outputs_layout_valid=%u async_state_valid=%u async_data_before=0x%p async_word8_before=%u async_wordc_before=%u async_words_semantic=structural_only argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            hostCount,
+            hostCapacity,
+            hostValid ? 1u : 0u,
+            countsBefore[0],
+            countsBefore[1],
+            countsBefore[2],
+            countsBefore[3],
+            countsBefore[4],
+            outputsValidBefore ? 1u : 0u,
+            asyncValidBefore ? 1u : 0u,
+            reinterpret_cast<void*>(asyncDataBefore),
+            asyncWord8Before,
+            asyncWordCBefore);
+    }
+
+    wrapped(
+        manager,
+        hostManifest,
+        asyncState,
+        mismatch0,
+        mismatch1,
+        mismatch2,
+        mismatch3,
+        mismatch4);
+
+    uint32_t capacitiesAfter[5]{};
+    uint32_t countsAfter[5]{};
+    bool outputsValidAfter{ true };
+    uint64_t totalMismatches{};
+    for (size_t i = 0; i < std::size(mismatchCollections); i++) {
+        outputsValidAfter = readCount(
+            mismatchCollections[i], capacitiesAfter[i], countsAfter[i])
+            && outputsValidAfter;
+        totalMismatches += countsAfter[i];
+    }
+    uintptr_t asyncDataAfter{};
+    uint32_t asyncWord8After{};
+    uint32_t asyncWordCAfter{};
+    auto const asyncValidAfter = readAsyncState(
+        asyncState, asyncDataAfter, asyncWord8After, asyncWordCAfter);
+
+    auto& gateTrace = JoinModReconciliationGateTraceForCurrentThread;
+    if (gateTrace.Active) {
+        gateTrace.ClassifierObserved = true;
+        gateTrace.OutputsValid = outputsValidAfter;
+        gateTrace.HostCount = hostCount;
+        for (size_t i = 0; i < gateTrace.MismatchCounts.size(); i++) {
+            gateTrace.MismatchCounts[i] = countsAfter[i];
+        }
+        gateTrace.AsyncData = asyncDataAfter;
+        gateTrace.AsyncWord8 = asyncWord8After;
+        gateTrace.AsyncWordC = asyncWordCAfter;
+    }
+
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=mod_reconciliation_exit index=%u call_index=%u side=client direction=local classifier_rva=0x181BBF0 mismatch0_after=%u mismatch1_after=%u mismatch2_after=%u mismatch3_after=%u mismatch4_after=%u mismatch_total=%llu outputs_layout_valid=%u async_state_valid=%u async_data_after=0x%p async_word8_after=%u async_wordc_after=%u async_words_semantic=structural_only decision=%s argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            countsAfter[0],
+            countsAfter[1],
+            countsAfter[2],
+            countsAfter[3],
+            countsAfter[4],
+            (unsigned long long)totalMismatches,
+            outputsValidAfter ? 1u : 0u,
+            asyncValidAfter ? 1u : 0u,
+            reinterpret_cast<void*>(asyncDataAfter),
+            asyncWord8After,
+            asyncWordCAfter,
+            outputsValidAfter && totalMismatches == 0
+                ? "client_connect_allowed"
+                : "reconciliation_required");
+    }
+}
+
+void Hooks::OnModReconciliationGate(
+    void (*wrapped)(void*, void*),
+    void* coordinator,
+    void* hostManifest)
+{
+    uint32_t hostCapacity{};
+    uint32_t hostCount{};
+    bool hostLayoutValid{};
+    if (hostManifest != nullptr) {
+        auto const& view = *static_cast<JoinTraceArrayView const*>(hostManifest);
+        hostCapacity = view.Capacity;
+        hostCount = view.Count;
+        hostLayoutValid = view.Count <= view.Capacity
+            && view.Count <= 4096
+            && (view.Count == 0 || view.Data != nullptr);
+    }
+    auto const notificationGuardBefore = coordinator != nullptr
+        ? *(static_cast<uint8_t const*>(coordinator) + 0x5BC)
+        : 0u;
+
+    auto const previousTrace = JoinModReconciliationGateTraceForCurrentThread;
+    JoinModReconciliationGateTraceForCurrentThread = {};
+    JoinModReconciliationGateTraceForCurrentThread.Active = true;
+
+    uint32_t enterIndex{};
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=mod_gate_enter index=%u side=client direction=local gate_rva=0x18077D0 classifier_rva=0x181BBF0 mismatch_callback_rva=0x5EC760 client_connect_builder_rva=0x1C55380 coordinator_valid=%u host_count=%u host_capacity=%u host_layout_valid=%u notification_guard_before=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            coordinator != nullptr ? 1u : 0u,
+            hostCount,
+            hostCapacity,
+            hostLayoutValid ? 1u : 0u,
+            (unsigned)notificationGuardBefore);
+    }
+
+    wrapped(coordinator, hostManifest);
+
+    auto const gateTrace = JoinModReconciliationGateTraceForCurrentThread;
+    JoinModReconciliationGateTraceForCurrentThread = previousTrace;
+    auto const notificationGuardAfter = coordinator != nullptr
+        ? *(static_cast<uint8_t const*>(coordinator) + 0x5BC)
+        : 0u;
+    uint64_t mismatchTotal{};
+    for (auto const count : gateTrace.MismatchCounts) {
+        mismatchTotal += count;
+    }
+    auto const nativeBranch = !gateTrace.ClassifierObserved
+        ? "classifier_not_observed"
+        : !gateTrace.OutputsValid
+            ? "invalid_layout_no_semantic_inference"
+            : mismatchTotal == 0
+                ? "client_connect_builder_called"
+                : "mismatch_callback_called";
+
+    uint32_t exitIndex{};
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=mod_gate_exit index=%u call_index=%u side=client direction=local gate_rva=0x18077D0 classifier_observed=%u host_count=%u mismatch0=%u mismatch1=%u mismatch2=%u mismatch3=%u mismatch4=%u mismatch_total=%llu outputs_layout_valid=%u async_data=0x%p async_word8=%u async_wordc=%u async_words_semantic=structural_only notification_guard_after=%u native_branch=%s argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            gateTrace.ClassifierObserved ? 1u : 0u,
+            gateTrace.HostCount,
+            gateTrace.MismatchCounts[0],
+            gateTrace.MismatchCounts[1],
+            gateTrace.MismatchCounts[2],
+            gateTrace.MismatchCounts[3],
+            gateTrace.MismatchCounts[4],
+            (unsigned long long)mismatchTotal,
+            gateTrace.OutputsValid ? 1u : 0u,
+            reinterpret_cast<void*>(gateTrace.AsyncData),
+            gateTrace.AsyncWord8,
+            gateTrace.AsyncWordC,
+            (unsigned)notificationGuardAfter,
+            nativeBranch);
+    }
+}
+
+void Hooks::TraceGameServerSessionSnapshot(
+    char const* event,
+    uint32_t callIndex,
+    void const* gameServer)
+{
+    uint32_t eventIndex;
+    if (gameServer == nullptr) {
+        if (BeginJoinLifecycleTraceEvent(eventIndex)) {
+            INFO("[MP_JOIN_TRACE] event=session_snapshot index=%u call_index=%u source=%s game_server_valid=0 argument_mutation=0 payload_mutation=0 result_mutation=0",
+                eventIndex, callIndex, event);
+        }
+        return;
+    }
+
+    auto const bytes = static_cast<uint8_t const*>(gameServer);
+    auto const& connected = *reinterpret_cast<JoinTraceArrayView const*>(bytes + 0x680);
+    auto const& members = *reinterpret_cast<JoinTraceArrayView const*>(bytes + 0x6F8);
+    auto const connectedValid = connected.Count <= connected.Capacity
+        && connected.Count <= 64
+        && (connected.Count == 0 || connected.Data != nullptr);
+    auto const membersValid = members.Count <= members.Capacity
+        && members.Count <= 64
+        && (members.Count == 0 || members.Data != nullptr);
+
+    if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+    INFO("[MP_JOIN_TRACE] event=session_snapshot index=%u call_index=%u source=%s game_server_valid=1 connected_count=%u connected_capacity=%u connected_layout_valid=%u session_member_count=%u session_member_capacity=%u session_member_layout_valid=%u member_stride=4 argument_mutation=0 payload_mutation=0 result_mutation=0",
+        eventIndex,
+        callIndex,
+        event,
+        connected.Count,
+        connected.Capacity,
+        connectedValid ? 1u : 0u,
+        members.Count,
+        members.Capacity,
+        membersValid ? 1u : 0u);
+
+    if (connectedValid) {
+        for (uint32_t i = 0; i < connected.Count; i++) {
+            auto const peer = *reinterpret_cast<int32_t const*>(
+                connected.Data + static_cast<size_t>(i) * sizeof(int32_t));
+            if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+            INFO("[MP_JOIN_TRACE] event=connected_peer_snapshot_record index=%u call_index=%u source=%s ordinal=%u peer_id=%d mutation=0",
+                eventIndex, callIndex, event, i, peer);
+        }
+    }
+
+    if (membersValid) {
+        for (uint32_t i = 0; i < members.Count; i++) {
+            auto const member = *reinterpret_cast<int32_t const*>(
+                members.Data + static_cast<size_t>(i) * sizeof(int32_t));
+            if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+            INFO("[MP_JOIN_TRACE] event=session_member_snapshot_record index=%u call_index=%u source=%s ordinal=%u member_id=%d mutation=0",
+                eventIndex, callIndex, event, i, member);
+        }
+    }
+}
+
+void Hooks::TraceCreatorStateSnapshot(
+    char const* event,
+    uint32_t callIndex,
+    void const* gameServer,
+    uint64_t netId,
+    uint64_t expectedEntityHandle,
+    uint32_t targetUserId)
+{
+    uint64_t resolvedEntityHandle{};
+    if (gameServer != nullptr && netId != 0) {
+        auto const server = static_cast<net::GameServer const*>(gameServer);
+        auto const entity = server->Replication.NetIdToEntity.try_get(NetId{ netId });
+        if (entity != nullptr) {
+            resolvedEntityHandle = entity->Handle;
+        }
+    }
+
+    auto const targetEntityHandle = resolvedEntityHandle != 0
+        ? resolvedEntityHandle
+        : expectedEntityHandle;
+    auto const owners = CaptureJoinTraceCharacterOwners(
+        gameServer, targetEntityHandle);
+    uint32_t eventIndex;
+    if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+    INFO("[MP_JOIN_TRACE] event=creator_state_snapshot index=%u call_index=%u source=%s game_server_valid=%u net_id=0x%016llX resolved_entity_handle=0x%016llX expected_entity_handle=0x%016llX resolved_matches_expected=%u target_user_id=%u target_peer_id=%u target_player_index=%u character_owners_offset=0x728 owner_count=%u owner_hash_size=%u owner_layout_valid=%u owner_observed_count=%u owner_traversal_complete=%u target_owner_found=%u target_owner_user_id=%u target_owner_peer_id=%u target_owner_player_index=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+        eventIndex,
+        callIndex,
+        event,
+        owners.GameServerValid ? 1u : 0u,
+        (unsigned long long)netId,
+        (unsigned long long)resolvedEntityHandle,
+        (unsigned long long)expectedEntityHandle,
+        resolvedEntityHandle != 0 && expectedEntityHandle != 0
+            && resolvedEntityHandle == expectedEntityHandle ? 1u : 0u,
+        targetUserId,
+        targetUserId >> 16,
+        targetUserId & 0xFFFFu,
+        owners.ItemCount,
+        owners.HashSize,
+        owners.LayoutValid ? 1u : 0u,
+        owners.ObservedCount,
+        owners.TraversalComplete ? 1u : 0u,
+        owners.TargetOwnerFound ? 1u : 0u,
+        owners.TargetOwnerUserId,
+        owners.TargetOwnerUserId >> 16,
+        owners.TargetOwnerUserId & 0xFFFFu);
+
+    for (uint32_t i = 0; i < owners.ObservedCount; i++) {
+        auto const& owner = owners.Entries[i];
+        if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+        INFO("[MP_JOIN_TRACE] event=character_owner_record index=%u call_index=%u source=%s ordinal=%u bucket=%u entity_handle=0x%016llX user_id=%u peer_id=%u player_index=%u target_entity=%u mutation=0",
+            eventIndex,
+            callIndex,
+            event,
+            i,
+            owner.Bucket,
+            (unsigned long long)owner.EntityHandle,
+            owner.UserId,
+            owner.UserId >> 16,
+            owner.UserId & 0xFFFFu,
+            targetEntityHandle != 0 && owner.EntityHandle == targetEntityHandle ? 1u : 0u);
+    }
+}
+
+void Hooks::TraceServerLobbySnapshot(
+    char const* event,
+    uint32_t callIndex,
+    void const* lobbyManager)
+{
+    uint32_t eventIndex;
+    if (lobbyManager == nullptr) {
+        if (BeginJoinLifecycleTraceEvent(eventIndex)) {
+            INFO("[MP_JOIN_TRACE] event=server_lobby_snapshot index=%u call_index=%u source=%s lobby_manager_valid=0 mutation=0",
+                eventIndex, callIndex, event);
+        }
+        return;
+    }
+
+    auto const bytes = static_cast<uint8_t const*>(lobbyManager);
+    auto const& records = *reinterpret_cast<JoinTraceArrayView const*>(bytes + 0xA0);
+    auto const recordsValid = records.Count <= records.Capacity
+        && records.Count <= 64
+        && (records.Count == 0 || records.Data != nullptr);
+    void const* gameServer{};
+    memcpy(&gameServer, bytes + 0xC8, sizeof(gameServer));
+
+    if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+    INFO("[MP_JOIN_TRACE] event=server_lobby_snapshot index=%u call_index=%u source=%s lobby_manager_valid=1 record_count=%u record_capacity=%u record_layout_valid=%u record_stride=0x20 game_server_valid=%u mutation=0",
+        eventIndex,
+        callIndex,
+        event,
+        records.Count,
+        records.Capacity,
+        recordsValid ? 1u : 0u,
+        gameServer != nullptr ? 1u : 0u);
+
+    if (recordsValid) {
+        for (uint32_t i = 0; i < records.Count; i++) {
+            auto const& record = *reinterpret_cast<JoinTraceLobbyRecord const*>(
+                records.Data + static_cast<size_t>(i) * sizeof(JoinTraceLobbyRecord));
+            char const* keyData{};
+            uint32_t keyLength{};
+            auto const keyValid = TryGetJoinTraceString(record.Key, keyData, keyLength);
+            if (!BeginJoinLifecycleTraceEvent(eventIndex)) return;
+            INFO("[MP_JOIN_TRACE] event=server_lobby_record index=%u call_index=%u source=%s slot=%u key_valid=%u key=%.*s player_id=%u ready=%u active=%u mutation=0",
+                eventIndex,
+                callIndex,
+                event,
+                i,
+                keyValid ? 1u : 0u,
+                keyValid ? static_cast<int>(keyLength) : 0,
+                keyValid && keyData != nullptr ? keyData : "",
+                (unsigned)record.PlayerId,
+                (unsigned)record.Ready,
+                (unsigned)record.Active);
+        }
+    }
+
+    TraceGameServerSessionSnapshot(event, callIndex, gameServer);
+}
+
+uint32_t Hooks::OnModManifestCompare(
+    uint32_t (*wrapped)(void*, void*, void*),
+    void* firstManifest,
+    void* secondManifest,
+    void* mismatchOutput)
+{
+    auto readManifest = [](void const* manifest, uint32_t& capacity, uint32_t& count) {
+        capacity = 0;
+        count = 0;
+        if (manifest == nullptr) return false;
+        auto const& view = *static_cast<JoinTraceManifestView const*>(manifest);
+        capacity = view.Capacity;
+        count = view.Count;
+        return count <= capacity && count <= 4096
+            && (count == 0 || view.Data != nullptr);
+    };
+    auto readOutput = [](void const* output, uint32_t& capacity, uint32_t& count) {
+        capacity = 0;
+        count = 0;
+        if (output == nullptr) return true;
+        auto const& view = *static_cast<JoinTraceArrayView const*>(output);
+        capacity = view.Capacity;
+        count = view.Count;
+        return count <= capacity && count <= 4096
+            && (count == 0 || view.Data != nullptr);
+    };
+
+    uint32_t firstCapacity{};
+    uint32_t firstCount{};
+    uint32_t secondCapacity{};
+    uint32_t secondCount{};
+    uint32_t outputCapacityBefore{};
+    uint32_t outputCountBefore{};
+    auto const firstValid = readManifest(firstManifest, firstCapacity, firstCount);
+    auto const secondValid = readManifest(secondManifest, secondCapacity, secondCount);
+    auto const outputValidBefore = readOutput(
+        mismatchOutput, outputCapacityBefore, outputCountBefore);
+    auto const callerRva = FindGameReturnAddressRva();
+    auto const gate = callerRva == 0x1C52FC2
+        ? "joining"
+        : callerRva == 0x2FA2BB1
+            ? "handle_module_loaded"
+            : "other";
+
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=mod_compare_enter index=%u gate=%s caller_rva=0x%llX compare_rva=0x3BC7AF0 first_count=%u first_capacity=%u first_layout_valid=%u second_count=%u second_capacity=%u second_layout_valid=%u mismatch_before=%u mismatch_capacity_before=%u mismatch_layout_valid_before=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            gate,
+            (unsigned long long)callerRva,
+            firstCount,
+            firstCapacity,
+            firstValid ? 1u : 0u,
+            secondCount,
+            secondCapacity,
+            secondValid ? 1u : 0u,
+            outputCountBefore,
+            outputCapacityBefore,
+            outputValidBefore ? 1u : 0u);
+    }
+
+    auto const result = wrapped(firstManifest, secondManifest, mismatchOutput);
+
+    uint32_t outputCapacityAfter{};
+    uint32_t outputCountAfter{};
+    auto const outputValidAfter = readOutput(
+        mismatchOutput, outputCapacityAfter, outputCountAfter);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=mod_compare_exit index=%u call_index=%u gate=%s caller_rva=0x%llX compare_rva=0x3BC7AF0 result=%u decision=%s mismatch_after=%u mismatch_capacity_after=%u mismatch_layout_valid_after=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            gate,
+            (unsigned long long)callerRva,
+            result,
+            result == 0 ? "match"
+                : result == 1 ? "count_name_or_order_mismatch"
+                : result == 2 ? "version_mismatch"
+                : result == 3 ? "hash_mismatch"
+                : "unknown",
+            outputCountAfter,
+            outputCapacityAfter,
+            outputValidAfter ? 1u : 0u);
+    }
+    return result;
+}
+
+net::ProtocolResult Hooks::OnClientLobbyProtocolProcessMessage(
+    net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+    net::Protocol* protocol,
+    void* unused,
+    net::MessageContext* context,
+    net::Message* message)
+{
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    auto const messageId = message != nullptr
+        ? static_cast<uint32_t>(message->MsgId)
+        : UINT32_MAX;
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=lobby_process_enter index=%u side=client direction=receive protocol=lobby handler_rva=0x1FF8500 thread=%lu msg_id=%u user_id=%u peer=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            GetCurrentThreadId(),
+            messageId,
+            context != nullptr ? context->UserID.Id : UserId::Unassigned,
+            context != nullptr ? (unsigned)context->UserID.GetPeerId() : UINT32_MAX);
+    }
+    TraceJoinMessageSemantics(
+        "client",
+        "receive",
+        context != nullptr
+            ? static_cast<TPeerId>(context->UserID.GetPeerId())
+            : static_cast<TPeerId>(-1),
+        message,
+        trace ? enterIndex : UINT32_MAX);
+
+    auto const result = wrapped(protocol, unused, context, message);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=lobby_process_exit index=%u call_index=%u side=client direction=receive protocol=lobby handler_rva=0x1FF8500 thread=%lu msg_id=%u result=%d argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            GetCurrentThreadId(),
+            messageId,
             (int)result);
     }
     return result;
+}
+
+net::ProtocolResult Hooks::OnServerLobbyProtocolProcessMessage(
+    net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
+    net::Protocol* protocol,
+    void* unused,
+    net::MessageContext* context,
+    net::Message* message)
+{
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    auto const messageId = message != nullptr
+        ? static_cast<uint32_t>(message->MsgId)
+        : UINT32_MAX;
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=lobby_process_enter index=%u side=server direction=receive protocol=lobby handler_rva=0x2FF79A0 thread=%lu msg_id=%u user_id=%u peer=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            GetCurrentThreadId(),
+            messageId,
+            context != nullptr ? context->UserID.Id : UserId::Unassigned,
+            context != nullptr ? (unsigned)context->UserID.GetPeerId() : UINT32_MAX);
+    }
+    TraceJoinMessageSemantics(
+        "server",
+        "receive",
+        context != nullptr
+            ? static_cast<TPeerId>(context->UserID.GetPeerId())
+            : static_cast<TPeerId>(-1),
+        message,
+        trace ? enterIndex : UINT32_MAX);
+
+    auto const result = wrapped(protocol, unused, context, message);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=lobby_process_exit index=%u call_index=%u side=server direction=receive protocol=lobby handler_rva=0x2FF79A0 thread=%lu msg_id=%u result=%d argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            GetCurrentThreadId(),
+            messageId,
+            (int)result);
+    }
+    return result;
+}
+
+void Hooks::OnDCLobbyUpdate(void (*wrapped)(void*), void* lobby)
+{
+    uint8_t dirtyBefore{};
+    uint8_t canStartBefore{};
+    if (lobby != nullptr) {
+        auto const bytes = static_cast<uint8_t const*>(lobby);
+        dirtyBefore = *(bytes + 0x9A4);
+        canStartBefore = *(bytes + 0x838);
+    }
+
+    wrapped(lobby);
+
+    uint8_t dirtyAfter{};
+    uint8_t canStartAfter{};
+    if (lobby != nullptr) {
+        auto const bytes = static_cast<uint8_t const*>(lobby);
+        dirtyAfter = *(bytes + 0x9A4);
+        canStartAfter = *(bytes + 0x838);
+    }
+    if ((dirtyBefore & 2u) == 0 && canStartBefore == canStartAfter) return;
+
+    uint32_t eventIndex;
+    if (BeginJoinLifecycleTraceEvent(eventIndex)) {
+        INFO("[MP_JOIN_TRACE] event=dc_lobby_can_start_update index=%u side=client source_rva=0x15C4A40 lobby_valid=%u dirty_before=0x%02X dirty_after=0x%02X readiness_dirty_before=%u can_start_before=%u can_start_after=%u changed=%u derivation=virtual_model_ready_result_equals_zero argument_mutation=0 payload_mutation=0 result_mutation=0",
+            eventIndex,
+            lobby != nullptr ? 1u : 0u,
+            (unsigned)dirtyBefore,
+            (unsigned)dirtyAfter,
+            (dirtyBefore & 2u) != 0 ? 1u : 0u,
+            (unsigned)canStartBefore,
+            (unsigned)canStartAfter,
+            canStartBefore != canStartAfter ? 1u : 0u);
+    }
+}
+
+void Hooks::OnPlatformIdentityMapWrite(
+    void (*wrapped)(void*, int32_t, void const*),
+    void* identityMap,
+    int32_t peerId,
+    void const* identity)
+{
+    JoinTracePlatformIdentity value{};
+    if (identity != nullptr) {
+        memcpy(&value, identity, sizeof(value));
+    }
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=identity_map_write_enter index=%u side=server writer_rva=0x405E710 peer_id=%d identity_valid=%u platform_kind=%u platform_subtype=%u platform_key_word0=0x%016llX platform_key_word1=0x%016llX argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            peerId,
+            identity != nullptr ? 1u : 0u,
+            value.Kind,
+            (unsigned)value.Subtype,
+            (unsigned long long)value.KeyWord0,
+            (unsigned long long)value.KeyWord1);
+    }
+    wrapped(identityMap, peerId, identity);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=identity_map_write_exit index=%u call_index=%u side=server writer_rva=0x405E710 peer_id=%d argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex, enterIndex, peerId);
+    }
+}
+
+void Hooks::OnConnectedPeerRegistered(
+    void (*wrapped)(void*, int32_t const*),
+    void* gameServer,
+    int32_t const* peerId)
+{
+    auto const value = peerId != nullptr ? *peerId : -1;
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=connected_peer_register_enter index=%u side=server writer_rva=0x30A7320 peer_pointer_valid=%u peer_id=%d argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex, peerId != nullptr ? 1u : 0u, value);
+    }
+    wrapped(gameServer, peerId);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=connected_peer_register_exit index=%u call_index=%u side=server writer_rva=0x30A7320 peer_id=%d argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex, enterIndex, value);
+    }
+    TraceGameServerSessionSnapshot(
+        "connected_peer_register_after",
+        trace ? enterIndex : UINT32_MAX,
+        gameServer);
+}
+
+uint8_t Hooks::OnSessionMemberAdded(
+    uint8_t (*wrapped)(void*, int32_t const*),
+    void* listener,
+    int32_t const* membershipEvent)
+{
+    // Exact build 4.73.98.727 registers this listener at GameServer+0x418.
+    // The handler's listener+0x2E0 int32 vector is therefore
+    // GameServer+0x6F8, with its count at GameServer+0x704.
+    auto const gameServer = listener != nullptr
+        ? static_cast<void*>(static_cast<uint8_t*>(listener) - 0x418)
+        : nullptr;
+    auto const memberId = membershipEvent != nullptr
+        ? membershipEvent[0]
+        : -1;
+    auto const sessionScopeId = membershipEvent != nullptr
+        ? membershipEvent[1]
+        : -1;
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=session_member_add_enter index=%u side=server writer_rva=0x30A85F0 listener_valid=%u membership_event_valid=%u member_id=%d session_scope_id=%d listener_offset=0x418 member_vector_offset=0x6F8 member_count_offset=0x704 argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            listener != nullptr ? 1u : 0u,
+            membershipEvent != nullptr ? 1u : 0u,
+            memberId,
+            sessionScopeId);
+    }
+    TraceGameServerSessionSnapshot(
+        "session_member_add_before",
+        trace ? enterIndex : UINT32_MAX,
+        gameServer);
+    auto const result = wrapped(listener, membershipEvent);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=session_member_add_exit index=%u call_index=%u side=server writer_rva=0x30A85F0 member_id=%d session_scope_id=%d result=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            memberId,
+            sessionScopeId,
+            (unsigned)result);
+    }
+    TraceGameServerSessionSnapshot(
+        "session_member_add_after",
+        trace ? enterIndex : UINT32_MAX,
+        gameServer);
+    return result;
+}
+
+void Hooks::OnCharacterOwnerWrite(
+    void (*wrapped)(void*, void const*, uint32_t, uint8_t),
+    void* gameServer,
+    void const* entityObject,
+    uint32_t proposedUserId,
+    uint8_t assignImmediately)
+{
+    uint64_t entityHandle{};
+    if (entityObject != nullptr) {
+        memcpy(&entityHandle,
+            static_cast<uint8_t const*>(entityObject) + 0x10,
+            sizeof(entityHandle));
+    }
+    auto const callerRva = FindGameReturnAddressRva();
+    auto const source = callerRva == 0x35F827D
+        ? "entity_registration_path"
+        : callerRva == 0x373740F
+            ? "character_creation_existing_entity_scan"
+            : "other_native_caller";
+    auto const before = CaptureJoinTraceCharacterOwners(
+        gameServer, entityHandle);
+    uint32_t enterIndex{};
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=character_owner_write_enter index=%u side=server writer_rva=0x30A5000 caller_return_rva=0x%llX source=%s direct_caller_35f8100_return_rva=0x35F827D direct_caller_37372a0_return_rva=0x373740F game_server_valid=%u entity_object_valid=%u entity_handle=0x%016llX proposed_user_id=%u proposed_peer_id=%u proposed_player_index=%u assign_immediately=%u owner_count_before=%u owner_layout_valid_before=%u owner_found_before=%u owner_user_id_before=%u exact_semantics=insert_if_absent argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            (unsigned long long)callerRva,
+            source,
+            gameServer != nullptr ? 1u : 0u,
+            entityObject != nullptr ? 1u : 0u,
+            (unsigned long long)entityHandle,
+            proposedUserId,
+            proposedUserId >> 16,
+            proposedUserId & 0xFFFFu,
+            (unsigned)assignImmediately,
+            before.ItemCount,
+            before.LayoutValid ? 1u : 0u,
+            before.TargetOwnerFound ? 1u : 0u,
+            before.TargetOwnerUserId);
+    }
+    TraceCreatorStateSnapshot(
+        "character_owner_write_before",
+        trace ? enterIndex : UINT32_MAX,
+        gameServer,
+        0,
+        entityHandle,
+        proposedUserId);
+
+    wrapped(gameServer, entityObject, proposedUserId, assignImmediately);
+
+    auto const after = CaptureJoinTraceCharacterOwners(
+        gameServer, entityHandle);
+    uint32_t exitIndex{};
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=character_owner_write_exit index=%u call_index=%u side=server writer_rva=0x30A5000 caller_return_rva=0x%llX source=%s entity_handle=0x%016llX proposed_user_id=%u owner_count_after=%u owner_layout_valid_after=%u owner_found_after=%u owner_user_id_after=%u inserted=%u owner_changed=%u assigned_to_proposed=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            (unsigned long long)callerRva,
+            source,
+            (unsigned long long)entityHandle,
+            proposedUserId,
+            after.ItemCount,
+            after.LayoutValid ? 1u : 0u,
+            after.TargetOwnerFound ? 1u : 0u,
+            after.TargetOwnerUserId,
+            after.ItemCount > before.ItemCount ? 1u : 0u,
+            before.TargetOwnerFound != after.TargetOwnerFound
+                || before.TargetOwnerUserId != after.TargetOwnerUserId ? 1u : 0u,
+            after.TargetOwnerFound && after.TargetOwnerUserId == proposedUserId ? 1u : 0u);
+    }
+    TraceCreatorStateSnapshot(
+        "character_owner_write_after",
+        trace ? enterIndex : UINT32_MAX,
+        gameServer,
+        0,
+        entityHandle,
+        proposedUserId);
+}
+
+uint8_t Hooks::OnLobbyParticipantAdded(
+    uint8_t (*wrapped)(void*, uint32_t const*),
+    void* callback,
+    uint32_t const* compositeId)
+{
+    auto const composite = compositeId != nullptr ? *compositeId : UINT32_MAX;
+    auto const peerId = composite != UINT32_MAX ? composite >> 16 : UINT32_MAX;
+    auto const playerId = composite != UINT32_MAX ? composite & 0xFFFFu : UINT32_MAX;
+    auto const lobbyManager = callback != nullptr
+        ? static_cast<void*>(static_cast<uint8_t*>(callback) - 0xB0)
+        : nullptr;
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=participant_added_enter index=%u side=server callback_rva=0x2A95080 composite_valid=%u composite_id=0x%08X peer_id=%u player_id=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            compositeId != nullptr ? 1u : 0u,
+            composite,
+            peerId,
+            playerId);
+    }
+    TraceServerLobbySnapshot(
+        "participant_added_before",
+        trace ? enterIndex : UINT32_MAX,
+        lobbyManager);
+    auto const result = wrapped(callback, compositeId);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=participant_added_exit index=%u call_index=%u side=server callback_rva=0x2A95080 composite_id=0x%08X peer_id=%u player_id=%u result=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex, enterIndex, composite, peerId, playerId, (unsigned)result);
+    }
+    TraceServerLobbySnapshot(
+        "participant_added_after",
+        trace ? enterIndex : UINT32_MAX,
+        lobbyManager);
+    return result;
+}
+
+void Hooks::OnServerLobbyRecordWrite(
+    void (*wrapped)(void*, void const*, uint8_t),
+    void* lobbyManager,
+    void const* record,
+    uint8_t slot)
+{
+    JoinTraceLobbyRecord value{};
+    if (record != nullptr) {
+        memcpy(&value, record, sizeof(value));
+    }
+    char const* keyData{};
+    uint32_t keyLength{};
+    auto const keyValid = record != nullptr
+        && TryGetJoinTraceString(value.Key, keyData, keyLength);
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=lobby_record_write_enter index=%u side=server writer_rva=0x2A96290 slot=%u record_valid=%u key_valid=%u key=%.*s player_id=%u ready=%u active=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            (unsigned)slot,
+            record != nullptr ? 1u : 0u,
+            keyValid ? 1u : 0u,
+            keyValid ? static_cast<int>(keyLength) : 0,
+            keyValid && keyData != nullptr ? keyData : "",
+            (unsigned)value.PlayerId,
+            (unsigned)value.Ready,
+            (unsigned)value.Active);
+    }
+    wrapped(lobbyManager, record, slot);
+    TraceServerLobbySnapshot(
+        "lobby_record_write_after",
+        trace ? enterIndex : UINT32_MAX,
+        lobbyManager);
+}
+
+void Hooks::OnServerLobbyStateReconcile(
+    void (*wrapped)(void*, void*, uint8_t, uint8_t),
+    void* lobbyManager,
+    void* body,
+    uint8_t notify,
+    uint8_t reserved)
+{
+    auto const fieldMask = body != nullptr
+        ? *reinterpret_cast<uint32_t const*>(static_cast<uint8_t const*>(body) + 0x94)
+        : 0u;
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=lobby_reconcile_enter index=%u side=server handler_rva=0x2A95C00 body_valid=%u field_mask=0x%08X notify=%u reserved=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            body != nullptr ? 1u : 0u,
+            fieldMask,
+            (unsigned)notify,
+            (unsigned)reserved);
+    }
+    TraceServerLobbySnapshot(
+        "lobby_reconcile_before",
+        trace ? enterIndex : UINT32_MAX,
+        lobbyManager);
+    wrapped(lobbyManager, body, notify, reserved);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=lobby_reconcile_exit index=%u call_index=%u side=server handler_rva=0x2A95C00 field_mask=0x%08X argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex, enterIndex, fieldMask);
+    }
+    TraceServerLobbySnapshot(
+        "lobby_reconcile_after",
+        trace ? enterIndex : UINT32_MAX,
+        lobbyManager);
+}
+
+void Hooks::OnLobbyStartGame(void (*wrapped)(void*), void* lobbyManager)
+{
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=lobby_start_enter index=%u side=server handler_rva=0x2A96420 membership_bypass_active=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            syntheticLobbyBypassActive_.load(std::memory_order_acquire) ? 1u : 0u);
+    }
+    TraceServerLobbySnapshot(
+        "lobby_start_before",
+        trace ? enterIndex : UINT32_MAX,
+        lobbyManager);
+    wrapped(lobbyManager);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=lobby_start_exit index=%u call_index=%u side=server handler_rva=0x2A96420 argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex, enterIndex);
+    }
+    TraceServerLobbySnapshot(
+        "lobby_start_after",
+        trace ? enterIndex : UINT32_MAX,
+        lobbyManager);
+}
+
+void Hooks::OnLobbyReadyRecompute(void (*wrapped)(void*), void* lobbyManager)
+{
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=lobby_ready_recompute_enter index=%u side=server writer_rva=0x2A96D30 argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex);
+    }
+    TraceServerLobbySnapshot(
+        "lobby_ready_recompute_before",
+        trace ? enterIndex : UINT32_MAX,
+        lobbyManager);
+    wrapped(lobbyManager);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=lobby_ready_recompute_exit index=%u call_index=%u side=server writer_rva=0x2A96D30 argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex, enterIndex);
+    }
+    TraceServerLobbySnapshot(
+        "lobby_ready_recompute_after",
+        trace ? enterIndex : UINT32_MAX,
+        lobbyManager);
+}
+
+void Hooks::OnConnectionParticipantRemove(
+    void (*wrapped)(void*, int32_t const*, void const*, uint32_t),
+    void* gameServer,
+    int32_t const* peerId,
+    void const* displayName,
+    uint32_t reason)
+{
+    auto const peer = peerId != nullptr ? *peerId : -1;
+    char const* nameData{};
+    uint32_t nameLength{};
+    auto const nameValid = displayName != nullptr
+        && TryGetJoinTraceString(
+            *static_cast<JoinTraceStringView const*>(displayName),
+            nameData,
+            nameLength);
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=participant_remove_enter index=%u side=server handler_rva=0x30A4180 peer_pointer_valid=%u peer_id=%d name_valid=%u name=%.*s reason=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            peerId != nullptr ? 1u : 0u,
+            peer,
+            nameValid ? 1u : 0u,
+            nameValid ? static_cast<int>(nameLength) : 0,
+            nameValid && nameData != nullptr ? nameData : "",
+            reason);
+    }
+    TraceGameServerSessionSnapshot(
+        "participant_remove_before",
+        trace ? enterIndex : UINT32_MAX,
+        gameServer);
+    wrapped(gameServer, peerId, displayName, reason);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=participant_remove_exit index=%u call_index=%u side=server handler_rva=0x30A4180 peer_id=%d reason=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex, enterIndex, peer, reason);
+    }
+    TraceGameServerSessionSnapshot(
+        "participant_remove_after",
+        trace ? enterIndex : UINT32_MAX,
+        gameServer);
+}
+
+void Hooks::OnConnectionStateEvent(
+    void (*wrapped)(void*, void const*),
+    void* gameServer,
+    void const* event)
+{
+    int32_t peerId{ -1 };
+    uint32_t state{ UINT32_MAX };
+    uint8_t localOrSuppressed{};
+    char const* nameData{};
+    uint32_t nameLength{};
+    bool nameValid{};
+    if (event != nullptr) {
+        auto const bytes = static_cast<uint8_t const*>(event);
+        peerId = *reinterpret_cast<int32_t const*>(bytes + 0x08);
+        state = *reinterpret_cast<uint32_t const*>(bytes + 0x28);
+        localOrSuppressed = *(bytes + 0x2C);
+        nameValid = TryGetJoinTraceString(
+            *reinterpret_cast<JoinTraceStringView const*>(bytes + 0x10),
+            nameData,
+            nameLength);
+    }
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=connection_state_enter index=%u side=server handler_rva=0x30A3F80 event_valid=%u peer_id=%d name_valid=%u name=%.*s state=%u state_name=%s local_or_suppressed=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            event != nullptr ? 1u : 0u,
+            peerId,
+            nameValid ? 1u : 0u,
+            nameValid ? static_cast<int>(nameLength) : 0,
+            nameValid && nameData != nullptr ? nameData : "",
+            state,
+            state == 2 ? "closed" : state == 3 ? "active_or_ignored" : "lost_or_other",
+            (unsigned)localOrSuppressed);
+    }
+    TraceGameServerSessionSnapshot(
+        "connection_state_before",
+        trace ? enterIndex : UINT32_MAX,
+        gameServer);
+    wrapped(gameServer, event);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=connection_state_exit index=%u call_index=%u side=server handler_rva=0x30A3F80 peer_id=%d state=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex, enterIndex, peerId, state);
+    }
+    TraceGameServerSessionSnapshot(
+        "connection_state_after",
+        trace ? enterIndex : UINT32_MAX,
+        gameServer);
+}
+
+uint8_t Hooks::OnSteamLobbyVisibility(
+    uint8_t (*wrapped)(void*, uint8_t, uint8_t*, uint8_t*),
+    void* manager,
+    uint8_t requestedVisibility,
+    uint8_t* previousVisibility,
+    uint8_t* effectiveVisibility)
+{
+    uint64_t lobbyIdBefore{};
+    uint8_t currentVisibilityBefore{};
+    if (manager != nullptr) {
+        auto const bytes = static_cast<uint8_t const*>(manager);
+        memcpy(&lobbyIdBefore, bytes + 0x108, sizeof(lobbyIdBefore));
+        currentVisibilityBefore = *(bytes + 0x128);
+    }
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=platform_lobby_visibility_enter index=%u side=platform backend=steam handler_rva=0x21AEB90 manager_valid=%u requested_visibility=%u current_visibility=%u current_lobby_id=0x%016llX previous_output_valid=%u effective_output_valid=%u operation=%s argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            manager != nullptr ? 1u : 0u,
+            (unsigned)requestedVisibility,
+            (unsigned)currentVisibilityBefore,
+            (unsigned long long)lobbyIdBefore,
+            previousVisibility != nullptr ? 1u : 0u,
+            effectiveVisibility != nullptr ? 1u : 0u,
+            lobbyIdBefore == 0 && requestedVisibility != 0
+                ? "create_and_publish_request"
+                : "visibility_update");
+    }
+
+    auto const result = wrapped(
+        manager,
+        requestedVisibility,
+        previousVisibility,
+        effectiveVisibility);
+
+    uint64_t lobbyIdAfter{};
+    uint8_t currentVisibilityAfter{};
+    if (manager != nullptr) {
+        auto const bytes = static_cast<uint8_t const*>(manager);
+        memcpy(&lobbyIdAfter, bytes + 0x108, sizeof(lobbyIdAfter));
+        currentVisibilityAfter = *(bytes + 0x128);
+    }
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=platform_lobby_visibility_exit index=%u call_index=%u side=platform backend=steam handler_rva=0x21AEB90 result=%u previous_visibility=%u effective_visibility=%u current_visibility=%u current_lobby_id=0x%016llX argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            (unsigned)result,
+            previousVisibility != nullptr ? (unsigned)*previousVisibility : UINT32_MAX,
+            effectiveVisibility != nullptr ? (unsigned)*effectiveVisibility : UINT32_MAX,
+            (unsigned)currentVisibilityAfter,
+            (unsigned long long)lobbyIdAfter);
+    }
+    return result;
+}
+
+void Hooks::OnSteamLobbyCreated(
+    void (*wrapped)(void*, void const*, uint8_t),
+    void* manager,
+    void const* callback,
+    uint8_t ioFailure)
+{
+    uint32_t steamResult{ UINT32_MAX };
+    uint64_t lobbyId{};
+    if (callback != nullptr) {
+        auto const bytes = static_cast<uint8_t const*>(callback);
+        memcpy(&steamResult, bytes, sizeof(steamResult));
+        memcpy(&lobbyId, bytes + 0x08, sizeof(lobbyId));
+    }
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=platform_lobby_created_callback_enter index=%u side=platform backend=steam handler_rva=0x21ADCB0 callback_valid=%u io_failure=%u steam_result=%u lobby_id=0x%016llX argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            callback != nullptr ? 1u : 0u,
+            (unsigned)ioFailure,
+            steamResult,
+            (unsigned long long)lobbyId);
+    }
+    wrapped(manager, callback, ioFailure);
+
+    uint64_t currentLobbyId{};
+    uint8_t currentVisibility{};
+    if (manager != nullptr) {
+        auto const bytes = static_cast<uint8_t const*>(manager);
+        memcpy(&currentLobbyId, bytes + 0x108, sizeof(currentLobbyId));
+        currentVisibility = *(bytes + 0x128);
+    }
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=platform_lobby_created_callback_exit index=%u call_index=%u side=platform backend=steam handler_rva=0x21ADCB0 callback_valid=%u io_failure=%u steam_result=%u lobby_id=0x%016llX current_lobby_id=0x%016llX current_visibility=%u published=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            callback != nullptr ? 1u : 0u,
+            (unsigned)ioFailure,
+            steamResult,
+            (unsigned long long)lobbyId,
+            (unsigned long long)currentLobbyId,
+            (unsigned)currentVisibility,
+            callback != nullptr && ioFailure == 0 && steamResult == 1
+                && currentLobbyId == lobbyId ? 1u : 0u);
+    }
+}
+
+uint8_t Hooks::OnSteamLobbyJoinRequest(
+    uint8_t (*wrapped)(void*, void const*),
+    void* manager,
+    void const* lobbyRecord)
+{
+    uint64_t lobbyId{};
+    uint32_t lobbyState{ UINT32_MAX };
+    uint8_t joinable{};
+    if (lobbyRecord != nullptr) {
+        auto const bytes = static_cast<uint8_t const*>(lobbyRecord);
+        memcpy(&lobbyId, bytes + 0x250, sizeof(lobbyId));
+        memcpy(&lobbyState, bytes + 0x27C, sizeof(lobbyState));
+        joinable = *(bytes + 0x280);
+    }
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=platform_lobby_join_request_enter index=%u side=platform backend=steam handler_rva=0x21AD5F0 lobby_record_valid=%u lobby_id=0x%016llX lobby_state=%u joinable=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            lobbyRecord != nullptr ? 1u : 0u,
+            (unsigned long long)lobbyId,
+            lobbyState,
+            (unsigned)joinable);
+    }
+    auto const result = wrapped(manager, lobbyRecord);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=platform_lobby_join_request_exit index=%u call_index=%u side=platform backend=steam handler_rva=0x21AD5F0 lobby_id=0x%016llX result=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            (unsigned long long)lobbyId,
+            (unsigned)result);
+    }
+    return result;
+}
+
+void Hooks::OnSteamLobbyEntered(
+    void (*wrapped)(void*, void const*, uint8_t),
+    void* manager,
+    void const* callback,
+    uint8_t ioFailure)
+{
+    uint64_t lobbyId{};
+    uint32_t enterResponse{ UINT32_MAX };
+    if (callback != nullptr) {
+        auto const bytes = static_cast<uint8_t const*>(callback);
+        memcpy(&lobbyId, bytes, sizeof(lobbyId));
+        memcpy(&enterResponse, bytes + 0x10, sizeof(enterResponse));
+    }
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=platform_lobby_entered_callback_enter index=%u side=platform backend=steam handler_rva=0x21ADEF0 callback_valid=%u lobby_id=0x%016llX enter_response=%u io_failure=%u membership_enumeration=inside_original argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            callback != nullptr ? 1u : 0u,
+            (unsigned long long)lobbyId,
+            enterResponse,
+            (unsigned)ioFailure);
+    }
+    wrapped(manager, callback, ioFailure);
+
+    uint64_t currentLobbyId{};
+    uint8_t currentVisibility{};
+    if (manager != nullptr) {
+        auto const bytes = static_cast<uint8_t const*>(manager);
+        memcpy(&currentLobbyId, bytes + 0x108, sizeof(currentLobbyId));
+        currentVisibility = *(bytes + 0x128);
+    }
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=platform_lobby_entered_callback_exit index=%u call_index=%u side=platform backend=steam handler_rva=0x21ADEF0 callback_valid=%u lobby_id=0x%016llX enter_response=%u io_failure=%u current_lobby_id=0x%016llX current_visibility=%u membership_enumeration_completed=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            callback != nullptr ? 1u : 0u,
+            (unsigned long long)lobbyId,
+            enterResponse,
+            (unsigned)ioFailure,
+            (unsigned long long)currentLobbyId,
+            (unsigned)currentVisibility,
+            callback != nullptr && ioFailure == 0 && enterResponse == 1 ? 1u : 0u);
+    }
+}
+
+void Hooks::OnSteamLobbyMatchList(
+    void (*wrapped)(void*, uint32_t const*, uint8_t, void*),
+    void* manager,
+    uint32_t const* matchCount,
+    uint8_t ioFailure,
+    void* context)
+{
+    auto const count = matchCount != nullptr ? *matchCount : 0u;
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=platform_lobby_match_list_enter index=%u side=platform backend=steam handler_rva=0x21ADA40 count_pointer_valid=%u match_count=%u io_failure=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            matchCount != nullptr ? 1u : 0u,
+            count,
+            (unsigned)ioFailure);
+    }
+    wrapped(manager, matchCount, ioFailure, context);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=platform_lobby_match_list_exit index=%u call_index=%u side=platform backend=steam handler_rva=0x21ADA40 match_count=%u io_failure=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            count,
+            (unsigned)ioFailure);
+    }
+}
+
+void* Hooks::OnPlatformMemberResolve(
+    void* (*wrapped)(void*, void const*),
+    void* participantManager,
+    void const* identity)
+{
+    JoinTracePlatformIdentity value{};
+    if (identity != nullptr) {
+        memcpy(&value, identity, sizeof(value));
+    }
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=platform_member_resolve_enter index=%u side=platform handler_rva=0x403F6A0 manager_valid=%u identity_valid=%u platform_kind=%u platform_subtype=%u platform_key_word0=0x%016llX platform_key_word1=0x%016llX argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            participantManager != nullptr ? 1u : 0u,
+            identity != nullptr ? 1u : 0u,
+            value.Kind,
+            (unsigned)value.Subtype,
+            (unsigned long long)value.KeyWord0,
+            (unsigned long long)value.KeyWord1);
+    }
+    auto const result = wrapped(participantManager, identity);
+    auto const internalMemberId = result != nullptr
+        ? *static_cast<uint32_t const*>(result)
+        : UINT32_MAX;
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=platform_member_resolve_exit index=%u call_index=%u side=platform handler_rva=0x403F6A0 result_valid=%u internal_member_id=%u platform_kind=%u platform_subtype=%u platform_key_word0=0x%016llX platform_key_word1=0x%016llX argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            result != nullptr ? 1u : 0u,
+            internalMemberId,
+            value.Kind,
+            (unsigned)value.Subtype,
+            (unsigned long long)value.KeyWord0,
+            (unsigned long long)value.KeyWord1);
+    }
+    return result;
+}
+
+void Hooks::OnPlatformMembershipEvent(
+    void (*wrapped)(void*, uint32_t, uint8_t),
+    void* participantManager,
+    uint32_t internalMemberId,
+    uint8_t eventFlag)
+{
+    auto const callerRva = FindGameReturnAddressRva();
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=platform_membership_event_enter index=%u side=platform handler_rva=0x403FFC0 caller_rva=0x%llX manager_valid=%u internal_member_id=%u event_flag=%u semantic=queued_platform_participant_event argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            (unsigned long long)callerRva,
+            participantManager != nullptr ? 1u : 0u,
+            internalMemberId,
+            (unsigned)eventFlag);
+    }
+    wrapped(participantManager, internalMemberId, eventFlag);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=platform_membership_event_exit index=%u call_index=%u side=platform handler_rva=0x403FFC0 caller_rva=0x%llX internal_member_id=%u event_flag=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            (unsigned long long)callerRva,
+            internalMemberId,
+            (unsigned)eventFlag);
+    }
 }
 
 net::ProtocolResult Hooks::OnClientLoadProtocolProcessMessage(
@@ -2805,19 +5503,37 @@ net::ProtocolResult Hooks::OnServerCharacterCreationProtocolProcessMessage(
     auto const traceMessage = messageId >= 238 && messageId <= 240;
     uint32_t enterIndex{};
     auto const trace = traceMessage && BeginLoadProtocolWireTraceEvent(enterIndex);
+    uint32_t joinEnterIndex{};
+    auto const joinTrace = traceMessage && BeginJoinLifecycleTraceEvent(joinEnterIndex);
     uint64_t netId{};
     uint16_t field30{};
     uint32_t field38{};
     uint8_t field3C{};
-    if (trace) {
+    uint8_t updateDiscriminator{};
+    uint32_t updateTailField2C8{};
+    uint32_t updateTailField2CC{};
+    uint8_t updateTailField2D0{};
+    uint32_t targetUserId{ UserId::Unassigned };
+    uint64_t resolvedEntityHandle{};
+    net::GameServer* gameServer{};
+    if (trace || joinTrace) {
         auto const bytes = reinterpret_cast<uint8_t const*>(message);
         memcpy(&netId, bytes + 0x28, sizeof(netId));
         memcpy(&field30, bytes + 0x30, sizeof(field30));
         memcpy(&field38, bytes + 0x38, sizeof(field38));
         memcpy(&field3C, bytes + 0x3C, sizeof(field3C));
-        uint64_t resolvedEntityHandle{};
+        if (messageId == 240) {
+            memcpy(&updateDiscriminator, bytes + 0x2C0, sizeof(updateDiscriminator));
+            memcpy(&updateTailField2C8, bytes + 0x2C8, sizeof(updateTailField2C8));
+            memcpy(&updateTailField2CC, bytes + 0x2CC, sizeof(updateTailField2CC));
+            memcpy(&updateTailField2D0, bytes + 0x2D0, sizeof(updateTailField2D0));
+        }
+        if (context != nullptr) {
+            targetUserId = (context->UserID.Id & 0xFFFF0000u)
+                | static_cast<uint32_t>(field30);
+        }
         auto const eocServer = GetStaticSymbols().GetEoCServer();
-        auto const gameServer = eocServer != nullptr ? eocServer->GameServer : nullptr;
+        gameServer = eocServer != nullptr ? eocServer->GameServer : nullptr;
         if (gameServer != nullptr) {
             auto const entity = gameServer->Replication.NetIdToEntity.try_get(NetId{ netId });
             if (entity != nullptr) {
@@ -2841,25 +5557,69 @@ net::ProtocolResult Hooks::OnServerCharacterCreationProtocolProcessMessage(
                 flushHistory = it->second;
             }
         }
-        INFO("[MP_CHARACTER_CREATE_TRACE] event=process_enter index=%u side=server protocol=character_creation thread=%lu msg_id=%u user_id=%u peer=%u net_id=0x%016llX resolved_entity_handle=0x%016llX replication_command_enqueue_caller_rva=0x%llX replication_command_enqueue_source_rva=0x%llX replication_authority_insert_caller_rva=0x%llX replication_command_seen_in_flush=%u replication_command_first_flush=%llu replication_command_last_flush=%llu replication_command_flush_occurrences=%u field30=%u field38=%u field3c=%u",
-            enterIndex,
-            GetCurrentThreadId(),
-            messageId,
-            context != nullptr ? context->UserID.Id : UserId::Unassigned,
-            context != nullptr ? static_cast<unsigned>(context->UserID.GetPeerId()) : UINT32_MAX,
-            static_cast<unsigned long long>(netId),
-            static_cast<unsigned long long>(resolvedEntityHandle),
-            static_cast<unsigned long long>(enqueueCallerRva),
-            static_cast<unsigned long long>(enqueueSourceRva),
-            static_cast<unsigned long long>(authorityInsertCallerRva),
-            flushHistory.Occurrences != 0 ? 1u : 0u,
-            static_cast<unsigned long long>(flushHistory.FirstSequence),
-            static_cast<unsigned long long>(flushHistory.LastSequence),
-            flushHistory.Occurrences,
-            static_cast<unsigned>(field30),
-            static_cast<unsigned>(field38),
-            static_cast<unsigned>(field3C));
-        if (messageId == 240 && resolvedEntityHandle != 0) {
+        if (trace) {
+            INFO("[MP_CHARACTER_CREATE_TRACE] event=process_enter index=%u side=server protocol=character_creation thread=%lu msg_id=%u user_id=%u peer=%u target_user_id=%u target_peer_id=%u target_player_index=%u net_id=0x%016llX resolved_entity_handle=0x%016llX replication_command_enqueue_caller_rva=0x%llX replication_command_enqueue_source_rva=0x%llX replication_authority_insert_caller_rva=0x%llX replication_command_seen_in_flush=%u replication_command_first_flush=%llu replication_command_last_flush=%llu replication_command_flush_occurrences=%u field30=%u payload_word38=%u payload_byte3c=%u update_discriminator=%u update_tail_field_2c8=%u update_tail_field_2cc=%u update_tail_field_2d0=%u",
+                enterIndex,
+                GetCurrentThreadId(),
+                messageId,
+                context != nullptr ? context->UserID.Id : UserId::Unassigned,
+                context != nullptr ? static_cast<unsigned>(context->UserID.GetPeerId()) : UINT32_MAX,
+                targetUserId,
+                targetUserId >> 16,
+                targetUserId & 0xFFFFu,
+                static_cast<unsigned long long>(netId),
+                static_cast<unsigned long long>(resolvedEntityHandle),
+                static_cast<unsigned long long>(enqueueCallerRva),
+                static_cast<unsigned long long>(enqueueSourceRva),
+                static_cast<unsigned long long>(authorityInsertCallerRva),
+                flushHistory.Occurrences != 0 ? 1u : 0u,
+                static_cast<unsigned long long>(flushHistory.FirstSequence),
+                static_cast<unsigned long long>(flushHistory.LastSequence),
+                flushHistory.Occurrences,
+                static_cast<unsigned>(field30),
+                static_cast<unsigned>(field38),
+                static_cast<unsigned>(field3C),
+                static_cast<unsigned>(updateDiscriminator),
+                updateTailField2C8,
+                updateTailField2CC,
+                static_cast<unsigned>(updateTailField2D0));
+        }
+        if (joinTrace) {
+            INFO("[MP_JOIN_TRACE] event=creator_process_enter index=%u side=server direction=receive protocol=character_creation handler_rva=0x373C020 update_apply_rva=0x373CAC0 update_queue_rva=0x37948A0 thread=%lu msg_id=%u user_id=%u peer=%u target_user_id=%u target_peer_id=%u target_player_index=%u target_user_composition=context_peer_high16_plus_message_player_low16 net_id=0x%016llX resolved_entity_handle=0x%016llX field30=%u payload_word38=%u payload_byte3c=%u update_discriminator=%u update_tail_field_2c8=%u update_tail_field_2cc=%u update_tail_field_2d0=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+                joinEnterIndex,
+                GetCurrentThreadId(),
+                messageId,
+                context != nullptr ? context->UserID.Id : UserId::Unassigned,
+                context != nullptr ? static_cast<unsigned>(context->UserID.GetPeerId()) : UINT32_MAX,
+                targetUserId,
+                targetUserId >> 16,
+                targetUserId & 0xFFFFu,
+                static_cast<unsigned long long>(netId),
+                static_cast<unsigned long long>(resolvedEntityHandle),
+                static_cast<unsigned>(field30),
+                static_cast<unsigned>(field38),
+                static_cast<unsigned>(field3C),
+                static_cast<unsigned>(updateDiscriminator),
+                updateTailField2C8,
+                updateTailField2CC,
+                static_cast<unsigned>(updateTailField2D0));
+            TraceJoinMessageSemantics(
+                "server",
+                "receive",
+                context != nullptr
+                    ? static_cast<TPeerId>(context->UserID.GetPeerId())
+                    : static_cast<TPeerId>(-1),
+                message,
+                joinEnterIndex);
+            TraceCreatorStateSnapshot(
+                "creator_process_before",
+                joinEnterIndex,
+                gameServer,
+                netId,
+                resolvedEntityHandle,
+                targetUserId);
+        }
+        if (trace && messageId == 240 && resolvedEntityHandle != 0) {
             entityReplicationPreBindCaptureEnabled_.store(false, std::memory_order_release);
             INFO("[MP_REPLICATION_TRACE] event=prebind_capture_stopped phase=character_create_resolved msg_id=240 entity_handle=0x%016llX capture_scope=process capture_enabled=0 message_mutation=0",
                 static_cast<unsigned long long>(resolvedEntityHandle));
@@ -2867,6 +5627,13 @@ net::ProtocolResult Hooks::OnServerCharacterCreationProtocolProcessMessage(
     }
 
     auto const result = wrapped(protocol, unused, context, message);
+    uint64_t resolvedEntityHandleAfter{};
+    if ((trace || joinTrace) && gameServer != nullptr && netId != 0) {
+        auto const entity = gameServer->Replication.NetIdToEntity.try_get(NetId{ netId });
+        if (entity != nullptr) {
+            resolvedEntityHandleAfter = entity->Handle;
+        }
+    }
 
     uint32_t exitIndex{};
     if (trace && BeginLoadProtocolWireTraceEvent(exitIndex)) {
@@ -2878,6 +5645,35 @@ net::ProtocolResult Hooks::OnServerCharacterCreationProtocolProcessMessage(
             static_cast<int>(result),
             context != nullptr ? context->UserID.Id : UserId::Unassigned,
             static_cast<unsigned long long>(netId));
+    }
+    uint32_t joinExitIndex{};
+    if (joinTrace && BeginJoinLifecycleTraceEvent(joinExitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=creator_process_exit index=%u call_index=%u side=server direction=receive protocol=character_creation handler_rva=0x373C020 thread=%lu msg_id=%u result=%d user_id=%u peer=%u target_user_id=%u target_peer_id=%u target_player_index=%u net_id=0x%016llX resolved_entity_handle_before=0x%016llX resolved_entity_handle_after=0x%016llX update_discriminator=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            joinExitIndex,
+            joinEnterIndex,
+            GetCurrentThreadId(),
+            messageId,
+            static_cast<int>(result),
+            context != nullptr ? context->UserID.Id : UserId::Unassigned,
+            context != nullptr ? static_cast<unsigned>(context->UserID.GetPeerId()) : UINT32_MAX,
+            targetUserId,
+            targetUserId >> 16,
+            targetUserId & 0xFFFFu,
+            static_cast<unsigned long long>(netId),
+            static_cast<unsigned long long>(resolvedEntityHandle),
+            static_cast<unsigned long long>(resolvedEntityHandleAfter),
+            static_cast<unsigned>(updateDiscriminator));
+    }
+    if (joinTrace) {
+        TraceCreatorStateSnapshot(
+            "creator_process_after",
+            joinEnterIndex,
+            gameServer,
+            netId,
+            resolvedEntityHandleAfter != 0
+                ? resolvedEntityHandleAfter
+                : resolvedEntityHandle,
+            targetUserId);
     }
     return result;
 }
@@ -3526,6 +6322,11 @@ net::ProtocolResult Hooks::OnLoadProtocolProcessMessage(
 {
     uint32_t enterIndex;
     auto const trace = BeginLoadProtocolWireTraceEvent(enterIndex);
+    uint32_t joinEnterIndex;
+    auto const joinTrace = BeginJoinLifecycleTraceEvent(joinEnterIndex);
+    auto const messageId = message != nullptr
+        ? static_cast<uint32_t>(message->MsgId)
+        : UINT32_MAX;
     if (trace) {
         INFO("[MP_LOAD_TRACE] event=process_enter index=%u side=%s protocol=load thread=%lu msg_id=%u user_id=%u peer=%u peer_class_count=%u user_count=%u",
             enterIndex,
@@ -3537,6 +6338,25 @@ net::ProtocolResult Hooks::OnLoadProtocolProcessMessage(
             context != nullptr ? context->PeerIDClassNames.size() : 0,
             context != nullptr ? context->UserIDs.size() : 0);
     }
+    if (joinTrace) {
+        INFO("[MP_JOIN_TRACE] event=load_process_enter index=%u side=%s direction=receive protocol=load thread=%lu msg_id=%u user_id=%u peer=%u peer_class_count=%u user_count=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            joinEnterIndex,
+            side,
+            GetCurrentThreadId(),
+            messageId,
+            context != nullptr ? context->UserID.Id : UserId::Unassigned,
+            context != nullptr ? (unsigned)context->UserID.GetPeerId() : UINT32_MAX,
+            context != nullptr ? context->PeerIDClassNames.size() : 0,
+            context != nullptr ? context->UserIDs.size() : 0);
+    }
+    TraceJoinMessageSemantics(
+        side,
+        "receive",
+        context != nullptr
+            ? static_cast<TPeerId>(context->UserID.GetPeerId())
+            : static_cast<TPeerId>(-1),
+        message,
+        joinTrace ? joinEnterIndex : UINT32_MAX);
 
     auto const result = wrapped(protocol, unused, context, message);
 
@@ -3548,6 +6368,16 @@ net::ProtocolResult Hooks::OnLoadProtocolProcessMessage(
             side,
             GetCurrentThreadId(),
             message != nullptr ? (unsigned)message->MsgId : UINT32_MAX,
+            (int)result);
+    }
+    uint32_t joinExitIndex;
+    if (joinTrace && BeginJoinLifecycleTraceEvent(joinExitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=load_process_exit index=%u call_index=%u side=%s direction=receive protocol=load thread=%lu msg_id=%u result=%d argument_mutation=0 payload_mutation=0 result_mutation=0",
+            joinExitIndex,
+            joinEnterIndex,
+            side,
+            GetCurrentThreadId(),
+            messageId,
             (int)result);
     }
     return result;
@@ -3624,6 +6454,27 @@ bool Hooks::BeginInitialPeerSerializerTelemetryEvent(uint32_t& eventIndex)
 
     if (eventIndex == maxEvents) {
         INFO("[MP_SERIALIZER_TRACE] event=limit_reached max_events=%u", maxEvents);
+    }
+
+    return false;
+}
+
+bool Hooks::BeginJoinLifecycleTraceEvent(uint32_t& eventIndex)
+{
+    if (!gExtender->GetConfig().EnableJoinLifecycleTrace
+        || !IsValidJoinLifecycleTraceMaxEvents(
+            gExtender->GetConfig().JoinLifecycleTraceMaxEvents)) {
+        return false;
+    }
+
+    auto const maxEvents = gExtender->GetConfig().JoinLifecycleTraceMaxEvents;
+    eventIndex = joinLifecycleTraceEventCount_.fetch_add(1, std::memory_order_relaxed);
+    if (eventIndex < maxEvents) {
+        return true;
+    }
+
+    if (eventIndex == maxEvents) {
+        INFO("[MP_JOIN_TRACE] event=limit_reached max_events=%u", maxEvents);
     }
 
     return false;
@@ -3924,6 +6775,23 @@ void Hooks::OnAbstractPeerSendGeneralMessage(
     auto const messageId = message != nullptr
         ? static_cast<uint32_t>(message->MsgId)
         : UINT32_MAX;
+    uint32_t joinTraceIndex;
+    auto const joinTrace = IsJoinLifecycleTraceMessage(messageId)
+        && BeginJoinLifecycleTraceEvent(joinTraceIndex);
+    if (joinTrace) {
+        INFO("[MP_JOIN_TRACE] event=send_message index=%u side=transport direction=send thread=%lu msg_id=%u peer=%u flags=%u compressed=%u special_vtable_path=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            joinTraceIndex,
+            GetCurrentThreadId(),
+            messageId,
+            (unsigned)peerId,
+            (unsigned)flags,
+            (unsigned)(flags & 1),
+            messageId <= 14 ? 1u : 0u);
+    }
+    TraceJoinMessageSemantics(
+        "transport", "send", peerId, message,
+        joinTrace ? joinTraceIndex : UINT32_MAX);
+
     auto const trace = IsLoadOrCharacterCreationTraceMessage(messageId)
         && BeginLoadProtocolWireTraceEvent(traceIndex);
     if (trace) {
@@ -3993,6 +6861,16 @@ void Hooks::OnAbstractPeerSendGeneralMessage(
             (unsigned)peerId,
             (unsigned)effectiveFlags);
     }
+    uint32_t joinTraceExitIndex;
+    if (joinTrace && BeginJoinLifecycleTraceEvent(joinTraceExitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=send_complete index=%u call_index=%u side=transport direction=send thread=%lu msg_id=%u peer=%u effective_flags=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            joinTraceExitIndex,
+            joinTraceIndex,
+            GetCurrentThreadId(),
+            messageId,
+            (unsigned)peerId,
+            (unsigned)effectiveFlags);
+    }
 }
 
 bool Hooks::OnAbstractPeerReceiveGeneralMessage(
@@ -4021,6 +6899,9 @@ bool Hooks::OnAbstractPeerReceiveGeneralMessage(
 
     uint32_t enterIndex{ 0 };
     auto const trace = traceMessage && BeginLoadProtocolWireTraceEvent(enterIndex);
+    uint32_t joinEnterIndex{ 0 };
+    auto const joinTrace = IsJoinLifecycleTraceMessage(messageId)
+        && BeginJoinLifecycleTraceEvent(joinEnterIndex);
     if (trace) {
         auto const capacityBytes = (allocatedBits + 7u) / 8u;
         auto const lengthBytes = (bitsBefore + 7u) / 8u;
@@ -4068,6 +6949,16 @@ bool Hooks::OnAbstractPeerReceiveGeneralMessage(
             messageId,
             (unsigned)peerId);
     }
+    if (joinTrace) {
+        INFO("[MP_JOIN_TRACE] event=receive_wrapper_enter index=%u thread=%lu direction=receive msg_id=%u peer=%u bits=%u allocated_bits=%u offset=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            joinEnterIndex,
+            GetCurrentThreadId(),
+            messageId,
+            (unsigned)peerId,
+            bitsBefore,
+            allocatedBits,
+            offsetBefore);
+    }
 
     auto const bypassUncompressedCompressionUpdate =
         gExtender->GetConfig().EnableSyntheticPeerUncompressedLoadReceiveBypassPrototype
@@ -4104,11 +6995,31 @@ bool Hooks::OnAbstractPeerReceiveGeneralMessage(
     }
     auto const bitsAfter = bitstream != nullptr ? bitstream->NumBits : 0u;
     auto const offsetAfter = bitstream != nullptr ? bitstream->CurrentOffsetBits : 0u;
+    TraceJoinMessageSemantics(
+        "unknown",
+        "receive",
+        peerId,
+        message,
+        joinTrace ? joinEnterIndex : UINT32_MAX);
     uint32_t exitIndex{ 0 };
     if (trace && BeginLoadProtocolWireTraceEvent(exitIndex)) {
         INFO("[MP_LOAD_TRACE] event=receive_wrapper_exit index=%u call_index=%u thread=%lu msg_id=%u peer=%u result=%u bits=%u offset_before=%u offset_after=%u consumed_bits=%u message_mutation=0",
             exitIndex,
             enterIndex,
+            GetCurrentThreadId(),
+            messageId,
+            (unsigned)peerId,
+            result ? 1u : 0u,
+            bitsAfter,
+            offsetBefore,
+            offsetAfter,
+            offsetAfter >= offsetBefore ? offsetAfter - offsetBefore : 0u);
+    }
+    uint32_t joinExitIndex{ 0 };
+    if (joinTrace && BeginJoinLifecycleTraceEvent(joinExitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=receive_wrapper_exit index=%u call_index=%u thread=%lu direction=receive msg_id=%u peer=%u result=%u bits=%u offset_before=%u offset_after=%u consumed_bits=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            joinExitIndex,
+            joinEnterIndex,
             GetCurrentThreadId(),
             messageId,
             (unsigned)peerId,
