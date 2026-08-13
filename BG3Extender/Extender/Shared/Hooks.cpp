@@ -43,6 +43,7 @@ decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyCreated)* decltype(Hooks::s
 decltype(Hooks::stm__SteamMatchMakingManager__JoinLobby)* decltype(Hooks::stm__SteamMatchMakingManager__JoinLobby)::gHook;
 decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyEntered)* decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyEntered)::gHook;
 decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyMatchList)* decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyMatchList)::gHook;
+decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyChatUpdate)* decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyChatUpdate)::gHook;
 decltype(Hooks::net__PlatformParticipantManager__ResolveMember)* decltype(Hooks::net__PlatformParticipantManager__ResolveMember)::gHook;
 decltype(Hooks::net__PlatformParticipantManager__PublishMembershipEvent)* decltype(Hooks::net__PlatformParticipantManager__PublishMembershipEvent)::gHook;
 decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)::gHook;
@@ -97,6 +98,7 @@ static constexpr uintptr_t SteamLobbyCreatedRva7398727 = 0x21ADCB0;
 static constexpr uintptr_t SteamLobbyJoinRequestRva7398727 = 0x21AD5F0;
 static constexpr uintptr_t SteamLobbyEnteredRva7398727 = 0x21ADEF0;
 static constexpr uintptr_t SteamLobbyMatchListRva7398727 = 0x21ADA40;
+static constexpr uintptr_t SteamLobbyChatUpdateRva7398727 = 0x21AE8D0;
 static constexpr uintptr_t PlatformMemberResolveRva7398727 = 0x403F6A0;
 static constexpr uintptr_t PlatformMembershipEventRva7398727 = 0x403FFC0;
 static constexpr uintptr_t LobbyMembershipCheckRva7398727 = 0x404E570;
@@ -830,6 +832,13 @@ static constexpr uint8_t SteamLobbyMatchListPreamble7398727[] = {
     0x24, 0x18, 0x56, 0x57, 0x41, 0x54, 0x41, 0x56,
     0x41, 0x57, 0x48, 0x81, 0xEC, 0x90, 0x00, 0x00,
     0x00, 0x4C, 0x8B, 0xF9, 0xC6, 0x81, 0x2A, 0x01
+};
+
+static constexpr uint8_t SteamLobbyChatUpdatePreamble7398727[] = {
+    0x48, 0x83, 0xEC, 0x48, 0x4C, 0x8B, 0x89, 0x10,
+    0x01, 0x00, 0x00, 0x45, 0x33, 0xD2, 0x4C, 0x8B,
+    0xC2, 0x41, 0x83, 0xB9, 0xFC, 0x02, 0x00, 0x00,
+    0xFF, 0x49, 0x8D, 0x81, 0xC0, 0x00, 0x00, 0x00
 };
 
 static constexpr uint8_t PlatformMemberResolvePreamble7398727[] = {
@@ -1976,6 +1985,13 @@ static void (*ResolveSteamLobbyMatchList())(
         SteamLobbyMatchListPreamble7398727);
 }
 
+static void (*ResolveSteamLobbyChatUpdate())(void*, void const*)
+{
+    return ResolveExactGameFunction<void (*)(void*, void const*)>(
+        SteamLobbyChatUpdateRva7398727,
+        SteamLobbyChatUpdatePreamble7398727);
+}
+
 static void* (*ResolvePlatformMemberResolve())(void*, void const*)
 {
     return ResolveExactGameFunction<void* (*)(void*, void const*)>(
@@ -2557,6 +2573,9 @@ void Hooks::Startup()
         auto const steamLobbyMatchListTarget = enableJoinLifecycleTrace
             ? ResolveSteamLobbyMatchList()
             : nullptr;
+        auto const steamLobbyChatUpdateTarget = enableJoinLifecycleTrace
+            ? ResolveSteamLobbyChatUpdate()
+            : nullptr;
         auto const platformMemberResolveTarget = enableJoinLifecycleTrace
             ? ResolvePlatformMemberResolve()
             : nullptr;
@@ -2599,6 +2618,7 @@ void Hooks::Startup()
                 || steamLobbyJoinRequestTarget == nullptr
                 || steamLobbyEnteredTarget == nullptr
                 || steamLobbyMatchListTarget == nullptr
+                || steamLobbyChatUpdateTarget == nullptr
                 || platformMemberResolveTarget == nullptr
                 || platformMembershipEventTarget == nullptr))) {
             ERR("[MP_JOIN_TRACE] event=disabled reason=function_preamble_mismatch server_rva=0x%llx server=%u client_rva=0x%llx client=%u mod_reconciliation_rva=0x%llx mod_reconciliation=%u semantic_group_valid=%u",
@@ -2629,10 +2649,11 @@ void Hooks::Startup()
                     && steamLobbyJoinRequestTarget != nullptr
                     && steamLobbyEnteredTarget != nullptr
                     && steamLobbyMatchListTarget != nullptr
+                    && steamLobbyChatUpdateTarget != nullptr
                     && platformMemberResolveTarget != nullptr
                     && platformMembershipEventTarget != nullptr ? 1u : 0u);
             if (enableJoinLifecycleTrace) {
-                ERR("[MP_JOIN_TRACE] event=semantic_guard_status mod_gate=%u mod_compare=%u client_lobby=%u server_lobby=%u dc_lobby_update=%u identity_map=%u connected_peer=%u session_member_added=%u character_owner_write=%u participant_added=%u record_write=%u reconcile=%u start_game=%u ready_recompute=%u participant_remove=%u connection_event=%u steam_visibility=%u steam_created=%u steam_join=%u steam_entered=%u steam_match_list=%u platform_member_resolve=%u platform_membership_event=%u",
+                ERR("[MP_JOIN_TRACE] event=semantic_guard_status mod_gate=%u mod_compare=%u client_lobby=%u server_lobby=%u dc_lobby_update=%u identity_map=%u connected_peer=%u session_member_added=%u character_owner_write=%u participant_added=%u record_write=%u reconcile=%u start_game=%u ready_recompute=%u participant_remove=%u connection_event=%u steam_visibility=%u steam_created=%u steam_join=%u steam_entered=%u steam_match_list=%u steam_chat_update=%u platform_member_resolve=%u platform_membership_event=%u",
                     modReconciliationGateTarget != nullptr ? 1u : 0u,
                     modManifestCompareTarget != nullptr ? 1u : 0u,
                     clientLobbyProcessMessageTarget != nullptr ? 1u : 0u,
@@ -2654,6 +2675,7 @@ void Hooks::Startup()
                     steamLobbyJoinRequestTarget != nullptr ? 1u : 0u,
                     steamLobbyEnteredTarget != nullptr ? 1u : 0u,
                     steamLobbyMatchListTarget != nullptr ? 1u : 0u,
+                    steamLobbyChatUpdateTarget != nullptr ? 1u : 0u,
                     platformMemberResolveTarget != nullptr ? 1u : 0u,
                     platformMembershipEventTarget != nullptr ? 1u : 0u);
             }
@@ -2685,6 +2707,7 @@ void Hooks::Startup()
                 stm__SteamMatchMakingManager__JoinLobby.Wrap(steamLobbyJoinRequestTarget);
                 stm__SteamMatchMakingManager__OnLobbyEntered.Wrap(steamLobbyEnteredTarget);
                 stm__SteamMatchMakingManager__OnLobbyMatchList.Wrap(steamLobbyMatchListTarget);
+                stm__SteamMatchMakingManager__OnLobbyChatUpdate.Wrap(steamLobbyChatUpdateTarget);
                 net__PlatformParticipantManager__ResolveMember.Wrap(platformMemberResolveTarget);
                 net__PlatformParticipantManager__PublishMembershipEvent.Wrap(platformMembershipEventTarget);
             }
@@ -2738,6 +2761,8 @@ void Hooks::Startup()
                         &Hooks::OnSteamLobbyEntered, this);
                     stm__SteamMatchMakingManager__OnLobbyMatchList.SetWrapper(
                         &Hooks::OnSteamLobbyMatchList, this);
+                    stm__SteamMatchMakingManager__OnLobbyChatUpdate.SetWrapper(
+                        &Hooks::OnSteamLobbyChatUpdate, this);
                     net__PlatformParticipantManager__ResolveMember.SetWrapper(
                         &Hooks::OnPlatformMemberResolve, this);
                     net__PlatformParticipantManager__PublishMembershipEvent.SetWrapper(
@@ -2745,11 +2770,12 @@ void Hooks::Startup()
                 }
                 joiningProtocolHookInstalled = true;
                 if (enableJoinLifecycleTrace) {
-                    INFO("[MP_JOIN_TRACE] event=hook_enabled server_rva=0x%llx client_rva=0x%llx mod_reconciliation_rva=0x%llx mod_gate_rva=0x%llx semantic_hook_count=26 max_events=%u protocol_filter=joining_2_3_6_7_8_324_325-load_166_167_168_169_170_171_172_174_194-lobby_199_200_201 dc_lobby_state_change_only=1 synthetic_bypass_active=0 argument_mutation=0 payload_mutation=0 result_mutation=0",
+                    INFO("[MP_JOIN_TRACE] event=hook_enabled server_rva=0x%llx client_rva=0x%llx mod_reconciliation_rva=0x%llx mod_gate_rva=0x%llx steam_lobby_chat_update_rva=0x%llx semantic_hook_count=27 max_events=%u protocol_filter=joining_2_3_6_7_8_324_325-load_166_167_168_169_170_171_172_174_194-lobby_199_200_201 dc_lobby_state_change_only=1 synthetic_bypass_active=0 argument_mutation=0 payload_mutation=0 result_mutation=0",
                         (unsigned long long)JoiningProtocolProcessMessageRva7398727,
                         (unsigned long long)ClientJoiningProtocolProcessMessageRva7398727,
                         (unsigned long long)ModReconciliationClassifyRva7398727,
                         (unsigned long long)ModReconciliationGateRva7398727,
+                        (unsigned long long)SteamLobbyChatUpdateRva7398727,
                         gExtender->GetConfig().JoinLifecycleTraceMaxEvents);
                 }
             } else {
@@ -3685,9 +3711,11 @@ void Hooks::TraceJoinMessageSemantics(
         uint64_t identityWord0{};
         uint64_t identityWord1{};
         memcpy(&identityWord0, &connect->field_60, sizeof(identityWord0));
-        memcpy(&identityWord1,
-            reinterpret_cast<uint8_t const*>(&connect->field_60) + sizeof(identityWord0),
-            sizeof(identityWord1));
+        if (connect->field_58 == 1) {
+            memcpy(&identityWord1,
+                reinterpret_cast<uint8_t const*>(&connect->field_60) + sizeof(identityWord0),
+                sizeof(identityWord1));
+        }
         INFO("[MP_JOIN_TRACE] event=message_fields index=%u call_index=%u side=%s direction=%s msg_id=6 concrete=ClientConnectMessage concrete_name_va=0x14554CAB0 constructor_rva=0x11CB790 serializer_rva=0x11CB900 peer=%u platform_kind=%d platform_subtype=%u platform_key_word0=0x%016llX platform_key_word1=0x%016llX compatibility_count=%u generation=%d identity_tail_kind=%u identity_tail_subtype=%u field_ac=%u special_vtable_path=1 message_mutation=0",
             eventIndex, callIndex, side, direction, (unsigned)peerId,
             connect->field_58,
@@ -4789,6 +4817,9 @@ void Hooks::OnPlatformIdentityMapWrite(
     JoinTracePlatformIdentity value{};
     if (identity != nullptr) {
         memcpy(&value, identity, sizeof(value));
+        if (value.Kind == 0) {
+            value.KeyWord1 = 0;
+        }
     }
     uint32_t enterIndex;
     auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
@@ -5429,6 +5460,56 @@ void Hooks::OnSteamLobbyMatchList(
     }
 }
 
+void Hooks::OnSteamLobbyChatUpdate(
+    void (*wrapped)(void*, void const*),
+    void* manager,
+    void const* callback)
+{
+    uint64_t lobbyId{};
+    uint64_t changedUserSteamId{};
+    uint64_t makingChangeSteamId{};
+    uint32_t stateChange{};
+    if (callback != nullptr) {
+        auto const bytes = static_cast<uint8_t const*>(callback);
+        memcpy(&lobbyId, bytes, sizeof(lobbyId));
+        memcpy(&changedUserSteamId, bytes + 0x08, sizeof(changedUserSteamId));
+        memcpy(&makingChangeSteamId, bytes + 0x10, sizeof(makingChangeSteamId));
+        memcpy(&stateChange, bytes + 0x18, sizeof(stateChange));
+    }
+
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=platform_lobby_chat_update_enter index=%u side=platform backend=steam handler_rva=0x21AE8D0 callback_valid=%u manager_valid=%u lobby_id=0x%016llX platform_kind=0 platform_subtype=1 platform_key_word0=0x%016llX platform_key_word1=0x0000000000000000 making_change_steam_id=0x%016llX state_change=%u entered=%u left=%u disconnected=%u kicked=%u banned=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            callback != nullptr ? 1u : 0u,
+            manager != nullptr ? 1u : 0u,
+            (unsigned long long)lobbyId,
+            (unsigned long long)changedUserSteamId,
+            (unsigned long long)makingChangeSteamId,
+            stateChange,
+            (stateChange & 0x01u) != 0 ? 1u : 0u,
+            (stateChange & 0x02u) != 0 ? 1u : 0u,
+            (stateChange & 0x04u) != 0 ? 1u : 0u,
+            (stateChange & 0x08u) != 0 ? 1u : 0u,
+            (stateChange & 0x10u) != 0 ? 1u : 0u);
+    }
+
+    wrapped(manager, callback);
+
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=platform_lobby_chat_update_exit index=%u call_index=%u side=platform backend=steam handler_rva=0x21AE8D0 callback_valid=%u lobby_id=0x%016llX platform_kind=0 platform_subtype=1 platform_key_word0=0x%016llX platform_key_word1=0x0000000000000000 making_change_steam_id=0x%016llX state_change=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            callback != nullptr ? 1u : 0u,
+            (unsigned long long)lobbyId,
+            (unsigned long long)changedUserSteamId,
+            (unsigned long long)makingChangeSteamId,
+            stateChange);
+    }
+}
+
 void* Hooks::OnPlatformMemberResolve(
     void* (*wrapped)(void*, void const*),
     void* participantManager,
@@ -5437,6 +5518,9 @@ void* Hooks::OnPlatformMemberResolve(
     JoinTracePlatformIdentity value{};
     if (identity != nullptr) {
         memcpy(&value, identity, sizeof(value));
+        if (value.Kind == 0) {
+            value.KeyWord1 = 0;
+        }
     }
     uint32_t enterIndex;
     auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);

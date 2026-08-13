@@ -118,6 +118,9 @@ public:
     void OnSteamLobbyMatchList(
         void (*wrapped)(void*, uint32_t const*, uint8_t, void*),
         void* manager, uint32_t const* matchCount, uint8_t ioFailure, void* context);
+    void OnSteamLobbyChatUpdate(
+        void (*wrapped)(void*, void const*),
+        void* manager, void const* callback);
     void* OnPlatformMemberResolve(
         void* (*wrapped)(void*, void const*),
         void* participantManager, void const* identity);
@@ -262,6 +265,9 @@ public:
     enum class SteamLobbyMatchListTag{};
     WrappableFunction<SteamLobbyMatchListTag,
         void(void*, uint32_t const*, uint8_t, void*)> stm__SteamMatchMakingManager__OnLobbyMatchList;
+    enum class SteamLobbyChatUpdateTag{};
+    WrappableFunction<SteamLobbyChatUpdateTag,
+        void(void*, void const*)> stm__SteamMatchMakingManager__OnLobbyChatUpdate;
     enum class PlatformMemberResolveTag{};
     WrappableFunction<PlatformMemberResolveTag,
         void*(void*, void const*)> net__PlatformParticipantManager__ResolveMember;
