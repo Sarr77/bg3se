@@ -46,6 +46,8 @@ decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyMatchList)* decltype(Hooks:
 decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyChatUpdate)* decltype(Hooks::stm__SteamMatchMakingManager__OnLobbyChatUpdate)::gHook;
 decltype(Hooks::net__PlatformParticipantManager__ResolveMember)* decltype(Hooks::net__PlatformParticipantManager__ResolveMember)::gHook;
 decltype(Hooks::net__PlatformParticipantManager__PublishMembershipEvent)* decltype(Hooks::net__PlatformParticipantManager__PublishMembershipEvent)::gHook;
+decltype(Hooks::net__PlatformIdentityResolver__ResolveMemberId)* decltype(Hooks::net__PlatformIdentityResolver__ResolveMemberId)::gHook;
+decltype(Hooks::eocnet__Lobby__CheckIdentityAdmission)* decltype(Hooks::eocnet__Lobby__CheckIdentityAdmission)::gHook;
 decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ClientLoadProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerLoadProtocol__ProcessMessage)::gHook;
 decltype(Hooks::eocnet__ServerCharacterCreationProtocol__ProcessMessage)* decltype(Hooks::eocnet__ServerCharacterCreationProtocol__ProcessMessage)::gHook;
@@ -58,7 +60,7 @@ decltype(Hooks::ecs__EntityReplicationSystem__Update)* decltype(Hooks::ecs__Enti
 decltype(Hooks::ecs__EntityReplicationCommandBuffer__Flush)* decltype(Hooks::ecs__EntityReplicationCommandBuffer__Flush)::gHook;
 decltype(Hooks::eocnet__CharacterAssignment__RouteEntity)* decltype(Hooks::eocnet__CharacterAssignment__RouteEntity)::gHook;
 decltype(Hooks::esv__PeersInRange__Add)* decltype(Hooks::esv__PeersInRange__Add)::gHook;
-decltype(Hooks::eocnet__Lobby__CheckMembership)* decltype(Hooks::eocnet__Lobby__CheckMembership)::gHook;
+decltype(Hooks::eocnet__Lobby__QueryBackendState)* decltype(Hooks::eocnet__Lobby__QueryBackendState)::gHook;
 decltype(Hooks::eocnet__Lobby__IsReady)* decltype(Hooks::eocnet__Lobby__IsReady)::gHook;
 decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)* decltype(Hooks::stm__SteamSocketOverride__RakNetSendTo)::gHook;
 decltype(Hooks::stm__SteamSocketOverride__RakNetRecvFrom)* decltype(Hooks::stm__SteamSocketOverride__RakNetRecvFrom)::gHook;
@@ -101,7 +103,9 @@ static constexpr uintptr_t SteamLobbyMatchListRva7398727 = 0x21ADA40;
 static constexpr uintptr_t SteamLobbyChatUpdateRva7398727 = 0x21AE8D0;
 static constexpr uintptr_t PlatformMemberResolveRva7398727 = 0x403F6A0;
 static constexpr uintptr_t PlatformMembershipEventRva7398727 = 0x403FFC0;
-static constexpr uintptr_t LobbyMembershipCheckRva7398727 = 0x404E570;
+static constexpr uintptr_t PlatformIdentityToMemberIdRva7398727 = 0x403F220;
+static constexpr uintptr_t LobbyIdentityAdmissionRva7398727 = 0x404E8C0;
+static constexpr uintptr_t LobbyBackendStateQueryRva7398727 = 0x404E570;
 static constexpr uintptr_t LobbyIsReadyRva7398727 = 0x404DA40;
 static constexpr uintptr_t AbstractPeerSendGeneralMessageRva7398727 = 0x4061F20;
 static constexpr uintptr_t AbstractPeerReceiveGeneralMessageRva7398727 = 0x4062320;
@@ -855,7 +859,21 @@ static constexpr uint8_t PlatformMembershipEventPreamble7398727[] = {
     0x20, 0x89, 0x54, 0x24, 0x28, 0x44, 0x88, 0x44
 };
 
-static constexpr uint8_t LobbyMembershipCheckPreamble7398727[] = {
+static constexpr uint8_t PlatformIdentityToMemberIdPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x08, 0x48, 0x89, 0x6C,
+    0x24, 0x10, 0x48, 0x89, 0x74, 0x24, 0x20, 0x57,
+    0x48, 0x83, 0xEC, 0x20, 0x49, 0x8B, 0xF0, 0x48,
+    0x8B, 0xFA, 0x48, 0x8B, 0xE9, 0x41, 0x83, 0x38
+};
+
+static constexpr uint8_t LobbyIdentityAdmissionPreamble7398727[] = {
+    0x48, 0x89, 0x5C, 0x24, 0x10, 0x48, 0x89, 0x6C,
+    0x24, 0x18, 0x48, 0x89, 0x74, 0x24, 0x20, 0x57,
+    0x48, 0x83, 0xEC, 0x20, 0x41, 0x8B, 0xF8, 0x48,
+    0x0F, 0xBE, 0xEA, 0x48, 0x8B, 0xF1, 0x48, 0x8B
+};
+
+static constexpr uint8_t LobbyBackendStateQueryPreamble7398727[] = {
     0x48, 0x89, 0x5C, 0x24, 0x08, 0x48, 0x89, 0x74,
     0x24, 0x10, 0x57, 0x48, 0x83, 0xEC, 0x20, 0x48,
     0x0F, 0xBE, 0xFA, 0x48, 0x8B, 0xF1, 0x40, 0x80,
@@ -2006,11 +2024,27 @@ static void (*ResolvePlatformMembershipEvent())(void*, uint32_t, uint8_t)
         PlatformMembershipEventPreamble7398727);
 }
 
-static uint8_t (*ResolveLobbyMembershipCheck())(void*, int8_t)
+static int32_t* (*ResolvePlatformIdentityToMemberId())(
+    void*, int32_t*, void const*)
+{
+    return ResolveExactGameFunction<int32_t* (*)(
+        void*, int32_t*, void const*)>(
+        PlatformIdentityToMemberIdRva7398727,
+        PlatformIdentityToMemberIdPreamble7398727);
+}
+
+static uint8_t (*ResolveLobbyIdentityAdmission())(void*, int8_t, int32_t)
+{
+    return ResolveExactGameFunction<uint8_t (*)(void*, int8_t, int32_t)>(
+        LobbyIdentityAdmissionRva7398727,
+        LobbyIdentityAdmissionPreamble7398727);
+}
+
+static uint8_t (*ResolveLobbyBackendStateQuery())(void*, int8_t)
 {
     return ResolveExactGameFunction<uint8_t (*)(void*, int8_t)>(
-        LobbyMembershipCheckRva7398727,
-        LobbyMembershipCheckPreamble7398727);
+        LobbyBackendStateQueryRva7398727,
+        LobbyBackendStateQueryPreamble7398727);
 }
 
 static uint8_t (*ResolveLobbyIsReady())(void*)
@@ -2502,10 +2536,10 @@ void Hooks::Startup()
     auto const enableSyntheticLobbyBypass =
         gExtender->GetConfig().EnableSyntheticLobbyBypassPrototype;
     bool joiningProtocolHookInstalled{ false };
-    bool lobbyMembershipCheckHookInstalled{ false };
+    bool lobbyBackendStateQueryHookInstalled{ false };
     if (enableJoinLifecycleTrace || enableSyntheticLobbyBypass) {
         auto const processMessageTarget = ResolveJoiningProtocolProcessMessage();
-        auto const membershipCheckTarget = ResolveLobbyMembershipCheck();
+        auto const backendStateQueryTarget = ResolveLobbyBackendStateQuery();
         auto const clientProcessMessageTarget = enableJoinLifecycleTrace
             ? ResolveClientJoiningProtocolProcessMessage()
             : nullptr;
@@ -2584,6 +2618,12 @@ void Hooks::Startup()
         auto const platformMembershipEventTarget = enableJoinLifecycleTrace
             ? ResolvePlatformMembershipEvent()
             : nullptr;
+        auto const platformIdentityToMemberIdTarget = enableJoinLifecycleTrace
+            ? ResolvePlatformIdentityToMemberId()
+            : nullptr;
+        auto const lobbyIdentityAdmissionTarget = enableJoinLifecycleTrace
+            ? ResolveLobbyIdentityAdmission()
+            : nullptr;
         if (!IsSocketOverrideTelemetryResearchBuild(gExtender->GetGameVersion())) {
             auto const& version = gExtender->GetGameVersion();
             ERR("[MP_JOIN_TRACE] event=disabled reason=unsupported_game_version actual=%u.%u.%u.%u supported=4.73.98.727",
@@ -2597,7 +2637,7 @@ void Hooks::Startup()
             ERR("[MP_JOIN_TRACE] event=disabled reason=invalid_max_events actual=%u allowed=1-4096",
                 gExtender->GetConfig().JoinLifecycleTraceMaxEvents);
         } else if (processMessageTarget == nullptr
-            || membershipCheckTarget == nullptr
+            || backendStateQueryTarget == nullptr
             || (enableJoinLifecycleTrace && (clientProcessMessageTarget == nullptr
                 || modReconciliationClassifyTarget == nullptr
                 || modReconciliationGateTarget == nullptr
@@ -2623,7 +2663,9 @@ void Hooks::Startup()
                 || steamLobbyMatchListTarget == nullptr
                 || steamLobbyChatUpdateTarget == nullptr
                 || platformMemberResolveTarget == nullptr
-                || platformMembershipEventTarget == nullptr))) {
+                || platformMembershipEventTarget == nullptr
+                || platformIdentityToMemberIdTarget == nullptr
+                || lobbyIdentityAdmissionTarget == nullptr))) {
             ERR("[MP_JOIN_TRACE] event=disabled reason=function_preamble_mismatch server_rva=0x%llx server=%u client_rva=0x%llx client=%u mod_reconciliation_rva=0x%llx mod_reconciliation=%u semantic_group_valid=%u",
                 (unsigned long long)JoiningProtocolProcessMessageRva7398727,
                 processMessageTarget != nullptr ? 1u : 0u,
@@ -2653,11 +2695,13 @@ void Hooks::Startup()
                     && steamLobbyEnteredTarget != nullptr
                     && steamLobbyMatchListTarget != nullptr
                     && steamLobbyChatUpdateTarget != nullptr
-                    && membershipCheckTarget != nullptr
+                    && backendStateQueryTarget != nullptr
                     && platformMemberResolveTarget != nullptr
-                    && platformMembershipEventTarget != nullptr ? 1u : 0u);
+                    && platformMembershipEventTarget != nullptr
+                    && platformIdentityToMemberIdTarget != nullptr
+                    && lobbyIdentityAdmissionTarget != nullptr ? 1u : 0u);
             if (enableJoinLifecycleTrace) {
-                ERR("[MP_JOIN_TRACE] event=semantic_guard_status mod_gate=%u mod_compare=%u client_lobby=%u server_lobby=%u dc_lobby_update=%u identity_map=%u connected_peer=%u session_member_added=%u character_owner_write=%u participant_added=%u record_write=%u reconcile=%u start_game=%u ready_recompute=%u participant_remove=%u connection_event=%u steam_visibility=%u steam_created=%u steam_join=%u steam_entered=%u steam_match_list=%u steam_chat_update=%u lobby_membership_check=%u platform_member_resolve=%u platform_membership_event=%u",
+                ERR("[MP_JOIN_TRACE] event=semantic_guard_status mod_gate=%u mod_compare=%u client_lobby=%u server_lobby=%u dc_lobby_update=%u identity_map=%u connected_peer=%u session_member_added=%u character_owner_write=%u participant_added=%u record_write=%u reconcile=%u start_game=%u ready_recompute=%u participant_remove=%u connection_event=%u steam_visibility=%u steam_created=%u steam_join=%u steam_entered=%u steam_match_list=%u steam_chat_update=%u lobby_backend_state=%u platform_member_resolve=%u platform_membership_event=%u identity_to_member_id=%u lobby_identity_admission=%u",
                     modReconciliationGateTarget != nullptr ? 1u : 0u,
                     modManifestCompareTarget != nullptr ? 1u : 0u,
                     clientLobbyProcessMessageTarget != nullptr ? 1u : 0u,
@@ -2680,15 +2724,17 @@ void Hooks::Startup()
                     steamLobbyEnteredTarget != nullptr ? 1u : 0u,
                     steamLobbyMatchListTarget != nullptr ? 1u : 0u,
                     steamLobbyChatUpdateTarget != nullptr ? 1u : 0u,
-                    membershipCheckTarget != nullptr ? 1u : 0u,
+                    backendStateQueryTarget != nullptr ? 1u : 0u,
                     platformMemberResolveTarget != nullptr ? 1u : 0u,
-                    platformMembershipEventTarget != nullptr ? 1u : 0u);
+                    platformMembershipEventTarget != nullptr ? 1u : 0u,
+                    platformIdentityToMemberIdTarget != nullptr ? 1u : 0u,
+                    lobbyIdentityAdmissionTarget != nullptr ? 1u : 0u);
             }
         } else {
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             eocnet__JoiningProtocol__ProcessMessage.Wrap(processMessageTarget);
-            eocnet__Lobby__CheckMembership.Wrap(membershipCheckTarget);
+            eocnet__Lobby__QueryBackendState.Wrap(backendStateQueryTarget);
             if (enableJoinLifecycleTrace) {
                 eocnet__ClientJoiningProtocol__ProcessMessage.Wrap(clientProcessMessageTarget);
                 eocnet__ModReconciliation__Classify.Wrap(modReconciliationClassifyTarget);
@@ -2716,13 +2762,15 @@ void Hooks::Startup()
                 stm__SteamMatchMakingManager__OnLobbyChatUpdate.Wrap(steamLobbyChatUpdateTarget);
                 net__PlatformParticipantManager__ResolveMember.Wrap(platformMemberResolveTarget);
                 net__PlatformParticipantManager__PublishMembershipEvent.Wrap(platformMembershipEventTarget);
+                net__PlatformIdentityResolver__ResolveMemberId.Wrap(platformIdentityToMemberIdTarget);
+                eocnet__Lobby__CheckIdentityAdmission.Wrap(lobbyIdentityAdmissionTarget);
             }
             auto const status = DetourTransactionCommit();
             if (status == NO_ERROR) {
                 eocnet__JoiningProtocol__ProcessMessage.SetWrapper(
                     &Hooks::OnJoiningProtocolProcessMessage, this);
-                eocnet__Lobby__CheckMembership.SetWrapper(
-                    &Hooks::OnLobbyMembershipCheck, this);
+                eocnet__Lobby__QueryBackendState.SetWrapper(
+                    &Hooks::OnLobbyBackendStateQuery, this);
                 if (enableJoinLifecycleTrace) {
                     eocnet__ClientJoiningProtocol__ProcessMessage.SetWrapper(
                         &Hooks::OnClientJoiningProtocolProcessMessage, this);
@@ -2775,17 +2823,23 @@ void Hooks::Startup()
                         &Hooks::OnPlatformMemberResolve, this);
                     net__PlatformParticipantManager__PublishMembershipEvent.SetWrapper(
                         &Hooks::OnPlatformMembershipEvent, this);
+                    net__PlatformIdentityResolver__ResolveMemberId.SetWrapper(
+                        &Hooks::OnPlatformIdentityToMemberId, this);
+                    eocnet__Lobby__CheckIdentityAdmission.SetWrapper(
+                        &Hooks::OnLobbyIdentityAdmission, this);
                 }
                 joiningProtocolHookInstalled = true;
-                lobbyMembershipCheckHookInstalled = true;
+                lobbyBackendStateQueryHookInstalled = true;
                 if (enableJoinLifecycleTrace) {
-                    INFO("[MP_JOIN_TRACE] event=hook_enabled server_rva=0x%llx client_rva=0x%llx mod_reconciliation_rva=0x%llx mod_gate_rva=0x%llx steam_lobby_chat_update_rva=0x%llx lobby_membership_check_rva=0x%llx semantic_hook_count=28 max_events=%u protocol_filter=joining_2_3_6_7_8_324_325-load_166_167_168_169_170_171_172_174_194-lobby_199_200_201 dc_lobby_state_change_only=1 synthetic_bypass_active=0 argument_mutation=0 payload_mutation=0 result_mutation=0",
+                    INFO("[MP_JOIN_TRACE] event=hook_enabled server_rva=0x%llx client_rva=0x%llx mod_reconciliation_rva=0x%llx mod_gate_rva=0x%llx steam_lobby_chat_update_rva=0x%llx lobby_backend_state_rva=0x%llx identity_to_member_id_rva=0x%llx lobby_identity_admission_rva=0x%llx semantic_hook_count=30 max_events=%u protocol_filter=joining_2_3_6_7_8_324_325-load_166_167_168_169_170_171_172_174_194-lobby_199_200_201 dc_lobby_state_change_only=1 synthetic_bypass_active=0 argument_mutation=0 payload_mutation=0 result_mutation=0",
                         (unsigned long long)JoiningProtocolProcessMessageRva7398727,
                         (unsigned long long)ClientJoiningProtocolProcessMessageRva7398727,
                         (unsigned long long)ModReconciliationClassifyRva7398727,
                         (unsigned long long)ModReconciliationGateRva7398727,
                         (unsigned long long)SteamLobbyChatUpdateRva7398727,
-                        (unsigned long long)LobbyMembershipCheckRva7398727,
+                        (unsigned long long)LobbyBackendStateQueryRva7398727,
+                        (unsigned long long)PlatformIdentityToMemberIdRva7398727,
+                        (unsigned long long)LobbyIdentityAdmissionRva7398727,
                         gExtender->GetConfig().JoinLifecycleTraceMaxEvents);
                 }
             } else {
@@ -2812,11 +2866,11 @@ void Hooks::Startup()
                 (unsigned)version.Minor,
                 (unsigned)version.Revision,
                 (unsigned)version.Build);
-        } else if (!joiningProtocolHookInstalled || !lobbyMembershipCheckHookInstalled
+        } else if (!joiningProtocolHookInstalled || !lobbyBackendStateQueryHookInstalled
             || lobbyIsReadyTarget == nullptr) {
-            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=function_guard_failed joining_protocol=%d membership_check=%d lobby_is_ready=%d",
+            ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=function_guard_failed joining_protocol=%d backend_state_query=%d lobby_is_ready=%d",
                 joiningProtocolHookInstalled,
-                lobbyMembershipCheckHookInstalled,
+                lobbyBackendStateQueryHookInstalled,
                 lobbyIsReadyTarget != nullptr);
         } else if (!ApplySyntheticLobbyCanStartBypass7398727()) {
             ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=can_start_bypass_failed");
@@ -5588,6 +5642,90 @@ void Hooks::OnPlatformMembershipEvent(
     }
 }
 
+int32_t* Hooks::OnPlatformIdentityToMemberId(
+    int32_t* (*wrapped)(void*, int32_t*, void const*),
+    void* identityResolver,
+    int32_t* outputMemberId,
+    void const* identity)
+{
+    JoinTracePlatformIdentity value{};
+    if (identity != nullptr) {
+        memcpy(&value, identity, sizeof(value));
+        if (value.Kind == 0) {
+            value.KeyWord1 = 0;
+        }
+    }
+    auto const callerRva = FindGameReturnAddressRva();
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=identity_to_member_id_enter index=%u side=platform handler_rva=0x403F220 caller_rva=0x%llX resolver_valid=%u output_valid=%u identity_valid=%u platform_kind=%u platform_subtype=%u platform_key_word0=0x%016llX platform_key_word1=0x%016llX map_dynamic_buffer_offset=0x68 map_count_offset=0x74 map_entry_stride=0x68 entry_member_id_offset=0x0 entry_identity_offset=0x28 argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            (unsigned long long)callerRva,
+            identityResolver != nullptr ? 1u : 0u,
+            outputMemberId != nullptr ? 1u : 0u,
+            identity != nullptr ? 1u : 0u,
+            value.Kind,
+            (unsigned)value.Subtype,
+            (unsigned long long)value.KeyWord0,
+            (unsigned long long)value.KeyWord1);
+    }
+
+    auto* result = wrapped(identityResolver, outputMemberId, identity);
+    auto const internalMemberId = outputMemberId != nullptr ? *outputMemberId : -1;
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=identity_to_member_id_exit index=%u call_index=%u side=platform handler_rva=0x403F220 caller_rva=0x%llX result_valid=%u result_matches_output=%u internal_member_id=%d resolved=%u platform_kind=%u platform_subtype=%u platform_key_word0=0x%016llX platform_key_word1=0x%016llX argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            (unsigned long long)callerRva,
+            result != nullptr ? 1u : 0u,
+            result == outputMemberId ? 1u : 0u,
+            internalMemberId,
+            internalMemberId != -1 ? 1u : 0u,
+            value.Kind,
+            (unsigned)value.Subtype,
+            (unsigned long long)value.KeyWord0,
+            (unsigned long long)value.KeyWord1);
+    }
+    return result;
+}
+
+uint8_t Hooks::OnLobbyIdentityAdmission(
+    uint8_t (*wrapped)(void*, int8_t, int32_t),
+    void* lobby,
+    int8_t backend,
+    int32_t internalMemberId)
+{
+    auto const callerRva = FindGameReturnAddressRva();
+    uint32_t enterIndex;
+    auto const trace = BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=lobby_identity_admission_enter index=%u side=platform handler_rva=0x404E8C0 caller_rva=0x%llX lobby_valid=%u backend_subtype=%d internal_member_id=%d member_id_resolved=%u concrete_backend=steam_for_subtype_1 concrete_handler_rva=0x21AEEC0 member_array_offset=0x118 member_buffer_offset=0x68 member_count_offset=0x74 member_stride=0x68 argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            (unsigned long long)callerRva,
+            lobby != nullptr ? 1u : 0u,
+            (int)backend,
+            internalMemberId,
+            internalMemberId != -1 ? 1u : 0u);
+    }
+
+    auto const result = wrapped(lobby, backend, internalMemberId);
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=lobby_identity_admission_exit index=%u call_index=%u side=platform handler_rva=0x404E8C0 caller_rva=0x%llX lobby_valid=%u backend_subtype=%d internal_member_id=%d admitted=%u result=%u decision_source=original_platform_member_collection argument_mutation=0 payload_mutation=0 result_mutation=0",
+            exitIndex,
+            enterIndex,
+            (unsigned long long)callerRva,
+            lobby != nullptr ? 1u : 0u,
+            (int)backend,
+            internalMemberId,
+            result != 0 ? 1u : 0u,
+            (unsigned)result);
+    }
+    return result;
+}
+
 net::ProtocolResult Hooks::OnClientLoadProtocolProcessMessage(
     net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
     net::Protocol* protocol,
@@ -6505,7 +6643,7 @@ net::ProtocolResult Hooks::OnLoadProtocolProcessMessage(
     return result;
 }
 
-uint8_t Hooks::OnLobbyMembershipCheck(
+uint8_t Hooks::OnLobbyBackendStateQuery(
     uint8_t (*wrapped)(void*, int8_t),
     void* lobby,
     int8_t backend)
@@ -6516,7 +6654,7 @@ uint8_t Hooks::OnLobbyMembershipCheck(
     auto const trace = gExtender->GetConfig().EnableJoinLifecycleTrace
         && BeginJoinLifecycleTraceEvent(enterIndex);
     if (trace) {
-        INFO("[MP_JOIN_TRACE] event=platform_membership_check_enter index=%u side=platform handler_rva=0x404E570 caller_rva=0x%llX lobby_valid=%u backend_subtype=%d synthetic_bypass_active=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+        INFO("[MP_JOIN_TRACE] event=platform_membership_check_enter index=%u side=platform handler_rva=0x404E570 caller_rva=0x%llX lobby_valid=%u backend_subtype=%d semantic=platform_backend_state_query_not_identity_admission synthetic_bypass_active=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
             enterIndex,
             (unsigned long long)callerRva,
             lobby != nullptr ? 1u : 0u,
@@ -6534,7 +6672,7 @@ uint8_t Hooks::OnLobbyMembershipCheck(
 
     uint32_t exitIndex;
     if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
-        INFO("[MP_JOIN_TRACE] event=platform_membership_check_exit index=%u call_index=%u side=platform handler_rva=0x404E570 caller_rva=0x%llX lobby_valid=%u backend_subtype=%d result=%u decision_source=%s synthetic_bypass_active=%u argument_mutation=0 payload_mutation=0 result_mutation=%u",
+        INFO("[MP_JOIN_TRACE] event=platform_membership_check_exit index=%u call_index=%u side=platform handler_rva=0x404E570 caller_rva=0x%llX lobby_valid=%u backend_subtype=%d result=%u semantic=platform_backend_state_query_not_identity_admission decision_source=%s synthetic_bypass_active=%u argument_mutation=0 payload_mutation=0 result_mutation=%u",
             exitIndex,
             enterIndex,
             (unsigned long long)callerRva,

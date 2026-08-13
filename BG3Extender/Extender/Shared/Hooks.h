@@ -127,6 +127,12 @@ public:
     void OnPlatformMembershipEvent(
         void (*wrapped)(void*, uint32_t, uint8_t),
         void* participantManager, uint32_t internalMemberId, uint8_t eventFlag);
+    int32_t* OnPlatformIdentityToMemberId(
+        int32_t* (*wrapped)(void*, int32_t*, void const*),
+        void* identityResolver, int32_t* outputMemberId, void const* identity);
+    uint8_t OnLobbyIdentityAdmission(
+        uint8_t (*wrapped)(void*, int8_t, int32_t),
+        void* lobby, int8_t backend, int32_t internalMemberId);
     net::ProtocolResult OnClientLoadProtocolProcessMessage(
         net::ProtocolResult (*wrapped)(net::Protocol*, void*, net::MessageContext*, net::Message*),
         net::Protocol* protocol, void* unused, net::MessageContext* context, net::Message* message);
@@ -163,7 +169,7 @@ public:
     void OnPeersInRangeAdd(
         void (*wrapped)(void*, int32_t const*),
         void* entityContext, int32_t const* peerId);
-    uint8_t OnLobbyMembershipCheck(uint8_t (*wrapped)(void*, int8_t), void* lobby, int8_t backend);
+    uint8_t OnLobbyBackendStateQuery(uint8_t (*wrapped)(void*, int8_t), void* lobby, int8_t backend);
     uint8_t OnLobbyIsReady(uint8_t (*wrapped)(void*), void* lobby);
 
     enum class ClientConnectMessageSerializeTag{};
@@ -274,6 +280,12 @@ public:
     enum class PlatformMembershipEventTag{};
     WrappableFunction<PlatformMembershipEventTag,
         void(void*, uint32_t, uint8_t)> net__PlatformParticipantManager__PublishMembershipEvent;
+    enum class PlatformIdentityToMemberIdTag{};
+    WrappableFunction<PlatformIdentityToMemberIdTag,
+        int32_t*(void*, int32_t*, void const*)> net__PlatformIdentityResolver__ResolveMemberId;
+    enum class LobbyIdentityAdmissionTag{};
+    WrappableFunction<LobbyIdentityAdmissionTag,
+        uint8_t(void*, int8_t, int32_t)> eocnet__Lobby__CheckIdentityAdmission;
     enum class ClientLoadProtocolProcessMessageTag{};
     WrappableFunction<ClientLoadProtocolProcessMessageTag,
         net::ProtocolResult(net::Protocol*, void*, net::MessageContext*, net::Message*)> eocnet__ClientLoadProtocol__ProcessMessage;
@@ -310,8 +322,8 @@ public:
     enum class PeersInRangeAddTag{};
     WrappableFunction<PeersInRangeAddTag,
         void(void*, int32_t const*)> esv__PeersInRange__Add;
-    enum class LobbyMembershipCheckTag{};
-    WrappableFunction<LobbyMembershipCheckTag, uint8_t(void*, int8_t)> eocnet__Lobby__CheckMembership;
+    enum class LobbyBackendStateQueryTag{};
+    WrappableFunction<LobbyBackendStateQueryTag, uint8_t(void*, int8_t)> eocnet__Lobby__QueryBackendState;
     enum class LobbyIsReadyTag{};
     WrappableFunction<LobbyIsReadyTag, uint8_t(void*)> eocnet__Lobby__IsReady;
     enum class SocketOverrideSendTag{};
