@@ -2502,8 +2502,10 @@ void Hooks::Startup()
     auto const enableSyntheticLobbyBypass =
         gExtender->GetConfig().EnableSyntheticLobbyBypassPrototype;
     bool joiningProtocolHookInstalled{ false };
+    bool lobbyMembershipCheckHookInstalled{ false };
     if (enableJoinLifecycleTrace || enableSyntheticLobbyBypass) {
         auto const processMessageTarget = ResolveJoiningProtocolProcessMessage();
+        auto const membershipCheckTarget = ResolveLobbyMembershipCheck();
         auto const clientProcessMessageTarget = enableJoinLifecycleTrace
             ? ResolveClientJoiningProtocolProcessMessage()
             : nullptr;
@@ -2595,6 +2597,7 @@ void Hooks::Startup()
             ERR("[MP_JOIN_TRACE] event=disabled reason=invalid_max_events actual=%u allowed=1-4096",
                 gExtender->GetConfig().JoinLifecycleTraceMaxEvents);
         } else if (processMessageTarget == nullptr
+            || membershipCheckTarget == nullptr
             || (enableJoinLifecycleTrace && (clientProcessMessageTarget == nullptr
                 || modReconciliationClassifyTarget == nullptr
                 || modReconciliationGateTarget == nullptr
@@ -2650,10 +2653,11 @@ void Hooks::Startup()
                     && steamLobbyEnteredTarget != nullptr
                     && steamLobbyMatchListTarget != nullptr
                     && steamLobbyChatUpdateTarget != nullptr
+                    && membershipCheckTarget != nullptr
                     && platformMemberResolveTarget != nullptr
                     && platformMembershipEventTarget != nullptr ? 1u : 0u);
             if (enableJoinLifecycleTrace) {
-                ERR("[MP_JOIN_TRACE] event=semantic_guard_status mod_gate=%u mod_compare=%u client_lobby=%u server_lobby=%u dc_lobby_update=%u identity_map=%u connected_peer=%u session_member_added=%u character_owner_write=%u participant_added=%u record_write=%u reconcile=%u start_game=%u ready_recompute=%u participant_remove=%u connection_event=%u steam_visibility=%u steam_created=%u steam_join=%u steam_entered=%u steam_match_list=%u steam_chat_update=%u platform_member_resolve=%u platform_membership_event=%u",
+                ERR("[MP_JOIN_TRACE] event=semantic_guard_status mod_gate=%u mod_compare=%u client_lobby=%u server_lobby=%u dc_lobby_update=%u identity_map=%u connected_peer=%u session_member_added=%u character_owner_write=%u participant_added=%u record_write=%u reconcile=%u start_game=%u ready_recompute=%u participant_remove=%u connection_event=%u steam_visibility=%u steam_created=%u steam_join=%u steam_entered=%u steam_match_list=%u steam_chat_update=%u lobby_membership_check=%u platform_member_resolve=%u platform_membership_event=%u",
                     modReconciliationGateTarget != nullptr ? 1u : 0u,
                     modManifestCompareTarget != nullptr ? 1u : 0u,
                     clientLobbyProcessMessageTarget != nullptr ? 1u : 0u,
@@ -2676,6 +2680,7 @@ void Hooks::Startup()
                     steamLobbyEnteredTarget != nullptr ? 1u : 0u,
                     steamLobbyMatchListTarget != nullptr ? 1u : 0u,
                     steamLobbyChatUpdateTarget != nullptr ? 1u : 0u,
+                    membershipCheckTarget != nullptr ? 1u : 0u,
                     platformMemberResolveTarget != nullptr ? 1u : 0u,
                     platformMembershipEventTarget != nullptr ? 1u : 0u);
             }
@@ -2683,6 +2688,7 @@ void Hooks::Startup()
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
             eocnet__JoiningProtocol__ProcessMessage.Wrap(processMessageTarget);
+            eocnet__Lobby__CheckMembership.Wrap(membershipCheckTarget);
             if (enableJoinLifecycleTrace) {
                 eocnet__ClientJoiningProtocol__ProcessMessage.Wrap(clientProcessMessageTarget);
                 eocnet__ModReconciliation__Classify.Wrap(modReconciliationClassifyTarget);
@@ -2715,6 +2721,8 @@ void Hooks::Startup()
             if (status == NO_ERROR) {
                 eocnet__JoiningProtocol__ProcessMessage.SetWrapper(
                     &Hooks::OnJoiningProtocolProcessMessage, this);
+                eocnet__Lobby__CheckMembership.SetWrapper(
+                    &Hooks::OnLobbyMembershipCheck, this);
                 if (enableJoinLifecycleTrace) {
                     eocnet__ClientJoiningProtocol__ProcessMessage.SetWrapper(
                         &Hooks::OnClientJoiningProtocolProcessMessage, this);
@@ -2769,13 +2777,15 @@ void Hooks::Startup()
                         &Hooks::OnPlatformMembershipEvent, this);
                 }
                 joiningProtocolHookInstalled = true;
+                lobbyMembershipCheckHookInstalled = true;
                 if (enableJoinLifecycleTrace) {
-                    INFO("[MP_JOIN_TRACE] event=hook_enabled server_rva=0x%llx client_rva=0x%llx mod_reconciliation_rva=0x%llx mod_gate_rva=0x%llx steam_lobby_chat_update_rva=0x%llx semantic_hook_count=27 max_events=%u protocol_filter=joining_2_3_6_7_8_324_325-load_166_167_168_169_170_171_172_174_194-lobby_199_200_201 dc_lobby_state_change_only=1 synthetic_bypass_active=0 argument_mutation=0 payload_mutation=0 result_mutation=0",
+                    INFO("[MP_JOIN_TRACE] event=hook_enabled server_rva=0x%llx client_rva=0x%llx mod_reconciliation_rva=0x%llx mod_gate_rva=0x%llx steam_lobby_chat_update_rva=0x%llx lobby_membership_check_rva=0x%llx semantic_hook_count=28 max_events=%u protocol_filter=joining_2_3_6_7_8_324_325-load_166_167_168_169_170_171_172_174_194-lobby_199_200_201 dc_lobby_state_change_only=1 synthetic_bypass_active=0 argument_mutation=0 payload_mutation=0 result_mutation=0",
                         (unsigned long long)JoiningProtocolProcessMessageRva7398727,
                         (unsigned long long)ClientJoiningProtocolProcessMessageRva7398727,
                         (unsigned long long)ModReconciliationClassifyRva7398727,
                         (unsigned long long)ModReconciliationGateRva7398727,
                         (unsigned long long)SteamLobbyChatUpdateRva7398727,
+                        (unsigned long long)LobbyMembershipCheckRva7398727,
                         gExtender->GetConfig().JoinLifecycleTraceMaxEvents);
                 }
             } else {
@@ -2787,7 +2797,6 @@ void Hooks::Startup()
     if (enableSyntheticLobbyBypass) {
         auto const marker = gExtender->GetConfig().SyntheticLobbyBypassMarker;
         auto const peerLimit = gExtender->GetConfig().ExperimentalNativeMultiplayerPeerLimit;
-        auto const membershipCheckTarget = ResolveLobbyMembershipCheck();
         auto const lobbyIsReadyTarget = ResolveLobbyIsReady();
         if (marker == 0) {
             ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=invalid_marker marker_must_be_nonzero=true");
@@ -2803,11 +2812,11 @@ void Hooks::Startup()
                 (unsigned)version.Minor,
                 (unsigned)version.Revision,
                 (unsigned)version.Build);
-        } else if (!joiningProtocolHookInstalled || membershipCheckTarget == nullptr
+        } else if (!joiningProtocolHookInstalled || !lobbyMembershipCheckHookInstalled
             || lobbyIsReadyTarget == nullptr) {
             ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=function_guard_failed joining_protocol=%d membership_check=%d lobby_is_ready=%d",
                 joiningProtocolHookInstalled,
-                membershipCheckTarget != nullptr,
+                lobbyMembershipCheckHookInstalled,
                 lobbyIsReadyTarget != nullptr);
         } else if (!ApplySyntheticLobbyCanStartBypass7398727()) {
             ERR("[MP_SYNTHETIC_LOBBY] event=disabled reason=can_start_bypass_failed");
@@ -2816,12 +2825,9 @@ void Hooks::Startup()
         } else {
             DetourTransactionBegin();
             DetourUpdateThread(GetCurrentThread());
-            eocnet__Lobby__CheckMembership.Wrap(membershipCheckTarget);
             eocnet__Lobby__IsReady.Wrap(lobbyIsReadyTarget);
             auto const status = DetourTransactionCommit();
             if (status == NO_ERROR) {
-                eocnet__Lobby__CheckMembership.SetWrapper(
-                    &Hooks::OnLobbyMembershipCheck, this);
                 eocnet__Lobby__IsReady.SetWrapper(
                     &Hooks::OnLobbyIsReady, this);
                 syntheticLobbyBypassActive_.store(true, std::memory_order_release);
@@ -6504,12 +6510,42 @@ uint8_t Hooks::OnLobbyMembershipCheck(
     void* lobby,
     int8_t backend)
 {
-    if (SyntheticLobbyAdmissionActive && backend == 0) {
-        INFO("[MP_SYNTHETIC_LOBBY] event=membership_granted scope=current_marked_client_connect identity_logging=disabled marker_logging=disabled");
-        return 1;
+    auto const bypassApplied = SyntheticLobbyAdmissionActive && backend == 0;
+    auto const callerRva = FindGameReturnAddressRva();
+    uint32_t enterIndex;
+    auto const trace = gExtender->GetConfig().EnableJoinLifecycleTrace
+        && BeginJoinLifecycleTraceEvent(enterIndex);
+    if (trace) {
+        INFO("[MP_JOIN_TRACE] event=platform_membership_check_enter index=%u side=platform handler_rva=0x404E570 caller_rva=0x%llX lobby_valid=%u backend_subtype=%d synthetic_bypass_active=%u argument_mutation=0 payload_mutation=0 result_mutation=0",
+            enterIndex,
+            (unsigned long long)callerRva,
+            lobby != nullptr ? 1u : 0u,
+            (int)backend,
+            bypassApplied ? 1u : 0u);
     }
 
-    return wrapped(lobby, backend);
+    uint8_t result;
+    if (bypassApplied) {
+        INFO("[MP_SYNTHETIC_LOBBY] event=membership_granted scope=current_marked_client_connect identity_logging=disabled marker_logging=disabled");
+        result = 1;
+    } else {
+        result = wrapped(lobby, backend);
+    }
+
+    uint32_t exitIndex;
+    if (trace && BeginJoinLifecycleTraceEvent(exitIndex)) {
+        INFO("[MP_JOIN_TRACE] event=platform_membership_check_exit index=%u call_index=%u side=platform handler_rva=0x404E570 caller_rva=0x%llX lobby_valid=%u backend_subtype=%d result=%u decision_source=%s synthetic_bypass_active=%u argument_mutation=0 payload_mutation=0 result_mutation=%u",
+            exitIndex,
+            enterIndex,
+            (unsigned long long)callerRva,
+            lobby != nullptr ? 1u : 0u,
+            (int)backend,
+            (unsigned)result,
+            bypassApplied ? "explicit_synthetic_bypass" : "original_platform_backend",
+            bypassApplied ? 1u : 0u,
+            bypassApplied ? 1u : 0u);
+    }
+    return result;
 }
 
 uint8_t Hooks::OnLobbyIsReady(uint8_t (*wrapped)(void*), void* lobby)
